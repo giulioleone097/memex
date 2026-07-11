@@ -1,6 +1,6 @@
 ---
 name: openwiki
-description: Route OpenWiki requests to the correct code, personal, ingestion, query, update, or operations workflow. Use when a user asks to create, inspect, refresh, search, diagnose, schedule, or remove an OpenWiki and the correct specialized workflow is not yet selected.
+description: Route OpenWiki requests to the correct code, personal, graph, ingestion, query, update, or operations workflow. Use when a user asks to create, inspect, refresh, search, understand code structure, diagnose, schedule, or remove an OpenWiki and the correct specialized workflow is not yet selected.
 ---
 
 # OpenWiki router
@@ -23,7 +23,7 @@ Select one workflow. Keep Codex and Claude Code on the same deterministic runtim
 ## Procedure
 
 1. Run `<cli> status --mode <mode> --root <root> --json`; accept `NOT_INITIALIZED` only when initialization is the requested next action.
-2. Route creation to `openwiki-init`, refresh to `openwiki-update`, grounded questions to `openwiki-query`, external-source reads to `openwiki-ingest`, and doctor, schedule, recovery, purge, privacy, or uninstall to `openwiki-ops`.
+2. Route repository structure, symbol, dependency, architecture, impact, or changed-path questions to `openwiki-graph` in code mode. Route creation to `openwiki-init`, wiki refresh to `openwiki-update`, grounded page questions to `openwiki-query`, external-source reads to `openwiki-ingest`, and doctor, schedule, recovery, purge, privacy, or uninstall to `openwiki-ops`.
 3. Load only the selected specialized skill and follow its operation order without substituting upstream OpenWiki commands.
 4. Return the selected mode, root, workflow, mutation level, and expected proof before starting a mutating operation.
 

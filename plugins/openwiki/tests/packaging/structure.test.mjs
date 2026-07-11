@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
@@ -22,6 +22,7 @@ const SKILL_NAMES = [
   "openwiki-init",
   "openwiki-update",
   "openwiki-query",
+  "openwiki-graph",
   "openwiki-ingest",
   "openwiki-ops",
 ];
@@ -187,6 +188,53 @@ describe("native plugin packaging", () => {
     assert.match(contents, /MISSING_HOST_CAPABILITY/);
   });
 
+  test("graph skill exposes the bounded native graph contract", async () => {
+    const contents = await readText(
+      resolve(PLUGIN_ROOT, "skills/openwiki-graph/SKILL.md"),
+    );
+    const { fields, body } = parseFrontmatter(contents, "openwiki-graph");
+
+    assert.equal(fields.name, "openwiki-graph");
+    assert.match(fields.description, /Use when/i);
+    assert.match(body, /graph status first/i);
+    assert.match(body, /graph .*--action status/i);
+    for (const action of ["build", "status", "query", "context", "impact", "changes", "map"]) {
+      assert.match(body, new RegExp(`\\b${action}\\b`));
+    }
+    assert.match(body, /query.*requires.*--query/i);
+    assert.match(body, /context.*impact.*require.*--target/i);
+    assert.match(body, /changes.*optionally accepts.*--base/i);
+    assert.match(body, /build.*alone.*--force/i);
+    assert.match(body, /impact .*direction.*depth/i);
+    assert.match(body, /--limit/);
+    assert.match(body, /exact.*resolved.*heuristic/i);
+    assert.match(body, /truncat/i);
+    assert.match(body, /never execute/i);
+    assert.match(body, /never (stores )?source-file (contents|bodies)/i);
+    assert.match(body, /~\/\.openwiki\/data/);
+    for (const protocolStep of ["initialize", "notifications/initialized", "tools/list", "tools/call"]) {
+      assert.match(body, new RegExp(protocolStep));
+    }
+  });
+
+  test("router and wiki workflows delegate graph work without changing personal mode", async () => {
+    const router = await readText(resolve(PLUGIN_ROOT, "skills/openwiki/SKILL.md"));
+    const init = await readText(resolve(PLUGIN_ROOT, "skills/openwiki-init/SKILL.md"));
+    const update = await readText(resolve(PLUGIN_ROOT, "skills/openwiki-update/SKILL.md"));
+    const query = await readText(resolve(PLUGIN_ROOT, "skills/openwiki-query/SKILL.md"));
+
+    assert.match(router, /openwiki-graph/);
+    assert.match(router, /code[- ]mode/i);
+    for (const contents of [init, update, query]) {
+      assert.match(contents, /openwiki-graph/);
+      assert.match(contents, /code[- ]mode/i);
+      assert.match(contents, /personal mode/i);
+    }
+    assert.match(init, /do not reproduce graph build or refresh orchestration/i);
+    assert.match(update, /owns graph status, authorized refresh/i);
+    assert.match(query, /do not broad-scan source files/i);
+  });
+
   test("distribution, security, privacy, and attribution documents are complete", async () => {
     for (const document of DOCUMENTS) {
       assert.equal((await stat(resolve(PLUGIN_ROOT, document))).isFile(), true);
@@ -217,6 +265,14 @@ describe("native plugin packaging", () => {
     assert.match(privacy, /authenticated external connector proof/i);
     assert.match(privacy, /~\/.openwiki\/data/);
     assert.match(privacy, /never stores provider tokens/i);
+    for (const document of [security, privacy]) {
+      assert.match(document, /graph/i);
+      assert.match(document, /symlink/i);
+      assert.match(document, /exclud/i);
+      assert.match(document, /generated/i);
+      assert.match(document, /source bod(y|ies)|source-file bod(y|ies)|source-file contents/i);
+      assert.match(document, /private/i);
+    }
 
     const upstream = await readText(resolve(PLUGIN_ROOT, "UPSTREAM.md"));
     assert.match(upstream, new RegExp(UPSTREAM_COMMIT));
@@ -236,7 +292,9 @@ describe("native plugin packaging", () => {
       ".codex-plugin/plugin.json",
       ".claude-plugin/plugin.json",
       ...SKILL_NAMES.map((name) => `skills/${name}/SKILL.md`),
-      ...SKILL_NAMES.map((name) => `skills/${name}/agents/openai.yaml`),
+      ...SKILL_NAMES.filter((name) => name !== "openwiki-graph").map(
+        (name) => `skills/${name}/agents/openai.yaml`,
+      ),
       ...DOCUMENTS,
     ];
     const externalRuntimePattern =
@@ -252,5 +310,26 @@ describe("native plugin packaging", () => {
     const claude = await readJson(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"));
     assertRelativePluginPath(codex.skills, "Codex skills path");
     assertRelativePluginPath(claude.skills, "Claude skills path");
+  });
+
+  test("packaged runtime surfaces do not reference external graph runtimes", async () => {
+    const files = [
+      "package.json",
+      ".codex-plugin/plugin.json",
+      ".claude-plugin/plugin.json",
+      ...SKILL_NAMES.map((name) => `skills/${name}/SKILL.md`),
+    ];
+    for (const directory of ["src", "dist"]) {
+      const entries = await readdir(resolve(PLUGIN_ROOT, directory), { recursive: true });
+      files.push(...entries.map((entry) => join(directory, entry)));
+    }
+
+    for (const file of files) {
+      assert.doesNotMatch(
+        await readText(resolve(PLUGIN_ROOT, file)),
+        /gitnexus/i,
+        `${file} must remain OpenWiki-native`,
+      );
+    }
   });
 });

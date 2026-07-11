@@ -6,6 +6,7 @@ All notable changes to the OpenWiki dual-host plugin are recorded here.
 
 - Added native Codex and Claude Code plugin manifests and repository marketplaces.
 - Added shared host-neutral routing, initialization, update, query, ingestion, and operations skills.
+- Added the host-neutral `openwiki-graph` skill and documented the seven bounded native graph actions.
 - Documented installation, update, uninstall, security, privacy, proof boundaries, and upstream provenance.
 - Pinned upstream assessment to `langchain-ai/openwiki` commit `326a307203345128a60b92a356978c46e2992df3`.
 - Preserved upstream MIT terms and added independent plugin licensing.

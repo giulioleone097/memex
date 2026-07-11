@@ -22,14 +22,16 @@ Search first, read the strongest pages, and answer with page and line references
 ## Procedure
 
 1. Run `status` and note freshness issues before answering.
-2. Run `search` with the user's question and a bounded result count.
-3. Run `read` for the strongest relevant markdown pages and line ranges returned by search.
-4. Answer only supported claims, citing each as `page:line`; label reasonable inferences and missing evidence.
-5. If freshness materially affects the answer, offer `openwiki-update` without starting it automatically.
+2. For code-mode structure, symbol, dependency, architecture, impact, or changed-path questions, delegate to `openwiki-graph` first. It owns graph status, authorized refresh, compact action selection, confidence, and truncation; do not broad-scan source files here. For personal mode or page-grounded questions, continue with `search`.
+3. Run `search` with the user's question and a bounded result count when page evidence is in scope.
+4. Run `read` for the strongest relevant markdown pages and line ranges returned by search.
+5. Answer only supported claims, citing each as `page:line` or graph evidence; label reasonable inferences and missing evidence.
+6. If freshness materially affects the answer, offer `openwiki-update` without starting it automatically.
 
 ## Evidence
 
 - Preserve search scores, selected page paths, line ranges, content hash, and freshness state.
+- When graph evidence is delegated, preserve its action JSON, confidence, diagnostics, unresolved-edge, and truncation fields.
 - Separate wiki-grounded facts, inference, and unresolved gaps.
 
 ## Error recovery

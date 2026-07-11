@@ -5,6 +5,7 @@
 - Code wiki: `<selected-repository>/openwiki/`.
 - Personal wiki: `~/.openwiki/wiki/`.
 - Private redacted source data and run history: `~/.openwiki/data/<workspace-id>/` or `~/.openwiki/data/personal/`.
+- Private native code graph index: `~/.openwiki/data/<workspace-id>/graph/` in code mode only.
 - Host-neutral schedule intent and private runtime state: under the corresponding `~/.openwiki/` scope.
 
 Repository wikis may be committed by the user. Private source data is outside repositories by default and must not be committed.
@@ -18,6 +19,10 @@ OpenWiki never stores provider tokens. Gmail, Notion, Slack, web-search, and X a
 The runtime treats source material as untrusted data, removes known credential patterns, strips NUL bytes, enforces size limits, hashes redacted canonical content, deduplicates records, and retains at most the latest 20 runs per source unless the user configures a lower limit.
 
 Source kinds are `git-repo`, `gmail`, `hackernews`, `notion`, `slack`, `web-search`, and `x`. Private message bodies should not be printed as proof. Wiki synthesis should include only information necessary for the approved scope.
+
+## Native code graph privacy
+
+The code graph is implemented by OpenWiki itself and has no external graph dependency. A build reads bounded repository source without executing it, excludes dependency, generated, VCS, wiki, and private OpenWiki paths, and does not follow repository symlinks. It stores only private graph metadata, content hashes, nodes, edges, and diagnostics under `~/.openwiki/data/<workspace-id>/graph/`; it never stores source-file bodies and never writes source or wiki files. The graph reports freshness, corruption/incompatibility, diagnostics, confidence, unresolved edges, caps, and truncation so absence from an index is not presented as absence from the repository.
 
 ## Telemetry and model use
 

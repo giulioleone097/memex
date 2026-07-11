@@ -48,12 +48,37 @@ Restart Claude Code after installation. Claude copies the plugin into a versione
 - `openwiki-init`: initialize a code or personal wiki.
 - `openwiki-update`: detect evidence changes, update affected pages, check, and finalize.
 - `openwiki-query`: answer from page and line evidence without mutation.
+- `openwiki-graph`: inspect a code repository with the private OpenWiki-native graph before broad source reads.
 - `openwiki-ingest`: normalize and ingest authorized connector evidence as untrusted data.
 - `openwiki-ops`: run doctor, schedule, recovery, purge, privacy, or uninstall workflows.
 
 Claude Code exposes plugin skills under the `openwiki:` namespace. Codex discovers the same skill folders through the Codex manifest.
 
 Supported source kinds: `git-repo`, `gmail`, `hackernews`, `notion`, `slack`, `web-search`, and `x`.
+
+## Native code graph
+
+Code mode stores the private graph under `~/.openwiki/data/<workspace-id>/graph/`. Graph construction reads bounded repository source, never executes repository code, and stores metadata, hashes, nodes, edges, and diagnostics—not source-file bodies. It does not write source, wiki, instruction, dependency, or credential files. Personal mode has no repository graph.
+
+The graph CLI grammar is:
+
+```text
+node "<plugin-root>/dist/cli.js" graph --mode code --root <repository> --action <build|status|query|context|impact|changes|map> [flags] --json
+```
+
+Seven actions are available:
+
+- `build`: initial or incremental private-index refresh; `--force` is the only action-specific flag and requests a clean rebuild.
+- `status`: report schema, counts, diagnostics, Git fingerprint, scanner version, and freshness.
+- `query`: bounded lexical/structural retrieval; requires `--query "<terms>"`.
+- `context`: bounded file/symbol neighborhood; requires `--target "<file-or-symbol>"`.
+- `impact`: bounded traversal; requires `--target`, accepts `--direction inbound|outbound|both` and `--depth 1..5`.
+- `changes`: map a Git diff or working-tree delta; accepts optional `--base <git-ref>`.
+- `map`: return compact modules, entry points, hubs, cycles, and cross-module flows.
+
+Query-like actions accept bounded `--limit 1..100`; the runtime defaults are compact. The workflow runs graph `status` first, refreshes only when missing/stale and authorized, then prefers `map`, `query`, `context`, `impact`, or `changes` before any targeted source read. Results disclose exact, resolved, or heuristic confidence, diagnostics, unresolved edges, and truncation; a healthy index does not prove complete semantic coverage.
+
+MCP hosts use the same graph contract: JSON-RPC `initialize`, `notifications/initialized`, `tools/list`, then `tools/call` for the graph operation advertised by `tools/list`. Arguments mirror the CLI action and flags. The tool name is discovered from the configured server; it is not hard-coded in this documentation.
 
 ## Update
 

@@ -23,15 +23,17 @@ Create the standard wiki page map, synthesize from verified evidence, validate i
 ## Procedure
 
 1. Run `<cli> status --mode <mode> --root <root> --json`; continue on `NOT_INITIALIZED`, but stop for any other error.
-2. Run `<cli> context --mode <mode> --root <root> --json` and bound synthesis to the returned evidence.
-3. Run `<cli> init --mode <mode> --root <root> --json` once to create confined state and standard pages idempotently.
-4. Write concise pages through the `write` operation: quickstart, architecture, source map, workflows, domain concepts, operations, integrations, and testing. Preserve unrelated instruction-file content byte-for-byte.
-5. Run `check`; fix every reported missing page, broken internal link, provenance gap, or instruction-block mismatch.
-6. Run `finalize` only after all writes and `check` succeed, then run `status` again.
+2. In code mode, delegate graph freshness and compact repository structure evidence to `openwiki-graph` before requesting broad context. Do not reproduce graph build or refresh orchestration here. In personal mode, skip graph work.
+3. Run `<cli> context --mode <mode> --root <root> --json` and bound synthesis to the returned evidence.
+4. Run `<cli> init --mode <mode> --root <root> --json` once to create confined state and standard pages idempotently.
+5. Write concise pages through the `write` operation: quickstart, architecture, source map, workflows, domain concepts, operations, integrations, and testing. Preserve unrelated instruction-file content byte-for-byte.
+6. Run `check`; fix every reported missing page, broken internal link, provenance gap, or instruction-block mismatch.
+7. Run `finalize` only after all writes and `check` succeed, then run `status` again.
 
 ## Evidence
 
 - Capture canonical mode/root, Git HEAD for code mode, written page paths, `check` result, final content hash, and final run id.
+- In code mode, preserve the delegated `openwiki-graph` status/action evidence and disclose its freshness, confidence, diagnostics, and truncation; personal mode has no graph evidence.
 - Cite repository evidence used for synthesis; do not claim external connector coverage unless that connector was read through an authenticated host tool.
 
 ## Error recovery
