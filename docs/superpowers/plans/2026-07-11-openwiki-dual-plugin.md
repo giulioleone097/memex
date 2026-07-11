@@ -373,3 +373,27 @@ git commit -m "chore: complete OpenWiki dual-host verification"
 ```
 
 Expected report: changes, architecture, command results, artifacts, regression scope, both review outcomes, and exact limitations.
+
+### Task 8: Private GitHub publication
+
+**External target:** `giulioleone097/openwiki-codex-claude-plugin`
+
+**Interfaces:**
+- Consumes: final clean local history and Task 7 evidence.
+- Produces: private GitHub repository, canonical `origin`, integrated default branch, and remote SHA/visibility proof.
+
+- [ ] **Step 1: Verify publication preconditions**
+
+Confirm `gh` authentication, active owner, clean intended scope, validator/secret scan, remote ownership, and target repository visibility. Existing conflicting remote or non-private target is a hard stop.
+
+- [ ] **Step 2: Create or reuse only the authorized private repository**
+
+Create without generated README/license/gitignore when absent. Never delete, overwrite, make public, rewrite unrelated history, create releases, or add secrets.
+
+- [ ] **Step 3: Push the integrated history without force**
+
+Push the completed branch, fast-forward the canonical `main` branch only after final verification, set upstream tracking, and make `main` the default branch.
+
+- [ ] **Step 4: Verify remote truth**
+
+Use GitHub API/CLI plus `git ls-remote` to prove owner/name, `PRIVATE` visibility, description, default branch, remote URL, and exact local/remote commit equality.

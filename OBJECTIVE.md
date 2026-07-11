@@ -29,7 +29,8 @@ The host agent performs all reasoning and synthesis. The plugin must not install
 7. A native, dependency-free, incrementally persisted code graph with deterministic schemas, language-aware extraction, module resolution, architecture mapping, graph query/context, impact analysis, and Git change detection.
 8. Installer, uninstaller, validator, security/privacy/license documentation, and upstream attribution pinned to commit `326a307203345128a60b92a356978c46e2992df3`.
 9. Unit, integration, real filesystem/Git/process E2E, plugin validation, and available live-host smoke evidence.
-10. Final verification report and two consecutive clean reviews.
+10. A private GitHub repository under the authenticated user account, with verified `PRIVATE` visibility, canonical `origin`, integrated default branch, and remote SHA proof.
+11. Final verification report and two consecutive clean reviews.
 
 ## Priorities
 
@@ -55,6 +56,7 @@ The host agent performs all reasoning and synthesis. The plugin must not install
 - MIT terms and upstream attribution preserved; no claim of upstream endorsement.
 - Meaningful user-facing behavior requires non-mocked E2E proof. External authenticated services may only be claimed when live credentials and tools are actually available.
 - Full quality gate runs after integration, not after every parallel slice.
+- GitHub publication must remain private; no force push, secret publication, unrelated history rewrite, public release, or visibility downgrade is allowed.
 
 ## Completion conditions
 
@@ -68,6 +70,7 @@ Work succeeds only when all applicable conditions hold:
 - Graph corruption, stale indexes, deleted/renamed files, unresolved relationships, repository scale caps, symlink escapes, generated/vendor exclusions, and deterministic rebuilds are covered.
 - Path traversal, symlink escape, malformed state, duplicate writes, concurrent writes, prompt-injection-shaped source data, secret redaction, retention, and partial-failure recovery are covered.
 - Installed plugin works after original source checkout is unavailable.
+- The final verified commit is pushed to `giulioleone097/openwiki-codex-claude-plugin`; GitHub reports `PRIVATE`, `origin` is canonical, the default branch points to the completed history, and local/remote SHAs match.
 - No dead code, debug output, stale duplicate implementation, secret, or unexpected generated file remains.
 - Review cycle 1 is clean after fixes; review cycle 2 is consecutively clean.
 - Limitations distinguish local deterministic proof, plugin-client proof, and unavailable external authenticated proof.
