@@ -22,7 +22,7 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-test("graph store: a real child-process writer excludes another writer", async () => {
+test("graph store: a real child-process writer excludes another writer", { timeout: 5_000 }, async (t) => {
   const root = await temporaryRoot("repo");
   const home = await temporaryRoot("home");
   const resolved = await resolveGraphStorage(root, home);
@@ -31,12 +31,16 @@ test("graph store: a real child-process writer excludes another writer", async (
   const moduleUrl = pathToFileURL(path.resolve("dist/graph-store.js")).href;
   const script = `import { once } from "node:events"; import { resolveGraphStorage, withGraphWriteLock } from ${JSON.stringify(moduleUrl)}; const resolved = await resolveGraphStorage(process.argv[1], process.argv[2]); await withGraphWriteLock(resolved.storage, async () => { process.stdout.write("locked\\n"); await once(process.stdin, "data"); process.stdin.destroy(); });`;
   const child = spawn(process.execPath, ["--input-type=module", "--eval", script, root, home], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  t.after(() => {
+    if (child.exitCode === null) child.kill("SIGKILL");
+  });
+  const closed = once(child, "close");
   const [chunk] = await once(child.stdout, "data");
   assert.equal(chunk.toString("utf8"), "locked\n");
   const reader = await openGraphIndex(resolved.storage);
   assert.equal((await reader.architectureSummary()).nodeCount, 1);
   await assert.rejects(withGraphWriteLock(resolved.storage, async () => undefined), { code: "LOCKED" });
   child.stdin.end("release\n");
-  const [code] = await once(child, "close");
+  const [code] = await closed;
   assert.equal(code, 0);
 });
