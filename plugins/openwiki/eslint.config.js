@@ -3,12 +3,11 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**"],
+    ignores: ["dist/**", "node_modules/**"],
   },
-  js.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
   {
     files: ["src/**/*.ts"],
+    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {
         project: "./tsconfig.json",
@@ -17,7 +16,14 @@ export default tseslint.config(
     },
   },
   {
-    files: ["tests/**/*.mjs"],
-    extends: [tseslint.configs.disableTypeChecked],
+    files: ["tests/**/*.mjs", "eslint.config.js"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: {
+        Buffer: "readonly",
+        console: "readonly",
+        process: "readonly",
+      },
+    },
   },
 );

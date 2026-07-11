@@ -108,7 +108,7 @@ export function parseSourceEnvelope(input) {
         throw new OpenWikiError("INVALID_ARGUMENT", "Source envelope items must be an array.");
     }
     if (envelope.items.length > MAX_ENVELOPE_ITEMS) {
-        throw new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${MAX_ENVELOPE_ITEMS} item limit.`);
+        throw new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${String(MAX_ENVELOPE_ITEMS)} item limit.`);
     }
     const items = envelope.items.map((item, index) => parseSourceItem(item, index));
     const externalIds = new Set();
@@ -144,7 +144,7 @@ function parseProvenance(input) {
     };
 }
 function parseSourceItem(input, index) {
-    const label = `Source envelope item ${index}`;
+    const label = `Source envelope item ${String(index)}`;
     const item = requireRecord(input, "INVALID_ARGUMENT", `${label} must be an object.`);
     requireKnownKeys(item, SOURCE_ITEM_KEYS, "INVALID_ARGUMENT", label);
     const externalId = requireNonEmptyString(item.externalId, "INVALID_ARGUMENT", `${label} externalId`);
@@ -177,25 +177,25 @@ function parseOptionalMetadata(item, label) {
         }
         if (typeof value === "string" &&
             utf8ByteLength(value) > MAX_METADATA_VALUE_BYTES) {
-            throw new OpenWikiError("SOURCE_TOO_LARGE", `${label} metadata value exceeds the ${MAX_METADATA_VALUE_BYTES} byte limit.`);
+            throw new OpenWikiError("SOURCE_TOO_LARGE", `${label} metadata value exceeds the ${String(MAX_METADATA_VALUE_BYTES)} byte limit.`);
         }
         entries.push([key, value]);
     }
     return Object.fromEntries(entries);
 }
 function enforceEnvelopeByteLimit(input) {
-    let serialized;
+    let serializedValue;
     try {
-        serialized = JSON.stringify(input);
+        serializedValue = JSON.stringify(input);
     }
     catch {
         throw new OpenWikiError("INVALID_ARGUMENT", "Source envelope must be JSON serializable.");
     }
-    if (serialized === undefined) {
+    if (typeof serializedValue !== "string") {
         throw new OpenWikiError("INVALID_ARGUMENT", "Source envelope must be JSON serializable.");
     }
-    if (utf8ByteLength(serialized) > MAX_ENVELOPE_BYTES) {
-        throw new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${MAX_ENVELOPE_BYTES} byte limit.`);
+    if (utf8ByteLength(serializedValue) > MAX_ENVELOPE_BYTES) {
+        throw new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`);
     }
 }
 function requireRecord(value, code, message) {
@@ -230,7 +230,7 @@ function readOptionalString(record, key, code, label) {
 function requireBoundedString(value, label) {
     const parsed = requireString(value, "INVALID_ARGUMENT", label);
     if (utf8ByteLength(parsed) > MAX_ITEM_TEXT_BYTES) {
-        throw new OpenWikiError("SOURCE_TOO_LARGE", `${label} exceeds the ${MAX_ITEM_TEXT_BYTES} byte limit.`);
+        throw new OpenWikiError("SOURCE_TOO_LARGE", `${label} exceeds the ${String(MAX_ITEM_TEXT_BYTES)} byte limit.`);
     }
     return parsed;
 }

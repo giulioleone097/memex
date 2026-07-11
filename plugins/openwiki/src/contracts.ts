@@ -220,7 +220,7 @@ export function parseSourceEnvelope(input: unknown): SourceEnvelopeV1 {
   if (envelope.items.length > MAX_ENVELOPE_ITEMS) {
     throw new OpenWikiError(
       "SOURCE_TOO_LARGE",
-      `Source envelope exceeds the ${MAX_ENVELOPE_ITEMS} item limit.`,
+      `Source envelope exceeds the ${String(MAX_ENVELOPE_ITEMS)} item limit.`,
     );
   }
 
@@ -301,7 +301,7 @@ function parseSourceItem(
   input: unknown,
   index: number,
 ): SourceEnvelopeV1["items"][number] {
-  const label = `Source envelope item ${index}`;
+  const label = `Source envelope item ${String(index)}`;
   const item = requireRecord(input, "INVALID_ARGUMENT", `${label} must be an object.`);
   requireKnownKeys(item, SOURCE_ITEM_KEYS, "INVALID_ARGUMENT", label);
 
@@ -360,7 +360,7 @@ function parseOptionalMetadata(
     ) {
       throw new OpenWikiError(
         "SOURCE_TOO_LARGE",
-        `${label} metadata value exceeds the ${MAX_METADATA_VALUE_BYTES} byte limit.`,
+        `${label} metadata value exceeds the ${String(MAX_METADATA_VALUE_BYTES)} byte limit.`,
       );
     }
     entries.push([key, value]);
@@ -370,9 +370,9 @@ function parseOptionalMetadata(
 }
 
 function enforceEnvelopeByteLimit(input: unknown): void {
-  let serialized: string | undefined;
+  let serializedValue: unknown;
   try {
-    serialized = JSON.stringify(input);
+    serializedValue = JSON.stringify(input);
   } catch {
     throw new OpenWikiError(
       "INVALID_ARGUMENT",
@@ -380,16 +380,16 @@ function enforceEnvelopeByteLimit(input: unknown): void {
     );
   }
 
-  if (serialized === undefined) {
+  if (typeof serializedValue !== "string") {
     throw new OpenWikiError(
       "INVALID_ARGUMENT",
       "Source envelope must be JSON serializable.",
     );
   }
-  if (utf8ByteLength(serialized) > MAX_ENVELOPE_BYTES) {
+  if (utf8ByteLength(serializedValue) > MAX_ENVELOPE_BYTES) {
     throw new OpenWikiError(
       "SOURCE_TOO_LARGE",
-      `Source envelope exceeds the ${MAX_ENVELOPE_BYTES} byte limit.`,
+      `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`,
     );
   }
 }
@@ -455,7 +455,7 @@ function requireBoundedString(value: unknown, label: string): string {
   if (utf8ByteLength(parsed) > MAX_ITEM_TEXT_BYTES) {
     throw new OpenWikiError(
       "SOURCE_TOO_LARGE",
-      `${label} exceeds the ${MAX_ITEM_TEXT_BYTES} byte limit.`,
+      `${label} exceeds the ${String(MAX_ITEM_TEXT_BYTES)} byte limit.`,
     );
   }
   return parsed;
