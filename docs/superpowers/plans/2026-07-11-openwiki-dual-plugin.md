@@ -2,15 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a self-contained, agent-native OpenWiki plugin that Codex and Claude Code install separately while sharing one deterministic runtime and wiki state.
+**Goal:** Build a self-contained, agent-native OpenWiki plugin that Codex and Claude Code install separately while sharing one deterministic runtime, wiki state, and native code graph.
 
-**Architecture:** Repository-local marketplaces point to one plugin root. Strict TypeScript domain/application services compile to dependency-free Node.js ESM; CLI, MCP, Claude hook, and skills are adapters. Codex/Claude perform synthesis, while the runtime confines writes, validates state/source data, and supplies grounded evidence.
+**Architecture:** Repository-local marketplaces point to one plugin root. Strict TypeScript domain/application services compile to dependency-free Node.js ESM; CLI, MCP, Claude hook, and skills are adapters. Codex/Claude perform synthesis, while the runtime confines writes, validates state/source data, and supplies grounded wiki and code-graph evidence.
 
 **Tech Stack:** Node.js 20+, TypeScript 5.x, Node standard library, Node test runner, ESLint, Prettier, Codex CLI 0.142+, Claude Code 2.1.207+.
 
 ## Global Constraints
 
 - Runtime has zero npm dependencies and no first-use network installation.
+- The graph is implemented entirely in OpenWiki: no GitNexus package, binary, service, provider, fallback, data-format coupling, or download.
+- Graph APIs never mutate repository source and never store source bodies; only private atomic indexes are written.
 - Installed plugin contains every executable artifact under `plugins/openwiki`.
 - Codex and Claude manifests/configuration stay separate; core and skills stay shared.
 - State schema version is exactly `1`; unknown versions fail closed.
@@ -148,6 +150,47 @@ git add plugins/openwiki/src plugins/openwiki/tests/unit/sources.test.mjs plugin
 git commit -m "feat: add secure OpenWiki source operations"
 ```
 
+### Task 3B: Native incremental code graph
+
+**Files:**
+- Create: `plugins/openwiki/src/graph-contracts.ts`
+- Create: `plugins/openwiki/src/graph-scan.ts`
+- Create: `plugins/openwiki/src/graph-store.ts`
+- Create: `plugins/openwiki/src/graph-query.ts`
+- Create: `plugins/openwiki/src/graph.ts`
+- Test: `plugins/openwiki/tests/unit/graph.test.mjs`
+- Test: `plugins/openwiki/tests/integration/graph-repository.test.mjs`
+
+**Interfaces:**
+- Consumes: Task 1 contracts/errors and Task 2 atomic/path/Git primitives.
+- Produces: `parseCodeGraph(value)`, `buildGraph(options)`, `getGraphStatus(options)`, `queryGraph(options)`, `getGraphContext(options)`, `analyzeGraphImpact(options)`, `analyzeGraphChanges(options)`, and `getArchitectureMap(options)`.
+
+- [ ] **Step 1: Write failing graph contract and scanner tests**
+
+Cover deterministic IDs/order, corrupt/unknown schema, language detection, comment/literal isolation, declarations, imports/exports, calls, inheritance, references, ambiguity confidence, binary/generated/vendor exclusions, symlink escape, file and repository caps, and serialization caps.
+
+- [ ] **Step 2: Implement deterministic scanners and module resolution**
+
+Use dependency-free lexical scanners with language adapters. Never execute repository code or store source bodies. Resolve exact paths first, conventional module candidates second, unique symbols third, and mark every non-exact relationship with explicit confidence.
+
+- [ ] **Step 3: Implement atomic incremental graph persistence**
+
+Enumerate tracked and non-ignored untracked files with Git argument arrays. Hash bounded content, reuse unchanged immutable file shards, atomically swap the manifest/snapshot, recover the prior graph after interrupted builds, and garbage-collect only unreachable shards.
+
+- [ ] **Step 4: Implement compact graph operations**
+
+Implement freshness/status, lexical plus structural query, bounded context, inbound/outbound impact, Git change-impact, and architecture map. Enforce default/max entity, traversal, file, repository-byte, and serialized-response budgets; report truncation and unresolved relationships.
+
+- [ ] **Step 5: Run focused tests and commit**
+
+Run: `npm --prefix plugins/openwiki run build && node --test plugins/openwiki/tests/unit/graph.test.mjs plugins/openwiki/tests/integration/graph-repository.test.mjs`
+Expected: PASS.
+
+```bash
+git add plugins/openwiki/src/graph-*.ts plugins/openwiki/src/graph.ts plugins/openwiki/tests/unit/graph.test.mjs plugins/openwiki/tests/integration/graph-repository.test.mjs
+git commit -m "feat: add native incremental code graph"
+```
+
 ### Task 4: CLI, MCP, and Claude hook adapters
 
 **Files:**
@@ -164,12 +207,12 @@ git commit -m "feat: add secure OpenWiki source operations"
 - Create: `plugins/openwiki/tests/integration/hook.test.mjs`
 
 **Interfaces:**
-- Consumes: Tasks 1-3 application operations.
+- Consumes: Tasks 1-3B application operations.
 - Produces: CLI commands named after each operation, MCP server methods `initialize`, `ping`, `tools/list`, `tools/call`, and SessionStart hook JSON.
 
 - [ ] **Step 1: Write failing process-level adapter tests**
 
-Spawn real Node processes. Assert JSON stdout, silent stderr on success, stable non-zero errors, newline-delimited MCP lifecycle, tool annotations, path-with-spaces behavior, and read-only hook behavior.
+Spawn real Node processes. Assert JSON stdout, silent stderr on success, stable non-zero errors, newline-delimited MCP lifecycle, 13-operation inventory including `graph`, tool annotations, path-with-spaces behavior, and read-only hook behavior.
 
 - [ ] **Step 2: Implement CLI parsing without a dependency**
 
@@ -202,6 +245,7 @@ git commit -m "feat: expose OpenWiki through CLI and MCP"
 - Create: `plugins/openwiki/skills/openwiki-init/SKILL.md`
 - Create: `plugins/openwiki/skills/openwiki-update/SKILL.md`
 - Create: `plugins/openwiki/skills/openwiki-query/SKILL.md`
+- Create: `plugins/openwiki/skills/openwiki-graph/SKILL.md`
 - Create: `plugins/openwiki/skills/openwiki-ingest/SKILL.md`
 - Create: `plugins/openwiki/skills/openwiki-ops/SKILL.md`
 - Create: `plugins/openwiki/README.md`
@@ -228,7 +272,7 @@ Use plugin name `openwiki`, plugin version `0.1.0`, publisher `Giulio Leone`, ma
 
 - [ ] **Step 3: Write complete host-neutral skills**
 
-Each skill defines triggers, preconditions, exact operation sequence, evidence, error recovery, mutation boundary, and completion proof. Include Codex root derivation and Claude `${CLAUDE_PLUGIN_ROOT}` paths.
+Each skill defines triggers, preconditions, exact operation sequence, evidence, error recovery, mutation boundary, and completion proof. Include Codex root derivation and Claude `${CLAUDE_PLUGIN_ROOT}` paths. The graph skill must prefer fresh compact graph evidence before broad scans and disclose heuristic confidence, diagnostics, and truncation.
 
 - [ ] **Step 4: Write security, privacy, install, update, uninstall, and attribution docs**
 
@@ -260,7 +304,7 @@ git commit -m "feat: package OpenWiki for Codex and Claude Code"
 
 - [ ] **Step 1: Write failing installer and journey tests**
 
-Use isolated config/data homes. Runtime journey: real Git repo, init, write content, finalize, grounded search, source ingestion for seven kinds, source change, update, no-op, doctor, schedule, cross-process query, purge.
+Use isolated config/data homes. Runtime journey: real multi-language Git repo, native graph build/status/query/context/map/impact/changes, incremental graph refresh, init, write content, finalize, grounded search, source ingestion for seven kinds, source change, update, no-op, doctor, schedule, cross-process query, purge.
 
 - [ ] **Step 2: Implement safe installer/uninstaller**
 
@@ -329,4 +373,3 @@ git commit -m "chore: complete OpenWiki dual-host verification"
 ```
 
 Expected report: changes, architecture, command results, artifacts, regression scope, both review outcomes, and exact limitations.
-
