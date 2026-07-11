@@ -355,12 +355,15 @@ describe("CLI adapter", () => {
     const built = assertSuccess(runCli([...graph, "build", "--force"], { home }));
     assertGraphCommon(built, "build", repository);
     assert.equal(typeof built.fresh, "boolean");
+    assert.equal(built.buildMode, "full");
     assert.equal(built.fullRebuild, true);
+    assert.ok(Array.isArray(built.changedPaths));
+    assert.equal(typeof built.truncated, "boolean");
+    assert.equal(Object.hasOwn(built, "graph"), false);
     if (built.head !== undefined) assert.match(built.head, /^[a-f0-9]{40}$/u);
     assert.equal(typeof built.dirtyFingerprint, "string");
     for (const key of [
       "scannedFileCount",
-      "reusedFileCount",
       "removedFileCount",
       "fileCount",
       "nodeCount",

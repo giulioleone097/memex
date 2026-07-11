@@ -293,7 +293,10 @@ describe("repository-local plugin lifecycle", () => {
 describe("repository validator", () => {
   test("reports missing integration artifacts as structured findings instead of crashing", (t) => {
     const harness = createHarness(t);
-    const result = harness.run("validate.mjs", ["--json"]);
+    const missingRoot = mkdtempSync(join(tmpdir(), "openwiki missing integration "));
+    t.after(() => rmSync(missingRoot, { recursive: true, force: true }));
+    rmSync(missingRoot, { recursive: true, force: true });
+    const result = harness.run("validate.mjs", ["--json", "--root", missingRoot]);
 
     assert.equal(result.status, 1);
     assert.equal(result.json.ok, false);

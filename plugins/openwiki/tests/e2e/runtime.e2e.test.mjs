@@ -369,7 +369,7 @@ function assertHasPositiveCount(value) {
   const visit = (current) => {
     if (current === null || typeof current !== "object") return;
     for (const [key, child] of Object.entries(current)) {
-      if (typeof child === "number" && /count|total|files|symbols|nodes|edges/u.test(key)) {
+      if (typeof child === "number" && /count|total|files|symbols|nodes|edges/iu.test(key)) {
         counts.push(child);
       }
       visit(child);
@@ -735,6 +735,10 @@ export function groupActiveProductsByCategory() {
     ]);
     const buildData = assertGraphResult(build, "build", harness.repositoryRoot);
     assertHasPositiveCount(buildData);
+    assert.equal(buildData.buildMode, "full");
+    assert.ok(Array.isArray(buildData.changedPaths));
+    assert.equal(typeof buildData.truncated, "boolean");
+    assert.equal(Object.hasOwn(buildData, "graph"), false);
     assertSemanticText(buildData, [new RegExp(harness.initialHead, "u")]);
 
     const status = await runCliSuccess(harness, [
@@ -807,7 +811,7 @@ export function groupActiveProductsByCategory() {
       "10",
     ]);
     const mapData = assertGraphResult(graphMap, "map", harness.repositoryRoot, 10);
-    assertHasPositiveCount(mapData);
+    assert.ok(mapData.modules.length > 0 || mapData.hubs.length > 0, "Graph map must expose bounded public topology.");
     assertSemanticText(mapData, [/findProductBySku/u, /catalog\.mjs/u]);
 
     await runCliError(
@@ -920,6 +924,10 @@ export function catalogDependencyMap() {
       harness.repositoryRoot,
     );
     assertHasPositiveCount(incrementalData);
+    assert.equal(incrementalData.buildMode, "incremental");
+    assert.equal(incrementalData.previousHead, harness.initialHead);
+    assert.ok(Array.isArray(incrementalData.changedPaths));
+    assert.equal(Object.hasOwn(incrementalData, "graph"), false);
     assertSemanticText(incrementalData, [
       /incremental/iu,
       /src\/catalog\.mjs/u,

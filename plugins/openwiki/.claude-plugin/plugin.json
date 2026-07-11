@@ -15,5 +15,6 @@
     "knowledge-base",
     "agents"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "mcpServers": "./.claude-plugin/mcp.json"
 }
