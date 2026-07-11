@@ -785,7 +785,7 @@ export function groupActiveProductsByCategory() {
       "--target",
       "listActiveProducts",
       "--direction",
-      "upstream",
+      "inbound",
       "--depth",
       "2",
       "--limit",
@@ -794,7 +794,7 @@ export function groupActiveProductsByCategory() {
     const impactData = assertGraphResult(impact, "impact", harness.repositoryRoot, 5);
     assertSemanticText(impactData, [
       /listActiveProducts/u,
-      /upstream/u,
+      /inbound/u,
       /summarizeCatalog|catalog\.test\.mjs/u,
     ]);
 
