@@ -63,7 +63,7 @@ The host agent performs all reasoning and synthesis. The plugin must not install
 Work succeeds only when all applicable conditions hold:
 
 - Clean-checkout build, typecheck, lint, format check, unit, integration, E2E, and packaging validation pass.
-- Codex validator accepts the plugin and Codex installs it from the repository marketplace.
+- The repository validator accepts the Codex plugin; the installed Codex CLI completes real marketplace add/list/remove lifecycle checks and loads the copied runtime from its cache. The current Codex release has no standalone `plugin validate` command, so no unavailable validator is claimed.
 - Claude `plugin validate --strict` accepts plugin and marketplace; local load/install exposes skills, MCP, bin, and hook.
 - Init, no-op update, changed update, grounded query, seven source envelopes, doctor, schedule state, purge, and cross-host state compatibility are proven.
 - Native graph initial build, incremental refresh, status/freshness, bounded query, symbol/file context, architecture map, inbound/outbound impact, and Git change-impact are proven on real multi-language fixtures.
@@ -88,4 +88,4 @@ Work succeeds only when all applicable conditions hold:
 | Native code graph | dedicated graph worker | integration/moderate | Graph contracts, scanners, store, queries, impact/change map, tests | Storage and Git primitives |
 | Sources, ops, E2E, integration | Main orchestrator | architecture/high | Secure source/ops services and final proof | Parallel slices |
 
-Model names requested by the user are recorded as complexity roles. Current collaboration tooling does not expose per-thread model selection, so no unverifiable model assignment is claimed.
+Visible Codex tasks use the user-requested model policy: `gpt-5.6-luna` for bounded mechanical work, `gpt-5.6-terra` with high reasoning for integration and moderate-complexity implementation, and `gpt-5.6-sol` with high reasoning only for critical architecture, difficult host-runtime debugging, and the final global review. Each task has an explicit goal, output, completion criteria, and dependency boundary tied to this objective.
