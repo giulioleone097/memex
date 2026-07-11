@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "web-search-inventory",
+  "kind": "web-search",
+  "fetchedAt": "2026-07-11T08:05:00.000Z",
+  "provenance": {
+    "host": "cli",
+    "query": "inventory catalog architecture reference"
+  },
+  "items": [
+    {
+      "externalId": "https://example.test/reference/catalog-boundaries",
+      "title": "Catalog boundary reference",
+      "text": "A catalog boundary validates identifiers, returns defensive copies, and exposes derived inventory summaries.",
+      "url": "https://example.test/reference/catalog-boundaries",
+      "occurredAt": "2026-07-07T12:00:00.000Z",
+      "metadata": {
+        "rank": 1,
+        "language": "en"
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "slack-catalog-incident",
+  "kind": "slack",
+  "fetchedAt": "2026-07-11T08:04:00.000Z",
+  "cursor": "ts:1783756800.000100",
+  "provenance": {
+    "host": "claude",
+    "accountHint": "northstar",
+    "query": "catalog incident"
+  },
+  "items": [
+    {
+      "externalId": "C01-1783756800.000100",
+      "title": "Catalog incident follow-up",
+      "text": "The incident review confirmed that callers must use normalized SKUs and must not mutate returned catalog records.",
+      "occurredAt": "2026-07-11T06:40:00.000Z",
+      "metadata": {
+        "channel": "eng-catalog",
+        "replyCount": 4
+      }
+    }
+  ]
+}

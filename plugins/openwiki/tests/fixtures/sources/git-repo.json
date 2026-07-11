@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "git-repo-northstar",
+  "kind": "git-repo",
+  "fetchedAt": "2026-07-11T08:00:00.000Z",
+  "cursor": "commit:4f33f4f",
+  "provenance": {
+    "host": "cli",
+    "query": "catalog architecture"
+  },
+  "items": [
+    {
+      "externalId": "src/catalog.mjs",
+      "title": "Catalog module",
+      "text": "The catalog module owns product lookup, active-product filtering, and inventory summaries.",
+      "url": "file:///workspace/src/catalog.mjs",
+      "occurredAt": "2026-07-11T07:55:00.000Z",
+      "metadata": {
+        "language": "javascript",
+        "tracked": true
+      }
+    }
+  ]
+}

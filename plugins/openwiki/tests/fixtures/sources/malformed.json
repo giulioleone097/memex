@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "malformed-envelope",
+  "kind": "unsupported-source",
+  "fetchedAt": "not-a-timestamp",
+  "provenance": {
+    "host": "unknown"
+  },
+  "items": "not-an-array"
+}

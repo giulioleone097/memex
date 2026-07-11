@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "gmail-catalog-decisions",
+  "kind": "gmail",
+  "fetchedAt": "2026-07-11T08:01:00.000Z",
+  "cursor": "message:mail-001",
+  "provenance": {
+    "host": "codex",
+    "accountHint": "engineering@example.test",
+    "query": "catalog migration"
+  },
+  "items": [
+    {
+      "externalId": "mail-001",
+      "title": "Catalog migration decision",
+      "text": "The team agreed that SKU normalization remains at the catalog boundary and inactive products stay excluded from summaries.",
+      "occurredAt": "2026-07-10T14:20:00.000Z",
+      "metadata": {
+        "threadId": "thread-catalog-01",
+        "hasAttachments": false
+      }
+    }
+  ]
+}

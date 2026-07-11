@@ -1,0 +1,2 @@
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"mode":"code","root":".","query":"catalog architecture","limit":5}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"read","arguments":{"mode":"code","root":".","page":"architecture.md"}}}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "x-catalog-release",
+  "kind": "x",
+  "fetchedAt": "2026-07-11T08:06:00.000Z",
+  "cursor": "post:x-post-001",
+  "provenance": {
+    "host": "codex",
+    "query": "catalog release"
+  },
+  "items": [
+    {
+      "externalId": "x-post-001",
+      "title": "Catalog release note",
+      "text": "Northstar catalog release keeps active inventory summaries deterministic and SKU lookup case-insensitive.",
+      "url": "https://x.example.test/northstar/status/x-post-001",
+      "occurredAt": "2026-07-10T16:15:00.000Z",
+      "metadata": {
+        "author": "northstar-eng",
+        "reposts": 8
+      }
+    }
+  ]
+}

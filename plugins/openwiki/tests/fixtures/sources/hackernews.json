@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "hackernews-local-first",
+  "kind": "hackernews",
+  "fetchedAt": "2026-07-11T08:02:00.000Z",
+  "provenance": {
+    "host": "claude",
+    "query": "local-first knowledge tools"
+  },
+  "items": [
+    {
+      "externalId": "hn-44880001",
+      "title": "Local-first knowledge tools",
+      "text": "A discussion of deterministic local storage, transparent provenance, and portable Markdown knowledge bases.",
+      "url": "https://news.ycombinator.com/item?id=44880001",
+      "occurredAt": "2026-07-09T10:00:00.000Z",
+      "metadata": {
+        "score": 142,
+        "comments": 37
+      }
+    }
+  ]
+}
