@@ -1,8 +1,19 @@
 #!/usr/bin/env node
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import {
+  appendFileSync,
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 
 const client = "claude";
 const argv = process.argv.slice(2);
+const operation = argv[1] === "marketplace" ? argv.slice(0, 3).join(" ") : argv.slice(0, 2).join(" ");
 const logPath = process.env.OPENWIKI_TEST_LOG;
 const statePath = process.env.OPENWIKI_TEST_STATE;
 
@@ -23,6 +34,81 @@ function output(value) {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
+function runtimeRoot() {
+  return join(
+    process.env.CLAUDE_CONFIG_DIR,
+    "plugins/cache/openwiki-local/openwiki/0.1.0",
+  );
+}
+
+function materializeRuntime() {
+  const artifacts = [
+    "bin/openwiki",
+    "dist/cli.js",
+    "dist/hook.js",
+    ".claude-plugin/plugin.json",
+    ".claude-plugin/mcp.json",
+    "hooks/hooks.json",
+    "skills/openwiki/SKILL.md",
+  ];
+  if (process.env.OPENWIKI_TEST_MISSING_ARTIFACTS !== "1") artifacts.push("dist/mcp.js");
+  for (const file of artifacts) {
+    const path = join(runtimeRoot(), file);
+    mkdirSync(dirname(path), { recursive: true });
+    if (
+      file === "dist/mcp.js" &&
+      process.env.OPENWIKI_TEST_SYMLINK_ARTIFACTS === "1"
+    ) {
+      const outside = join(process.env.CLAUDE_CONFIG_DIR, "outside-mcp.js");
+      writeFileSync(outside, "fixture\n");
+      symlinkSync(outside, path);
+      continue;
+    }
+    writeFileSync(path, "fixture\n");
+    if (file === "bin/openwiki") chmodSync(path, 0o755);
+  }
+}
+
+function advanceReadiness() {
+  if (clientState.installed.length === 0) return;
+  clientState.readinessPolls = (clientState.readinessPolls ?? 0) + 1;
+  const after = Number.parseInt(process.env.OPENWIKI_TEST_READY_AFTER_LISTS ?? "1", 10);
+  if (
+    process.env.OPENWIKI_TEST_NEVER_READY !== "1" &&
+    clientState.readinessPolls >= after &&
+    !existsSync(join(runtimeRoot(), "bin/openwiki"))
+  ) {
+    materializeRuntime();
+  }
+  save();
+}
+
+if (process.env.OPENWIKI_TEST_ORPHAN_ON === operation) {
+  const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 60_000)"], {
+    stdio: "inherit",
+  });
+  writeFileSync(process.env.OPENWIKI_TEST_CHILD_PID, `${orphan.pid}\n`);
+  process.stderr.write("Fixture intentionally exits with an orphaned descendant.\n");
+  process.exit(70);
+}
+
+if (process.env.OPENWIKI_TEST_OVERSIZED_OUTPUT_ON === operation) {
+  const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 60_000)"], {
+    stdio: "inherit",
+  });
+  writeFileSync(process.env.OPENWIKI_TEST_CHILD_PID, `${orphan.pid}\n`);
+  process.stdout.write("x".repeat(1024 * 1024 + 1));
+  process.exit(0);
+}
+
+if (process.env.OPENWIKI_TEST_TIMEOUT_ON === operation) {
+  const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 60_000)"], {
+    stdio: "inherit",
+  });
+  writeFileSync(process.env.OPENWIKI_TEST_CHILD_PID, `${orphan.pid}\n`);
+  setInterval(() => {}, 60_000);
+}
+
 if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "list") {
   output(clientState.marketplaces);
 } else if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "add") {
@@ -40,18 +126,25 @@ if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "list") {
   save();
   output({ ok: true });
 } else if (argv[0] === "plugin" && argv[1] === "list") {
+  advanceReadiness();
   output(clientState.installed);
 } else if (argv[0] === "plugin" && argv[1] === "install") {
   clientState.installed.push({
     id: argv[2],
     name: "openwiki",
     marketplace: "openwiki-local",
+    version: "0.1.0",
+    installPath:
+      process.env.OPENWIKI_TEST_MALFORMED_INSTALL_ROOT === "1"
+        ? "relative/cache"
+        : runtimeRoot(),
     enabled: true,
   });
   save();
   output({ ok: true });
 } else if (argv[0] === "plugin" && argv[1] === "uninstall") {
   clientState.installed = clientState.installed.filter(({ id }) => id !== argv[2]);
+  delete clientState.readinessPolls;
   save();
   output({ ok: true });
 } else {

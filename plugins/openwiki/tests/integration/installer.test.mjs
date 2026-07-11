@@ -7,12 +7,20 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { describe, test } from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import {
+  clientCommandTimeoutMs,
+  inspectInstalledRuntime,
+  pollInstalledRuntime,
+  resolveHostConfigRoot,
+} from "../../scripts/install.mjs";
 
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = resolve(TEST_DIR, "../..");
@@ -29,12 +37,14 @@ const installCommands = {
     ["plugin", "marketplace", "add", REPOSITORY_ROOT, "--json"],
     ["plugin", "list", "--json"],
     ["plugin", "add", PLUGIN_ID, "--json"],
+    ["plugin", "list", "--json"],
   ],
   claude: [
     ["plugin", "marketplace", "list", "--json"],
     ["plugin", "marketplace", "add", REPOSITORY_ROOT, "--scope", "user"],
     ["plugin", "list", "--json"],
     ["plugin", "install", PLUGIN_ID, "--scope", "user"],
+    ["plugin", "list", "--json"],
   ],
 };
 
@@ -51,6 +61,11 @@ const uninstallCommands = {
     ["plugin", "uninstall", PLUGIN_ID, "--scope", "user"],
     ["plugin", "marketplace", "remove", MARKETPLACE, "--scope", "user"],
   ],
+};
+
+const dryRunInstallCommands = {
+  codex: installCommands.codex.slice(0, -1),
+  claude: installCommands.claude.slice(0, -1),
 };
 
 function emptyState() {
@@ -108,15 +123,30 @@ function stateWithInstalled(target) {
   return state;
 }
 
-function createHarness(t, initialState = emptyState()) {
+function createHarness(t, initialState = emptyState(), extraEnv = {}) {
   const directory = mkdtempSync(join(tmpdir(), "openwiki installer "));
+  const home = join(directory, "home");
+  const codexHome = join(home, ".codex");
+  const claudeConfig = join(home, ".claude");
   const statePath = join(directory, "state.json");
   const logPath = join(directory, "argv.jsonl");
+  const childPidPath = join(directory, "child.pid");
+  mkdirSync(codexHome, { recursive: true });
+  mkdirSync(claudeConfig, { recursive: true });
+  for (const entry of initialState.codex.installed) {
+    if (entry.pluginId === PLUGIN_ID) entry.version ??= "0.1.0";
+  }
+  for (const entry of initialState.claude.installed) {
+    if (entry.id === PLUGIN_ID) {
+      entry.version ??= "0.1.0";
+      entry.installPath ??= join(claudeConfig, "plugins/cache/openwiki-local/openwiki/0.1.0");
+    }
+  }
   writeFileSync(statePath, `${JSON.stringify(initialState, null, 2)}\n`);
   t.after(() => rmSync(directory, { recursive: true, force: true }));
 
   return {
-    run(scriptName, args) {
+    run(scriptName, args, options = {}) {
       writeFileSync(logPath, "");
       const result = spawnSync(process.execPath, [join(SCRIPT_DIR, scriptName), ...args], {
         cwd: directory,
@@ -124,10 +154,17 @@ function createHarness(t, initialState = emptyState()) {
         env: {
           ...process.env,
           PATH: `${FIXTURE_BIN}${delimiter}${process.env.PATH ?? ""}`,
+          HOME: home,
+          USERPROFILE: home,
+          CODEX_HOME: codexHome,
+          CLAUDE_CONFIG_DIR: claudeConfig,
           OPENWIKI_TEST_LOG: logPath,
           OPENWIKI_TEST_STATE: statePath,
+          OPENWIKI_TEST_CHILD_PID: childPidPath,
+          ...extraEnv,
         },
         shell: false,
+        timeout: options.timeout ?? 10_000,
       });
 
       return {
@@ -135,6 +172,7 @@ function createHarness(t, initialState = emptyState()) {
         json: result.stdout.trim() === "" ? undefined : JSON.parse(result.stdout),
       };
     },
+    childPidPath,
     readLog() {
       if (!existsSync(logPath)) return [];
       const content = readFileSync(logPath, "utf8").trim();
@@ -144,6 +182,76 @@ function createHarness(t, initialState = emptyState()) {
       return JSON.parse(readFileSync(statePath, "utf8"));
     },
   };
+}
+
+function createInstalledRuntime(t, client, options = {}) {
+  const directory = mkdtempSync(join(tmpdir(), "openwiki installed runtime "));
+  const codexHome = join(directory, ".codex");
+  const claudeConfigDir = join(directory, ".claude");
+  const version = options.version ?? "0.1.0";
+  const configRoot = client === "codex" ? codexHome : claudeConfigDir;
+  const expectedRoot = join(
+    configRoot,
+    "plugins/cache/openwiki-local/openwiki",
+    version,
+  );
+  const root = options.rootSymlink
+    ? join(directory, "outside installed runtime")
+    : expectedRoot;
+  const artifacts = [
+    "bin/openwiki",
+    "dist/cli.js",
+    "dist/mcp.js",
+    client === "codex"
+      ? ".codex-plugin/plugin.json"
+      : ".claude-plugin/plugin.json",
+    client === "codex" ? ".codex-plugin/mcp.json" : ".claude-plugin/mcp.json",
+    "skills/openwiki/SKILL.md",
+    ...(client === "claude" ? ["hooks/hooks.json", "dist/hook.js"] : []),
+  ];
+  for (const artifact of artifacts) {
+    if (options.missing === artifact) continue;
+    const path = join(root, artifact);
+    mkdirSync(dirname(path), { recursive: true });
+    if (options.symlink === artifact) {
+      const outside = join(directory, "outside-runtime.js");
+      writeFileSync(outside, "export {};\n");
+      symlinkSync(outside, path);
+    } else {
+      writeFileSync(path, artifact === "bin/openwiki" ? "#!/bin/sh\n" : "{}\n");
+      if (artifact === "bin/openwiki") chmodSync(path, 0o755);
+    }
+  }
+  if (options.rootSymlink) {
+    mkdirSync(dirname(expectedRoot), { recursive: true });
+    symlinkSync(root, expectedRoot);
+  }
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  return {
+    entry:
+      client === "codex"
+        ? { pluginId: PLUGIN_ID, version }
+        : { id: PLUGIN_ID, version, installPath: expectedRoot },
+    roots: { codexHome, claudeConfigDir },
+  };
+}
+
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== "ESRCH";
+  }
+}
+
+async function waitForProcessExit(pid, timeoutMs = 2_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!processIsAlive(pid)) return true;
+    await delay(25);
+  }
+  return !processIsAlive(pid);
 }
 
 function expectedLog(target, commandMap) {
@@ -171,7 +279,10 @@ describe("repository-local plugin lifecycle", () => {
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.json.ok, true);
     assert.equal(result.json.dryRun, true);
-    assert.deepEqual(plannedCommands(result.json), expectedLog("all", installCommands));
+    assert.deepEqual(
+      plannedCommands(result.json),
+      expectedLog("all", dryRunInstallCommands),
+    );
     assert.deepEqual(harness.readLog(), []);
   });
 
@@ -227,8 +338,216 @@ describe("repository-local plugin lifecycle", () => {
       { client: "codex", argv: installCommands.codex[0] },
       { client: "claude", argv: installCommands.claude[0] },
       { client: "codex", argv: installCommands.codex[2] },
+      { client: "codex", argv: installCommands.codex[4] },
       { client: "claude", argv: installCommands.claude[2] },
+      { client: "claude", argv: installCommands.claude[4] },
     ]);
+  });
+
+  test("tears down orphaned descendants when a client command fails", async (t) => {
+    const harness = createHarness(t, emptyState(), {
+      OPENWIKI_TEST_ORPHAN_ON: "plugin install",
+    });
+    try {
+      const result = harness.run("install.mjs", ["--claude", "--json"]);
+      assert.equal(result.status, 1, result.stderr);
+      assert.equal(result.json.error.code, "CLIENT_COMMAND_FAILED");
+      const childPid = Number.parseInt(readFileSync(harness.childPidPath, "utf8"), 10);
+      assert.ok(Number.isInteger(childPid));
+      assert.equal(
+        await waitForProcessExit(childPid),
+        true,
+        `orphaned client descendant ${childPid} remained alive`,
+      );
+    } finally {
+      if (existsSync(harness.childPidPath)) {
+        const childPid = Number.parseInt(readFileSync(harness.childPidPath, "utf8"), 10);
+        if (processIsAlive(childPid)) process.kill(childPid, "SIGKILL");
+      }
+    }
+  });
+
+  test("caps client output and removes descendants without exposing raw content", async (t) => {
+    const harness = createHarness(t, emptyState(), {
+      OPENWIKI_TEST_OVERSIZED_OUTPUT_ON: "plugin install",
+    });
+    try {
+      const result = harness.run("install.mjs", ["--claude", "--json"]);
+      assert.equal(result.status, 1, result.stderr);
+      assert.equal(result.json.error.code, "CLIENT_OUTPUT_TOO_LARGE");
+      assert.equal(Object.hasOwn(result.json.error, "stderr"), false);
+      assert.equal(JSON.stringify(result.json.error).includes("x".repeat(128)), false);
+      const childPid = Number.parseInt(readFileSync(harness.childPidPath, "utf8"), 10);
+      assert.ok(Number.isInteger(childPid));
+      assert.equal(
+        await waitForProcessExit(childPid),
+        true,
+        `oversized-output descendant ${childPid} remained alive`,
+      );
+    } finally {
+      if (existsSync(harness.childPidPath)) {
+        const childPid = Number.parseInt(readFileSync(harness.childPidPath, "utf8"), 10);
+        if (processIsAlive(childPid)) process.kill(childPid, "SIGKILL");
+      }
+    }
+  });
+
+  test("times out client commands and removes descendants without exposing raw content", async (t) => {
+    const harness = createHarness(t, emptyState(), {
+      OPENWIKI_TEST_TIMEOUT_ON: "plugin marketplace list",
+    });
+    try {
+      const result = harness.run(
+        "install.mjs",
+        ["--claude", "--json"],
+        { timeout: 45_000 },
+      );
+      assert.equal(result.status, 1, result.stderr);
+      assert.equal(result.json.error.code, "CLIENT_TIMEOUT");
+      assert.equal(Object.hasOwn(result.json.error, "stderr"), false);
+      const childPid = Number.parseInt(readFileSync(harness.childPidPath, "utf8"), 10);
+      assert.ok(Number.isInteger(childPid));
+      assert.equal(
+        await waitForProcessExit(childPid),
+        true,
+        `timed-out client descendant ${childPid} remained alive`,
+      );
+    } finally {
+      if (existsSync(harness.childPidPath)) {
+        const childPid = Number.parseInt(readFileSync(harness.childPidPath, "utf8"), 10);
+        if (processIsAlive(childPid)) process.kill(childPid, "SIGKILL");
+      }
+    }
+  });
+
+  test("selects longer timeouts only for host mutations and copies", () => {
+    for (const argv of [
+      ["plugin", "add", PLUGIN_ID, "--json"],
+      ["plugin", "install", PLUGIN_ID, "--scope", "user"],
+      ["plugin", "remove", PLUGIN_ID, "--json"],
+      ["plugin", "uninstall", PLUGIN_ID, "--scope", "user"],
+      ["plugin", "marketplace", "add", REPOSITORY_ROOT, "--json"],
+      ["plugin", "marketplace", "remove", MARKETPLACE, "--json"],
+    ]) {
+      assert.equal(clientCommandTimeoutMs(argv), 60_000, argv.join(" "));
+    }
+    assert.equal(clientCommandTimeoutMs(["plugin", "list", "--json"]), 30_000);
+    assert.equal(
+      clientCommandTimeoutMs(["plugin", "marketplace", "list", "--json"]),
+      30_000,
+    );
+  });
+
+  test("polls delayed readiness with an explicit clock and policy", async () => {
+    let now = 0;
+    let reads = 0;
+    const result = await pollInstalledRuntime(
+      async () => ({ ready: ++reads === 3, missing: ["dist/mcp.js"] }),
+      { timeoutMs: 50, pollMs: 5 },
+      {
+        now: () => now,
+        sleep: async (milliseconds) => {
+          now += milliseconds;
+        },
+      },
+    );
+    assert.equal(result.ready, true);
+    assert.equal(reads, 3);
+    assert.equal(now, 10);
+  });
+
+  test("rejects malformed versions and install roots without polling", async (t) => {
+    const runtime = createInstalledRuntime(t, "claude");
+    for (const entry of [
+      { ...runtime.entry, version: "../0.1.0" },
+      { ...runtime.entry, installPath: "relative/cache" },
+    ]) {
+      const inspected = inspectInstalledRuntime("claude", [entry], runtime.roots);
+      assert.equal(inspected.invalid, true);
+      let sleeps = 0;
+      await assert.rejects(
+        pollInstalledRuntime(
+          async () => inspected,
+          { timeoutMs: 50, pollMs: 5 },
+          { now: () => 0, sleep: async () => { sleeps += 1; } },
+        ),
+        (error) => error.code === "INSTALL_NOT_READY",
+      );
+      assert.equal(sleeps, 0);
+    }
+  });
+
+  test("requires every runtime artifact referenced by each host manifest", (t) => {
+    const required = {
+      codex: [
+        "bin/openwiki",
+        "dist/cli.js",
+        "dist/mcp.js",
+        ".codex-plugin/plugin.json",
+        ".codex-plugin/mcp.json",
+        "skills/openwiki/SKILL.md",
+      ],
+      claude: [
+        "bin/openwiki",
+        "dist/cli.js",
+        "dist/mcp.js",
+        "dist/hook.js",
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/mcp.json",
+        "skills/openwiki/SKILL.md",
+        "hooks/hooks.json",
+      ],
+    };
+    for (const [client, artifacts] of Object.entries(required)) {
+      const complete = createInstalledRuntime(t, client);
+      assert.equal(
+        inspectInstalledRuntime(client, [complete.entry], complete.roots).ready,
+        true,
+      );
+      for (const artifact of artifacts) {
+        const runtime = createInstalledRuntime(t, client, { missing: artifact });
+        const inspected = inspectInstalledRuntime(client, [runtime.entry], runtime.roots);
+        assert.equal(inspected.ready, false, `${client}:${artifact}`);
+        assert.equal(inspected.invalid, false, `${client}:${artifact}`);
+        assert.ok(inspected.missing.includes(artifact), `${client}:${artifact}`);
+      }
+    }
+  });
+
+  test("resolves standard host config directories when overrides are absent", (t) => {
+    const home = mkdtempSync(join(tmpdir(), "openwiki default home "));
+    t.after(() => rmSync(home, { recursive: true, force: true }));
+    assert.equal(resolveHostConfigRoot("codex", {}, home), join(home, ".codex"));
+    assert.equal(resolveHostConfigRoot("claude", {}, home), join(home, ".claude"));
+  });
+
+  test("rejects runtime artifacts symlinked outside the installed cache", (t) => {
+    const runtime = createInstalledRuntime(t, "claude", { symlink: "dist/mcp.js" });
+    const inspected = inspectInstalledRuntime("claude", [runtime.entry], runtime.roots);
+    assert.equal(inspected.ready, false);
+    assert.equal(inspected.invalid, true);
+    assert.ok(inspected.missing.includes("dist/mcp.js"));
+  });
+
+  test("rejects an installed version directory symlinked outside the host cache", (t) => {
+    const runtime = createInstalledRuntime(t, "claude", { rootSymlink: true });
+    const inspected = inspectInstalledRuntime("claude", [runtime.entry], runtime.roots);
+    assert.equal(inspected.ready, false);
+    assert.equal(inspected.invalid, true);
+    assert.deepEqual(inspected.missing, ["install-root"]);
+  });
+
+  test("returns typed INSTALL_NOT_READY after the production readiness timeout", (t) => {
+    const harness = createHarness(t, emptyState(), {
+      OPENWIKI_TEST_NEVER_READY: "1",
+    });
+    const result = harness.run("install.mjs", ["--claude", "--json"], {
+      timeout: 20_000,
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.json.error.code, "INSTALL_NOT_READY");
+    assert.equal(result.json.error.timeoutMs, 15_000);
+    assert.equal(Object.hasOwn(result.json.error, "installPath"), false);
   });
 
   test("all-target collision preflight prevents partial mutation of the other client", (t) => {
