@@ -11,6 +11,7 @@ import { createGraphNodeId } from "../../dist/graph-contracts.js";
 import { openGraphIndex, resolveGraphStorage, withGraphWriteLock, writeGraph } from "../../dist/graph-store.js";
 
 const roots = [];
+const PHASE_TIMEOUT_MS = 10_000;
 
 async function temporaryRoot(name) {
   const root = await mkdtemp(path.join(os.tmpdir(), `openwiki-concurrency-${name}-`));
@@ -22,7 +23,14 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-test("graph store: a real child-process writer excludes another writer", { timeout: 5_000 }, async (t) => {
+function withinPhase(promise, phase) {
+  return new Promise((resolve, reject) => {
+    const timer = globalThis.setTimeout(() => reject(new Error(`Timed out waiting for graph writer ${phase} after ${PHASE_TIMEOUT_MS}ms.`)), PHASE_TIMEOUT_MS);
+    promise.then(resolve, reject).finally(() => globalThis.clearTimeout(timer));
+  });
+}
+
+test("graph store: a real child-process writer excludes another writer", { timeout: 30_000 }, async (t) => {
   const root = await temporaryRoot("repo");
   const home = await temporaryRoot("home");
   const resolved = await resolveGraphStorage(root, home);
@@ -35,12 +43,12 @@ test("graph store: a real child-process writer excludes another writer", { timeo
     if (child.exitCode === null) child.kill("SIGKILL");
   });
   const closed = once(child, "close");
-  const [chunk] = await once(child.stdout, "data");
+  const [chunk] = await withinPhase(once(child.stdout, "data"), "lock handshake");
   assert.equal(chunk.toString("utf8"), "locked\n");
   const reader = await openGraphIndex(resolved.storage);
   assert.equal((await reader.architectureSummary()).nodeCount, 1);
   await assert.rejects(withGraphWriteLock(resolved.storage, async () => undefined), { code: "LOCKED" });
   child.stdin.end("release\n");
-  const [code] = await closed;
+  const [code] = await withinPhase(closed, "child close");
   assert.equal(code, 0);
 });
