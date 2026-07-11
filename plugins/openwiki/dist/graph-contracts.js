@@ -65,12 +65,13 @@ export function parseCodeGraph(value) {
 }
 function parseFile(value) { const r = object(value, "Graph file must be an object."); assertKeys(r, ["path", "language", "contentHash", "size"]); const size = number(r.size, "Graph file size must be a non-negative integer."); if (!Number.isSafeInteger(size) || size < 0)
     fail("Graph file size must be a non-negative integer."); return { path: relativePath(r.path), language: string(r.language, "Graph file language must be a string."), contentHash: hash(r.contentHash), size }; }
-function parseNode(value) { const r = object(value, "Graph node must be an object."); assertKeys(r, ["id", "kind", "path", "name", "symbolKind", "startLine", "endLine"], true); const kind = string(r.kind, "Graph node kind must be a string."); if (!NODE_KINDS.has(kind))
-    fail("Graph node kind is unsupported."); const node = { id: string(r.id, "Graph node id must be a string."), kind, path: relativePath(r.path), name: string(r.name, "Graph node name must be a string.") }; if (r.symbolKind !== undefined)
+function parseNode(value) { const r = object(value, "Graph node must be an object."); assertKeys(r, ["id", "kind", "path", "name", "scope", "symbolKind", "startLine", "endLine"], true); const kind = string(r.kind, "Graph node kind must be a string."); if (!NODE_KINDS.has(kind))
+    fail("Graph node kind is unsupported."); const node = { id: string(r.id, "Graph node id must be a string."), kind, path: relativePath(r.path), name: string(r.name, "Graph node name must be a string.") }; if (r.scope !== undefined)
+    node.scope = string(r.scope, "Graph symbol scope must be a string."); if (r.symbolKind !== undefined)
     node.symbolKind = string(r.symbolKind, "Graph symbol kind must be a string."); if (r.startLine !== undefined)
     node.startLine = line(r.startLine); if (r.endLine !== undefined)
     node.endLine = line(r.endLine); if (node.endLine !== undefined && node.startLine !== undefined && node.endLine < node.startLine)
-    fail("Graph node line range is invalid."); if (node.id !== createGraphNodeId(node.kind, node.path, node.name, node.symbolKind, node.startLine === undefined ? undefined : String(node.startLine)))
+    fail("Graph node line range is invalid."); const discriminator = node.startLine === undefined ? undefined : node.scope === undefined ? String(node.startLine) : `${node.scope}\u0000${node.startLine.toString()}`; if (node.id !== createGraphNodeId(node.kind, node.path, node.name, node.symbolKind, discriminator))
     fail("Graph node ID does not match its identity fields."); return node; }
 function parseEdge(value) { const r = object(value, "Graph edge must be an object."); assertKeys(r, ["id", "kind", "from", "to", "confidence"]); const kind = string(r.kind, "Graph edge kind must be a string."); const confidence = string(r.confidence, "Graph edge confidence must be a string."); if (!EDGE_KINDS.has(kind) || !CONFIDENCES.has(confidence))
     fail("Graph edge type is unsupported."); const edge = { id: string(r.id, "Graph edge id must be a string."), kind, from: string(r.from, "Graph edge from must be a string."), to: string(r.to, "Graph edge to must be a string."), confidence }; if (edge.id !== createGraphEdgeId(edge.kind, edge.from, edge.to, edge.confidence))

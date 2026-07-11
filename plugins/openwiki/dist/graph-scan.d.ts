@@ -1,13 +1,23 @@
-import type { GraphDiagnosticV1 } from "./graph-contracts.js";
+import type { GraphDiagnosticV1, GraphEdgeKind } from "./graph-contracts.js";
 export interface ScannedSymbol {
     name: string;
+    qualifiedName?: string;
+    scope?: string;
     kind: string;
     startLine: number;
     endLine: number;
     exported: boolean;
 }
+export interface ScannedRelation {
+    kind: Extract<GraphEdgeKind, "calls" | "inherits" | "implements" | "references">;
+    fromQualifiedName: string;
+    target: string;
+    line: number;
+    confidence: "resolved" | "heuristic";
+}
 export interface SourceScan {
     symbols: ScannedSymbol[];
+    relations?: ScannedRelation[];
     imports: string[];
     exports: string[];
     calls: string[];

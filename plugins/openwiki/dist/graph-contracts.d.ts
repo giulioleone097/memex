@@ -23,6 +23,7 @@ export interface GraphNodeV1 {
     kind: GraphNodeKind;
     path: string;
     name: string;
+    scope?: string;
     symbolKind?: string;
     startLine?: number;
     endLine?: number;

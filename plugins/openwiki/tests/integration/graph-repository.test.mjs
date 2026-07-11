@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, test } from "node:test";
@@ -15,6 +15,7 @@ import {
   getGraphContext,
   getGraphStatus,
 } from "../../dist/graph.js";
+import { readStoredGraph, resolveGraphStorage } from "../../dist/graph-store.js";
 
 const execFileAsync = promisify(execFile);
 const roots = [];
@@ -51,26 +52,27 @@ afterEach(async () => {
 });
 
 describe("graph repository", () => {
-  test("graph: builds a real multi-language repository, reuses shards, and maps impact", async () => {
+  test("graph: builds a real multi-language repository and maps impact", async () => {
     const root = await repository();
     const homeDir = await temporaryRoot("home");
     const first = await buildGraph({ root, homeDir, now: "2026-07-11T00:00:00.000Z" });
-    assert.equal(first.graph.files.some((file) => file.path === "ignored.txt"), false);
-    assert.equal(first.graph.files.some((file) => file.path === "src/app.ts"), true);
-    assert.equal(first.graph.nodes.some((node) => node.name === "app"), true);
-    assert.equal(first.graph.edges.some((edge) => edge.kind === "imports"), true);
-    assert.equal(first.graph.edges.some((edge) => edge.kind === "calls"), true);
-    const manifest = JSON.parse(await readFile(first.manifestPath, "utf8"));
+    const storage = await resolveGraphStorage(root, homeDir);
+    const persisted = await readStoredGraph(storage.storage);
+    assert.equal(persisted.files.some((file) => file.path === "ignored.txt"), false);
+    assert.equal(persisted.files.some((file) => file.path === "src/app.ts"), true);
+    assert.equal(persisted.nodes.some((node) => node.name === "app"), true);
+    assert.equal(persisted.edges.some((edge) => edge.kind === "imports"), true);
+    assert.equal(persisted.edges.some((edge) => edge.kind === "calls"), true);
     const second = await buildGraph({ root, homeDir, now: "2026-07-11T00:01:00.000Z" });
-    assert.equal(second.reusedShardCount, first.graph.files.length);
-    assert.deepEqual(second.graph.files, first.graph.files);
+    assert.equal(second.buildMode, "incremental");
+    assert.equal("graph" in second, false);
     const context = await getGraphContext({ root, homeDir, target: "app", limit: 10 });
     assert.equal(context.nodes.some((node) => node.name === "app"), true);
     const impact = await analyzeGraphImpact({ root, homeDir, target: "helper", direction: "inbound", depth: 3 });
     assert.equal(impact.nodes.some((node) => node.name === "app"), true);
     const map = await getArchitectureMap({ root, homeDir, limit: 10 });
     assert.equal(map.modules.length > 0, true);
-    assert.equal(manifest.snapshot.endsWith(".json"), true);
+    assert.equal(first.buildMode, "full");
   });
 
   test("graph: handles dirty fingerprints, renames and deletes with private atomic recovery", async () => {
@@ -81,14 +83,15 @@ describe("graph repository", () => {
     await writeFile(path.join(root, "src", "app.ts"), "import { helper } from './utility'; export function app() { return helper(); }\n");
     await rm(path.join(root, "worker.py"));
     const updated = await buildGraph({ root, homeDir });
-    assert.notEqual(updated.graph.source.dirtyFingerprint, initial.graph.source.dirtyFingerprint);
-    assert.equal(updated.graph.files.some((file) => file.path === "src/helper.ts"), false);
-    assert.equal(updated.graph.files.some((file) => file.path === "worker.py"), false);
+    assert.notEqual(updated.dirtyFingerprint, initial.dirtyFingerprint);
+    assert.equal(updated.changedPaths.includes("src/helper.ts"), true);
+    assert.equal(updated.changedPaths.includes("src/utility.ts"), true);
     const changes = await analyzeGraphChanges({ root, homeDir, limit: 20 });
     assert.equal(changes.changedPaths.includes("src/utility.ts"), true);
-    await writeFile(updated.manifestPath, "{broken", "utf8");
+    const storage = await resolveGraphStorage(root, homeDir);
+    await writeFile(storage.storage.manifestPath, "{broken", "utf8");
     const status = await getGraphStatus({ root, homeDir });
-    assert.equal(status.graph.files.length > 0, true);
+    assert.equal(status.counts.files > 0, true);
   });
 
   test("graph: rejects symlink escapes and hard caps rather than silently storing partial graphs", async () => {

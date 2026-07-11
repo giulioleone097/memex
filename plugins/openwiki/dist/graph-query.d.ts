@@ -21,3 +21,5 @@ export declare function queryGraph(graph: CodeGraphV1, options: QueryGraphOption
 export declare function contextGraph(graph: CodeGraphV1, target: string, limit?: number, responseByteLimit?: number): GraphResult;
 export declare function impactGraph(graph: CodeGraphV1, target: string, direction: "inbound" | "outbound" | "both", depth?: number, limit?: number, responseByteLimit?: number): ImpactResult;
 export declare function matchTargets(graph: CodeGraphV1, target: string): GraphNodeV1[];
+export declare function entityLimit(value: number | undefined): number;
+export declare function responseLimit(value: number | undefined): number;

@@ -1,4 +1,4 @@
-import { type CodeGraphV1, type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
+import { type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
 import { type ImpactResult } from "./graph-query.js";
 export interface GraphOperationBase {
     root: string;
@@ -45,27 +45,27 @@ export interface GraphChangesEnvelope extends Omit<GraphResultEnvelope, "action"
     changedPaths: string[];
     base?: string;
 }
-export declare function buildGraph(options: BuildGraphOptions): Promise<{
+export interface BuildGraphResult {
     schemaVersion: 1;
     action: "build";
     root: string;
     fresh: true;
+    buildMode: "full" | "incremental";
     fullRebuild: boolean;
     head?: string;
+    previousHead?: string;
     dirtyFingerprint: string;
+    changedPaths: string[];
+    truncated: boolean;
     scannedFileCount: number;
-    reusedFileCount: number;
     removedFileCount: number;
     fileCount: number;
     nodeCount: number;
     edgeCount: number;
     diagnosticCount: number;
     generatedAt: string;
-    graph: CodeGraphV1;
-    manifestPath: string;
-    reusedShardCount: number;
-}>;
-export declare function getGraphStatus(options: GraphOperationBase): Promise<{
+}
+export interface GraphStatusResult {
     schemaVersion: 1;
     action: "status";
     root: string;
@@ -81,8 +81,9 @@ export declare function getGraphStatus(options: GraphOperationBase): Promise<{
         diagnostics: number;
     };
     generatedAt?: string;
-    graph?: CodeGraphV1;
-}>;
+}
+export declare function buildGraph(options: BuildGraphOptions): Promise<BuildGraphResult>;
+export declare function getGraphStatus(options: GraphOperationBase): Promise<GraphStatusResult>;
 export declare function queryGraphOperation(options: QueryGraphOptions): Promise<GraphResultEnvelope & {
     query: string;
 }>;
@@ -101,6 +102,7 @@ export declare function getArchitectureMap(options: GraphOperationBase): Promise
     action: "map";
     root: string;
     modules: GraphNodeV1[];
+    entrypoints: GraphNodeV1[];
     hubs: GraphNodeV1[];
     cycles: string[][];
     flows: Array<{
@@ -109,5 +111,13 @@ export declare function getArchitectureMap(options: GraphOperationBase): Promise
         weight: number;
     }>;
     truncated: boolean;
+    truncatedCollections: {
+        modules: boolean;
+        entrypoints: boolean;
+        hubs: boolean;
+        cycles: boolean;
+        flows: boolean;
+        diagnostics: boolean;
+    };
     diagnostics: GraphDiagnosticV1[];
 }>;
