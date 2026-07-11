@@ -1,7 +1,7 @@
 {
   "name": "openwiki-local",
   "interface": {
-    "displayName": "Openwiki Local"
+    "displayName": "OpenWiki Local"
   },
   "plugins": [
     {

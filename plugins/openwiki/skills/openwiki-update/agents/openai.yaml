@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenWiki Update"
+  short_description: "Update existing wikis from verified changes"
+  default_prompt: "Use $openwiki-update to refresh this wiki from verified changes."

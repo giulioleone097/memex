@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "openwiki",
+  "displayName": "OpenWiki",
+  "version": "0.1.0",
+  "description": "Build and maintain one source-backed local wiki from Codex or Claude Code through a shared deterministic runtime.",
+  "author": {
+    "name": "Giulio Leone"
+  },
+  "license": "MIT",
+  "keywords": [
+    "openwiki",
+    "wiki",
+    "documentation",
+    "knowledge-base",
+    "agents"
+  ],
+  "skills": "./skills/"
+}

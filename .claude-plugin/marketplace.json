@@ -2,13 +2,25 @@
   "name": "openwiki-local",
   "description": "Local marketplace for the self-contained OpenWiki plugin.",
   "owner": {
-    "name": "OpenWiki Plugin Contributors"
+    "name": "Giulio Leone"
   },
   "plugins": [
     {
       "name": "openwiki",
       "source": "./plugins/openwiki",
-      "description": "Maintain one interoperable local wiki from Codex and Claude Code."
+      "description": "Maintain one interoperable local wiki from Codex and Claude Code.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Giulio Leone"
+      },
+      "license": "MIT",
+      "category": "Productivity",
+      "tags": [
+        "wiki",
+        "documentation",
+        "knowledge-base"
+      ],
+      "strict": true
     }
   ]
 }

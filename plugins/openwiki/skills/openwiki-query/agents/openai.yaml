@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenWiki Query"
+  short_description: "Answer from grounded OpenWiki page evidence"
+  default_prompt: "Use $openwiki-query to answer this question from grounded wiki evidence."

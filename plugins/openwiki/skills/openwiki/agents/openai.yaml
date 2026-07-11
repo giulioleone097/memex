@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenWiki"
+  short_description: "Route safe OpenWiki workflows across both hosts"
+  default_prompt: "Use $openwiki to choose the safe OpenWiki workflow for this request."
