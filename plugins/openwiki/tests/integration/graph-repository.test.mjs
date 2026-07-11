@@ -94,6 +94,33 @@ describe("graph repository", () => {
     assert.equal(status.counts.files > 0, true);
   });
 
+  test("graph: considers an unchanged dirty build fresh and detects the next dirty edit", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await writeFile(path.join(root, "src", "app.ts"), "import { helper } from './helper'; export function app() { return helper() + 1; }\n");
+    const first = await buildGraph({ root, homeDir });
+    const immediate = await getGraphStatus({ root, homeDir });
+    assert.equal(immediate.fresh, true);
+    const second = await buildGraph({ root, homeDir });
+    assert.equal(second.scannedFileCount, 0);
+    assert.equal(second.dirtyFingerprint, first.dirtyFingerprint);
+    await writeFile(path.join(root, "src", "app.ts"), "import { helper } from './helper'; export function app() { return helper() + 2; }\n");
+    assert.equal((await getGraphStatus({ root, homeDir })).fresh, false);
+  });
+
+  test("graph: skips tracked and dirty binary files without changing graph freshness", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await writeFile(path.join(root, "asset.bin"), Buffer.from([0, 1, 2, 3]));
+    await git(root, ["add", "asset.bin"]);
+    await git(root, ["commit", "-m", "binary fixture"]);
+    const built = await buildGraph({ root, homeDir });
+    assert.equal(built.fileCount > 0, true);
+    assert.equal((await getGraphStatus({ root, homeDir })).fresh, true);
+    await writeFile(path.join(root, "asset.bin"), Buffer.from([0, 4, 5, 6]));
+    assert.equal((await getGraphStatus({ root, homeDir })).fresh, true);
+  });
+
   test("graph: rejects symlink escapes and hard caps rather than silently storing partial graphs", async () => {
     const root = await repository();
     const outside = await temporaryRoot("outside");

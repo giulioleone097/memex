@@ -43,6 +43,8 @@ export interface GraphImpactEnvelope extends Omit<GraphResultEnvelope, "action">
 export interface GraphChangesEnvelope extends Omit<GraphResultEnvelope, "action"> {
     action: "changes";
     changedPaths: string[];
+    changeState: "working-tree" | "committed" | "clean";
+    head?: string;
     base?: string;
 }
 export interface BuildGraphResult {

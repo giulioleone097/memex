@@ -1,57 +1,435 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { lstat, mkdir, open, readFile, readdir, rm, unlink } from "node:fs/promises";
 import path from "node:path";
 
 import { atomicWriteFile } from "./atomic.js";
 import { canonicalizeGraph, graphHash, parseCodeGraph, GRAPH_SCANNER_VERSION, type CodeGraphV1 } from "./graph-contracts.js";
 import { OpenWikiError } from "./errors.js";
+import {
+  GRAPH_STORE_SCHEMA_VERSION,
+  openGraphIndexGeneration,
+  writeGraphIndexGeneration,
+  type GraphIndexManifest,
+  type GraphIndexPort,
+} from "./graph-index.js";
 import { resolveWikiLocation } from "./paths.js";
 import { detectLanguage, type SourceScan } from "./graph-scan.js";
 
-export interface GraphShard { path: string; language: string; contentHash: string; size: number; scan: SourceScan; }
-interface GraphManifest { schemaVersion: 1; snapshot: string; shards: Array<{ path: string; contentHash: string; shard: string }>; }
-export interface GraphStorage { root: string; manifestPath: string; previousManifestPath: string; shardRoot: string; snapshotRoot: string; }
+const GRAPH_WRITE_LOCK_WAIT_MS = 50;
+const GRAPH_STALE_LOCK_MS = 5 * 60 * 1000;
+
+export interface GraphShard { path: string; language: string; contentHash: string; size: number; sourceId: string; scan: SourceScan; }
+export interface RepositoryFileMetadata { path: string; size: number; language: string; sourceId?: string; }
+export interface GraphManifest {
+  schemaVersion: typeof GRAPH_STORE_SCHEMA_VERSION;
+  scannerVersion: string;
+  generation: string;
+  snapshot: string;
+  index: GraphIndexManifest;
+  generatedAt: string;
+  source: CodeGraphV1["source"];
+  counts: { files: number; nodes: number; edges: number; diagnostics: number };
+  shards: Array<{ path: string; contentHash: string; sourceId: string; shard: string }>;
+}
+export interface GraphStorage {
+  root: string;
+  manifestPath: string;
+  previousManifestPath: string;
+  writeLockPath: string;
+  generationRoot: string;
+  shardRoot: string;
+  snapshotRoot: string;
+}
+export interface GraphStorageProbe { initialized: boolean; storage: GraphStorage; workspaceId: string; repositoryRoot: string; }
+export interface GraphChangeEvidence { paths: string[]; head?: string; changeState: "working-tree" | "committed" | "clean"; }
 
 export async function resolveGraphStorage(root: string, homeDir?: string): Promise<{ storage: GraphStorage; workspaceId: string; repositoryRoot: string }> {
   const location = await resolveWikiLocation({ mode: "code", root, ...(homeDir === undefined ? {} : { homeDir }) });
-  const graphRoot = path.join(location.dataRoot, "graph"); await mkdir(graphRoot, { recursive: true, mode: 0o700 }); if ((await lstat(graphRoot)).isSymbolicLink()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph storage root must not be a symbolic link.");
-  return { workspaceId: location.workspaceId, repositoryRoot: location.workspaceRoot as string, storage: { root: graphRoot, manifestPath: path.join(graphRoot, "manifest.json"), previousManifestPath: path.join(graphRoot, "manifest.previous.json"), shardRoot: path.join(graphRoot, "shards"), snapshotRoot: path.join(graphRoot, "snapshots") } };
+  const graphRoot = path.join(location.dataRoot, "graph");
+  await mkdir(graphRoot, { recursive: true, mode: 0o700 });
+  await assertRegularDirectory(graphRoot);
+  return {
+    workspaceId: location.workspaceId,
+    repositoryRoot: location.workspaceRoot as string,
+    storage: createStorage(graphRoot),
+  };
 }
 
-export async function enumerateRepositoryFiles(root: string, limits: { maxFiles: number; maxFileBytes: number; maxRepositoryBytes: number }): Promise<Array<{ path: string; content: string; size: number; contentHash: string; language: string }>> {
-  const listed = await runGit(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"]); const paths = [...new Set(listed.split("\0").filter(Boolean))].sort((a, b) => a.localeCompare(b));
+export async function probeGraphStorage(root: string, homeDir?: string): Promise<GraphStorageProbe> {
+  const location = await resolveWikiLocation({ mode: "code", root, ...(homeDir === undefined ? {} : { homeDir }) });
+  const storage = createStorage(path.join(location.dataRoot, "graph"));
+  const initialized = await isRegularFile(storage.manifestPath);
+  return { initialized, storage, workspaceId: location.workspaceId, repositoryRoot: location.workspaceRoot as string };
+}
+
+export async function enumerateRepositoryMetadata(root: string, limits: { maxFiles: number; maxFileBytes: number; maxRepositoryBytes: number }): Promise<RepositoryFileMetadata[]> {
+  const listed = await runGit(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"]);
+  const [indexed, status] = await Promise.all([runGit(root, ["ls-files", "-s", "-z", "--cached"]), runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])]);
+  const blobIds = parseGitIndexBlobIds(indexed);
+  const dirty = new Set(parsePorcelainPaths(status));
+  const paths = [...new Set(listed.split("\0").filter(Boolean))].sort((a, b) => a.localeCompare(b));
   if (paths.length > limits.maxFiles) throw new OpenWikiError("SOURCE_TOO_LARGE", "Repository exceeds the graph file limit.");
-  let total = 0; const results: Array<{ path: string; content: string; size: number; contentHash: string; language: string }> = [];
-  for (const relative of paths) { if (excluded(relative)) continue; const absolute = path.resolve(root, relative); assertInside(root, absolute); let details; try { details = await lstat(absolute); } catch (error) { if (error instanceof Error && "code" in error && error.code === "ENOENT") continue; throw error; } if (details.isSymbolicLink()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph scanner refuses symbolic-link repository files."); if (!details.isFile()) continue; if (details.size > limits.maxFileBytes) throw new OpenWikiError("SOURCE_TOO_LARGE", "A repository file exceeds the graph file size limit."); total += details.size; if (total > limits.maxRepositoryBytes) throw new OpenWikiError("SOURCE_TOO_LARGE", "Repository exceeds the graph byte limit."); const body = await readFile(absolute); if (body.includes(0)) continue; const content = body.toString("utf8"); results.push({ path: normalize(relative), content, size: details.size, contentHash: createHash("sha256").update(body).digest("hex"), language: detectLanguage(relative) }); }
+  let total = 0;
+  const results: RepositoryFileMetadata[] = [];
+  for (const relative of paths) {
+    if (excluded(relative)) continue;
+    const absolute = path.resolve(root, relative);
+    assertInside(root, absolute);
+    let details;
+    try { details = await lstat(absolute); } catch (error) { if (isNotFound(error)) continue; throw error; }
+    if (details.isSymbolicLink()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph scanner refuses symbolic-link repository files.");
+    if (!details.isFile()) continue;
+    if (details.size > limits.maxFileBytes) throw new OpenWikiError("SOURCE_TOO_LARGE", "A repository file exceeds the graph file size limit.");
+    total += details.size;
+    if (total > limits.maxRepositoryBytes) throw new OpenWikiError("SOURCE_TOO_LARGE", "Repository exceeds the graph byte limit.");
+    const normalized = normalize(relative);
+    const blob = blobIds.get(normalized);
+    results.push({ path: normalized, size: details.size, language: detectLanguage(relative), ...(blob !== undefined && !dirty.has(normalized) ? { sourceId: `git:${blob}` } : {}) });
+  }
   return results;
 }
 
-export async function readStoredGraph(storage: GraphStorage): Promise<CodeGraphV1> { for (const manifest of await readManifests(storage)) try { return parseCodeGraph(JSON.parse(await readFile(confinedStoredPath(storage.snapshotRoot, manifest.snapshot), "utf8")) as unknown); } catch { continue; } throw new OpenWikiError("NOT_INITIALIZED", "No recoverable OpenWiki graph snapshot exists."); }
-export async function readGraphShard(storage: GraphStorage, shardName: string): Promise<GraphShard> { return parseShard(JSON.parse(await readFile(confinedStoredPath(storage.shardRoot, shardName), "utf8")) as unknown); }
-export async function readManifest(storage: GraphStorage): Promise<GraphManifest> { for (const candidate of [storage.manifestPath, storage.previousManifestPath]) try { const value = JSON.parse(await readFile(candidate, "utf8")) as unknown; return parseManifest(value); } catch { continue; } throw new OpenWikiError("NOT_INITIALIZED", "No recoverable OpenWiki graph snapshot exists."); }
-
-export async function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
-  const previous = await readManifest(storage).catch(() => undefined); const reusable = new Map(previous?.shards.map((entry) => [`${entry.path}\0${entry.contentHash}`, entry]) ?? []); await mkdir(storage.shardRoot, { recursive: true, mode: 0o700 }); await mkdir(storage.snapshotRoot, { recursive: true, mode: 0o700 }); let reusedShardCount = 0; const manifestShards: GraphManifest["shards"] = [];
-  for (const shard of shards) { const key = `${shard.path}\0${shard.contentHash}`; const reuse = reusable.get(key); const shardFile = reuse?.shard ?? `${graphHash([GRAPH_SCANNER_VERSION, shard.path, shard.language, shard.contentHash])}.json`; if (reuse) reusedShardCount += 1; else await atomicWriteFile(confinedStoredPath(storage.shardRoot, shardFile), `${JSON.stringify(shard)}\n`); manifestShards.push({ path: shard.path, contentHash: shard.contentHash, shard: shardFile }); }
-  const snapshot = `${graphHash([graph.workspaceId, graph.source.dirtyFingerprint, ...graph.files.map((file) => `${file.path}:${file.contentHash}`)])}.json`; await atomicWriteFile(confinedStoredPath(storage.snapshotRoot, snapshot), `${JSON.stringify(canonicalizeGraph(graph))}\n`);
-  const manifest: GraphManifest = { schemaVersion: 1, snapshot, shards: manifestShards.sort((a, b) => a.path.localeCompare(b.path)) }; if (previous) await atomicWriteFile(storage.previousManifestPath, `${JSON.stringify(previous)}\n`); await atomicWriteFile(storage.manifestPath, `${JSON.stringify(manifest)}\n`); const retained = [manifest, ...(previous === undefined ? [] : [previous])]; await garbageCollect(storage, new Set(retained.flatMap((entry) => entry.shards.map((shard) => shard.shard))), new Set(retained.map((entry) => entry.snapshot))); return { manifestPath: storage.manifestPath, reusedShardCount };
+export async function readRepositoryFile(root: string, file: RepositoryFileMetadata): Promise<{ path: string; content: string; size: number; contentHash: string; language: string; sourceId: string }> {
+  if (!safeRelativePath(file.path)) throw new OpenWikiError("INVALID_ARGUMENT", "Graph repository path is invalid.");
+  const absolute = path.resolve(root, file.path);
+  assertInside(root, absolute);
+  const details = await lstat(absolute);
+  if (details.isSymbolicLink() || !details.isFile()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph scanner refuses symbolic-link repository files.");
+  const body = await readFile(absolute);
+  if (body.includes(0)) throw new OpenWikiError("UNSUPPORTED_SOURCE", "Graph scanner refuses binary repository files.");
+  const contentHash = createHash("sha256").update(body).digest("hex");
+  return { path: file.path, content: body.toString("utf8"), size: details.size, contentHash, language: file.language, sourceId: file.sourceId ?? `worktree:${contentHash}` };
 }
 
-export async function currentGitFingerprint(root: string): Promise<{ gitHead?: string }> { const head = await runGit(root, ["rev-parse", "HEAD"]).catch(() => ""); return head ? { gitHead: head } : {}; }
-export function repositoryFingerprint(files: ReadonlyArray<{ path: string; contentHash: string; size: number }>): string { return graphHash(files.slice().sort((a, b) => a.path.localeCompare(b.path)).map((file) => `${file.path}\0${file.contentHash}\0${String(file.size)}`)); }
-export async function changedRepositoryPaths(root: string, base?: string): Promise<string[]> { if (base !== undefined) { if (!/^[a-f0-9]{7,64}$/iu.test(base)) throw new OpenWikiError("INVALID_ARGUMENT", "Graph base must be a Git commit hash."); const output = await runGit(root, ["diff", "--name-only", `${base}..HEAD`]); return output.split(/\r?\n/u).filter(Boolean).map(normalize).sort((a, b) => a.localeCompare(b)); } const status = await runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]); return parsePorcelainPaths(status); }
+export async function resolveRepositorySourceIds(root: string, files: readonly RepositoryFileMetadata[]): Promise<Array<RepositoryFileMetadata & { sourceId: string }>> {
+  const resolved: Array<RepositoryFileMetadata & { sourceId: string }> = [];
+  for (const file of files) {
+    if (file.sourceId !== undefined) resolved.push({ ...file, sourceId: file.sourceId });
+    else {
+      try { const loaded = await readRepositoryFile(root, file); resolved.push({ ...file, sourceId: loaded.sourceId, size: loaded.size }); }
+      catch (error) { if (error instanceof OpenWikiError && error.code === "UNSUPPORTED_SOURCE") continue; throw error; }
+    }
+  }
+  return resolved;
+}
 
-async function readManifests(storage: GraphStorage): Promise<GraphManifest[]> { const values: GraphManifest[] = []; for (const candidate of [storage.manifestPath, storage.previousManifestPath]) try { values.push(parseManifest(JSON.parse(await readFile(candidate, "utf8")) as unknown)); } catch { continue; } return values; }
-function parseManifest(value: unknown): GraphManifest { if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid"); const r = value as Record<string, unknown>; if (r.schemaVersion !== 1 || !safeStoredName(r.snapshot) || !Array.isArray(r.shards)) throw new Error("invalid"); const shards = r.shards.map((item) => { if (item === null || typeof item !== "object" || Array.isArray(item)) throw new Error("invalid"); const s = item as Record<string, unknown>; if (!safeRelativePath(s.path) || typeof s.contentHash !== "string" || !/^[a-f0-9]{64}$/iu.test(s.contentHash) || !safeStoredName(s.shard)) throw new Error("invalid"); return { path: s.path, contentHash: s.contentHash, shard: s.shard }; }); return { schemaVersion: 1, snapshot: r.snapshot, shards }; }
-async function garbageCollect(storage: GraphStorage, reachableShards: ReadonlySet<string>, reachableSnapshots: ReadonlySet<string>): Promise<void> { for (const [directory, allowed] of [[storage.shardRoot, reachableShards], [storage.snapshotRoot, reachableSnapshots]] as const) { for (const entry of await readdir(directory).catch(() => [])) if (!allowed.has(entry)) await rm(confinedStoredPath(directory, entry), { force: true }); } }
+export async function enumerateRepositoryFiles(root: string, limits: { maxFiles: number; maxFileBytes: number; maxRepositoryBytes: number }): Promise<Array<{ path: string; content: string; size: number; contentHash: string; language: string }>> {
+  const files = await enumerateRepositoryMetadata(root, limits);
+  const results: Array<{ path: string; content: string; size: number; contentHash: string; language: string }> = [];
+  for (const file of files) {
+    try { const loaded = await readRepositoryFile(root, file); results.push(loaded); } catch (error) { if (error instanceof OpenWikiError && error.code === "UNSUPPORTED_SOURCE") continue; throw error; }
+  }
+  return results;
+}
+
+/** @deprecated Compatibility reader. Stage B query paths must use openGraphIndex. */
+export async function readStoredGraph(storage: GraphStorage): Promise<CodeGraphV1> {
+  for (const candidate of await readManifests(storage)) {
+    try {
+      return parseCodeGraph(JSON.parse(await readFile(manifestSnapshotPath(storage, candidate.manifest), "utf8")) as unknown);
+    } catch { continue; }
+  }
+  throw new OpenWikiError("NOT_INITIALIZED", "No recoverable OpenWiki graph snapshot exists.");
+}
+
+export async function readGraphShard(storage: GraphStorage, shardName: string): Promise<GraphShard> {
+  return parseShard(JSON.parse(await readFile(confinedStoredName(storage.shardRoot, shardName), "utf8")) as unknown);
+}
+
+export async function readManifest(storage: GraphStorage): Promise<GraphManifest> {
+  const manifests = await readManifests(storage);
+  const first = manifests.at(0);
+  if (first === undefined) throw new OpenWikiError("NOT_INITIALIZED", "No recoverable OpenWiki graph manifest exists.");
+  return first.manifest;
+}
+
+export async function openGraphIndex(storage: GraphStorage): Promise<GraphIndexPort> {
+  const manifests = await readManifests(storage);
+  for (const candidate of manifests) {
+    try {
+      return await openGraphIndexGeneration(manifestGenerationPath(storage, candidate.manifest.generation), candidate.manifest.generation, candidate.recovered);
+    } catch { continue; }
+  }
+  throw new OpenWikiError("NOT_INITIALIZED", "No recoverable OpenWiki graph index exists.");
+}
+
+export async function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
+  return withGraphWriteLock(storage, async () => writeGraphUnlocked(storage, graph, shards));
+}
+
+export async function withGraphWriteLock<T>(storage: GraphStorage, operation: () => Promise<T>): Promise<T> {
+  await mkdir(storage.root, { recursive: true, mode: 0o700 });
+  await assertRegularDirectory(storage.root);
+  const token = randomUUID();
+  const serialized = `${JSON.stringify({ schemaVersion: 1, pid: process.pid, createdAt: new Date().toISOString(), token })}\n`;
+  const deadline = Date.now() + GRAPH_WRITE_LOCK_WAIT_MS;
+  let handle: Awaited<ReturnType<typeof open>> | undefined;
+  while (handle === undefined) {
+    try {
+      handle = await open(storage.writeLockPath, "wx", 0o600);
+      await handle.writeFile(serialized, "utf8");
+      await handle.sync();
+    } catch (error) {
+      await handle?.close().catch(() => undefined);
+      handle = undefined;
+      if (!isAlreadyExists(error)) throw new OpenWikiError("IO_FAILURE", "Unable to acquire the graph writer lock.");
+      if (await recoverStaleGraphLock(storage.writeLockPath)) continue;
+      if (Date.now() >= deadline) throw new OpenWikiError("LOCKED", "OpenWiki graph writer is busy.");
+      await wait(10);
+    }
+  }
+  try {
+    return await operation();
+  } finally {
+    await handle.close().catch(() => undefined);
+    await releaseGraphLock(storage.writeLockPath, serialized);
+  }
+}
+
+export async function currentGitFingerprint(root: string): Promise<{ gitHead?: string }> {
+  const head = await runGit(root, ["rev-parse", "HEAD"]).catch(() => "");
+  return head ? { gitHead: head } : {};
+}
+
+export function repositoryFingerprint(files: ReadonlyArray<{ path: string; contentHash: string; size: number }>): string {
+  return graphHash(files.slice().sort((a, b) => a.path.localeCompare(b.path)).map((file) => `${file.path}\0${file.contentHash}\0${String(file.size)}`));
+}
+
+export function repositoryMetadataFingerprint(files: ReadonlyArray<{ path: string; sourceId: string; size: number }>): string {
+  return graphHash(files.slice().sort((left, right) => left.path.localeCompare(right.path)).map((file) => `${file.path}\0${String(file.size)}\0${file.sourceId}`));
+}
+
+export async function changedRepositoryPaths(root: string, base?: string): Promise<string[]> {
+  if (base !== undefined) {
+    if (!/^[a-f0-9]{7,64}$/iu.test(base)) throw new OpenWikiError("INVALID_ARGUMENT", "Graph base must be a Git commit hash.");
+    const [diff, status] = await Promise.all([
+      runGit(root, ["diff", "--name-only", "-z", "--find-renames", base]),
+      runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]),
+    ]);
+    return [...new Set([...diff.split("\0").filter(Boolean).map(normalize), ...parsePorcelainPaths(status)])].sort((left, right) => left.localeCompare(right));
+  }
+  return parsePorcelainPaths(await runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]));
+}
+
+export async function changedRepositoryEvidence(root: string, base?: string): Promise<GraphChangeEvidence> {
+  const [paths, status, current] = await Promise.all([
+    changedRepositoryPaths(root, base),
+    runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]),
+    currentGitFingerprint(root),
+  ]);
+  const workingTree = parsePorcelainPaths(status).length > 0;
+  return { paths, ...(current.gitHead === undefined ? {} : { head: current.gitHead }), changeState: workingTree ? "working-tree" : paths.length > 0 ? "committed" : "clean" };
+}
+
+async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
+  const previous = await readManifest(storage).catch(() => undefined);
+  const reusable = new Map(previous?.shards.map((entry) => [`${entry.path}\0${entry.contentHash}`, entry]) ?? []);
+  await mkdir(storage.shardRoot, { recursive: true, mode: 0o700 });
+  await mkdir(storage.generationRoot, { recursive: true, mode: 0o700 });
+  await assertRegularDirectory(storage.shardRoot);
+  await assertRegularDirectory(storage.generationRoot);
+  let reusedShardCount = 0;
+  const manifestShards: GraphManifest["shards"] = [];
+  for (const shard of shards) {
+    const key = `${shard.path}\0${shard.contentHash}`;
+    const reused = reusable.get(key);
+    const shardFile = reused?.shard ?? `${graphHash([GRAPH_SCANNER_VERSION, shard.path, shard.language, shard.contentHash])}.json`;
+    if (reused !== undefined) reusedShardCount += 1;
+    else await atomicWriteFile(confinedStoredName(storage.shardRoot, shardFile), `${JSON.stringify(shard)}\n`);
+    manifestShards.push({ path: shard.path, contentHash: shard.contentHash, sourceId: shard.sourceId, shard: shardFile });
+  }
+  const canonical = canonicalizeGraph(graph);
+  const generation = `g-${createHash("sha256").update(JSON.stringify(canonical), "utf8").digest("hex")}`;
+  const generationPath = manifestGenerationPath(storage, generation);
+  const published = await generationIsValid(storage, generation).catch(() => false);
+  if (!published) {
+    await rm(generationPath, { recursive: true, force: true });
+    await mkdir(generationPath, { recursive: true, mode: 0o700 });
+    await assertRegularDirectory(generationPath);
+    const index = await writeGraphIndexGeneration(generationPath, generation, canonical);
+    await atomicWriteFile(path.join(generationPath, "snapshot.json"), `${JSON.stringify(canonical)}\n`);
+    const manifest: GraphManifest = {
+      schemaVersion: GRAPH_STORE_SCHEMA_VERSION,
+      scannerVersion: GRAPH_SCANNER_VERSION,
+      generation,
+      snapshot: `${generation}/snapshot.json`,
+      index,
+      generatedAt: canonical.generatedAt,
+      source: canonical.source,
+      counts: { files: canonical.files.length, nodes: canonical.nodes.length, edges: canonical.edges.length, diagnostics: canonical.diagnostics.length },
+      shards: manifestShards.sort((left, right) => left.path.localeCompare(right.path)),
+    };
+    await publishManifest(storage, previous, manifest);
+  } else {
+    const existing = await readManifest(storage);
+    if (existing.generation !== generation) throw new OpenWikiError("INVALID_STATE", "Graph generation publication changed during write.");
+  }
+  await garbageCollect(storage, previous);
+  return { manifestPath: storage.manifestPath, reusedShardCount };
+}
+
+async function publishManifest(storage: GraphStorage, previous: GraphManifest | undefined, manifest: GraphManifest): Promise<void> {
+  if (previous !== undefined) await atomicWriteFile(storage.previousManifestPath, `${JSON.stringify(previous)}\n`);
+  await atomicWriteFile(storage.manifestPath, `${JSON.stringify(manifest)}\n`);
+}
+
+async function generationIsValid(storage: GraphStorage, generation: string): Promise<boolean> {
+  const reader = await openGraphIndexGeneration(manifestGenerationPath(storage, generation), generation, false);
+  return reader.status().generation === generation;
+}
+
+async function readManifests(storage: GraphStorage): Promise<Array<{ manifest: GraphManifest; recovered: boolean }>> {
+  const values: Array<{ manifest: GraphManifest; recovered: boolean }> = [];
+  for (const [candidate, recovered] of [[storage.manifestPath, false], [storage.previousManifestPath, true]] as const) {
+    try { values.push({ manifest: parseManifest(JSON.parse(await readFile(candidate, "utf8")) as unknown), recovered }); } catch { continue; }
+  }
+  return values;
+}
+
+function parseManifest(value: unknown): GraphManifest {
+  if (!isRecord(value) || value.schemaVersion !== GRAPH_STORE_SCHEMA_VERSION || value.scannerVersion !== GRAPH_SCANNER_VERSION || !safeGeneration(value.generation) || !safeSnapshot(value.snapshot) || !Array.isArray(value.shards) || typeof value.generatedAt !== "string" || !isRecord(value.source) || typeof value.source.dirtyFingerprint !== "string" || typeof value.source.scannerVersion !== "string" || !isRecord(value.counts) || !nonNegativeInteger(value.counts.files) || !nonNegativeInteger(value.counts.nodes) || !nonNegativeInteger(value.counts.edges) || !nonNegativeInteger(value.counts.diagnostics)) {
+    throw new OpenWikiError("INVALID_STATE", "Graph manifest schema is incompatible.");
+  }
+  const index = parseManifestIndex(value.index, value.generation);
+  const shards = value.shards.map(parseManifestShard).sort((left, right) => left.path.localeCompare(right.path));
+  if (JSON.stringify(shards) !== JSON.stringify(value.shards)) throw new OpenWikiError("INVALID_STATE", "Graph manifest shards are not canonical.");
+  return { schemaVersion: GRAPH_STORE_SCHEMA_VERSION, scannerVersion: GRAPH_SCANNER_VERSION, generation: value.generation, snapshot: value.snapshot, index, generatedAt: value.generatedAt, source: { ...(typeof value.source.gitHead === "string" ? { gitHead: value.source.gitHead } : {}), dirtyFingerprint: value.source.dirtyFingerprint, scannerVersion: value.source.scannerVersion }, counts: { files: value.counts.files, nodes: value.counts.nodes, edges: value.counts.edges, diagnostics: value.counts.diagnostics }, shards };
+}
+
+function parseManifestIndex(value: unknown, generation: string): GraphIndexManifest {
+  if (!isRecord(value) || value.schemaVersion !== GRAPH_STORE_SCHEMA_VERSION || value.scannerVersion !== GRAPH_SCANNER_VERSION || value.generation !== generation || value.architecture !== "architecture.json") {
+    throw new OpenWikiError("INVALID_STATE", "Graph manifest index is invalid.");
+  }
+  const buckets = (entry: unknown): string[] => {
+    if (!Array.isArray(entry)) throw new OpenWikiError("INVALID_STATE", "Graph manifest index buckets are invalid.");
+    const names: string[] = [];
+    for (const name of entry) { if (typeof name !== "string" || !/^[a-f0-9]$/u.test(name)) throw new OpenWikiError("INVALID_STATE", "Graph manifest index buckets are invalid."); names.push(name); }
+    const ordered = names.slice().sort((left, right) => left.localeCompare(right));
+    if (new Set(ordered).size !== ordered.length || JSON.stringify(entry) !== JSON.stringify(ordered)) throw new OpenWikiError("INVALID_STATE", "Graph manifest index buckets are not canonical.");
+    return ordered;
+  };
+  return { schemaVersion: GRAPH_STORE_SCHEMA_VERSION, scannerVersion: GRAPH_SCANNER_VERSION, generation, nodeBuckets: buckets(value.nodeBuckets), edgeBuckets: buckets(value.edgeBuckets), inboundBuckets: buckets(value.inboundBuckets), outboundBuckets: buckets(value.outboundBuckets), symbolBuckets: buckets(value.symbolBuckets), pathBuckets: buckets(value.pathBuckets), architecture: "architecture.json" };
+}
+
+function parseManifestShard(value: unknown): { path: string; contentHash: string; sourceId: string; shard: string } {
+  if (!isRecord(value) || !safeRelativePath(value.path) || typeof value.contentHash !== "string" || !/^[a-f0-9]{64}$/iu.test(value.contentHash) || typeof value.sourceId !== "string" || value.sourceId.length === 0 || !safeStoredName(value.shard)) throw new OpenWikiError("INVALID_STATE", "Graph manifest shard is invalid.");
+  return { path: value.path, contentHash: value.contentHash, sourceId: value.sourceId, shard: value.shard };
+}
+
+async function garbageCollect(storage: GraphStorage, previous: GraphManifest | undefined): Promise<void> {
+  const current = await readManifest(storage).catch(() => undefined);
+  const retained = new Set([current?.generation, previous?.generation].filter((value): value is string => value !== undefined));
+  for (const entry of await readdir(storage.generationRoot).catch(() => [])) {
+    if (safeGeneration(entry) && !retained.has(entry)) await rm(manifestGenerationPath(storage, entry), { recursive: true, force: true });
+  }
+  const shards = new Set((current?.shards ?? []).concat(previous?.shards ?? []).map((entry) => entry.shard));
+  for (const entry of await readdir(storage.shardRoot).catch(() => [])) if (!shards.has(entry)) await rm(confinedStoredName(storage.shardRoot, entry), { force: true });
+}
+
+async function recoverStaleGraphLock(lockPath: string): Promise<boolean> {
+  let serialized: string;
+  try {
+    const details = await lstat(lockPath);
+    if (details.isSymbolicLink() || !details.isFile()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph writer lock must be a regular file.");
+    serialized = await readFile(lockPath, "utf8");
+  } catch (error) {
+    if (error instanceof OpenWikiError) throw error;
+    return false;
+  }
+  const lock = parseLock(serialized);
+  if (lock === undefined || Date.now() - lock.createdAt < GRAPH_STALE_LOCK_MS || processAlive(lock.pid)) return false;
+  try {
+    if (await readFile(lockPath, "utf8") !== serialized) return false;
+    await unlink(lockPath);
+    return true;
+  } catch { return false; }
+}
+
+async function releaseGraphLock(lockPath: string, serialized: string): Promise<void> {
+  try {
+    if (await readFile(lockPath, "utf8") !== serialized) throw new OpenWikiError("LOCKED", "Graph writer lock ownership changed before release.");
+    await unlink(lockPath);
+  } catch (error) {
+    if (error instanceof OpenWikiError) throw error;
+    throw new OpenWikiError("IO_FAILURE", "Unable to release the graph writer lock.");
+  }
+}
+
+function parseLock(serialized: string): { pid: number; createdAt: number } | undefined {
+  try {
+    const value = JSON.parse(serialized) as unknown;
+    if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.pid !== "number" || !Number.isSafeInteger(value.pid) || value.pid < 1 || typeof value.createdAt !== "string" || typeof value.token !== "string") return undefined;
+    const createdAt = Date.parse(value.createdAt);
+    return Number.isFinite(createdAt) ? { pid: value.pid, createdAt } : undefined;
+  } catch { return undefined; }
+}
+
+function processAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch (error) { return !(error instanceof Error && "code" in error && error.code === "ESRCH"); }
+}
+
+function createStorage(root: string): GraphStorage {
+  return { root, manifestPath: path.join(root, "manifest.json"), previousManifestPath: path.join(root, "manifest.previous.json"), writeLockPath: path.join(root, "writer.lock"), generationRoot: path.join(root, "generations"), shardRoot: path.join(root, "shards"), snapshotRoot: path.join(root, "snapshots") };
+}
+
+function manifestGenerationPath(storage: GraphStorage, generation: string): string {
+  if (!safeGeneration(generation)) throw new OpenWikiError("INVALID_STATE", "Graph generation is invalid.");
+  return path.join(storage.generationRoot, generation);
+}
+
+function manifestSnapshotPath(storage: GraphStorage, manifest: GraphManifest): string {
+  if (manifest.snapshot !== `${manifest.generation}/snapshot.json`) throw new OpenWikiError("INVALID_STATE", "Graph snapshot path is invalid.");
+  return path.join(storage.generationRoot, manifest.snapshot);
+}
+
+function confinedStoredName(root: string, name: string): string {
+  if (!safeStoredName(name)) throw new OpenWikiError("INVALID_STATE", "Graph storage entry is invalid.");
+  return path.join(root, name);
+}
+
+function parseShard(value: unknown): GraphShard {
+  if (!isRecord(value) || !safeRelativePath(value.path) || typeof value.language !== "string" || typeof value.contentHash !== "string" || !/^[a-f0-9]{64}$/iu.test(value.contentHash) || typeof value.sourceId !== "string" || value.sourceId.length === 0 || typeof value.size !== "number" || !Number.isSafeInteger(value.size) || value.size < 0 || !isRecord(value.scan)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid.");
+  const scan = value.scan;
+  const strings = (key: string): string[] => { const candidate = scan[key]; if (!Array.isArray(candidate) || !candidate.every((entry) => typeof entry === "string")) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); return candidate; };
+  const symbols = Array.isArray(scan.symbols) ? scan.symbols.map((entry) => parseShardSymbol(entry)) : undefined;
+  const relations = Array.isArray(scan.relations) ? scan.relations.map((entry) => parseShardRelation(entry)) : undefined;
+  const diagnostics = Array.isArray(scan.diagnostics) ? scan.diagnostics.map((entry) => parseShardDiagnostic(entry)) : undefined;
+  if (symbols === undefined || relations === undefined || diagnostics === undefined) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid.");
+  return { path: value.path, language: value.language, contentHash: value.contentHash, size: value.size, sourceId: value.sourceId, scan: { symbols, relations, imports: strings("imports"), exports: strings("exports"), calls: strings("calls"), inherits: strings("inherits"), implements: strings("implements"), references: strings("references"), diagnostics } };
+}
+
+function parseShardSymbol(value: unknown): SourceScan["symbols"][number] {
+  if (!isRecord(value) || typeof value.name !== "string" || typeof value.qualifiedName !== "string" || typeof value.scope !== "string" || typeof value.kind !== "string" || !positiveLine(value.startLine) || !positiveLine(value.endLine) || value.startLine > value.endLine || typeof value.exported !== "boolean") throw new OpenWikiError("INVALID_STATE", "Graph shard symbol is invalid.");
+  return { name: value.name, qualifiedName: value.qualifiedName, scope: value.scope, kind: value.kind, startLine: value.startLine, endLine: value.endLine, exported: value.exported };
+}
+
+function parseShardRelation(value: unknown): NonNullable<SourceScan["relations"]>[number] {
+  if (!isRecord(value) || !isRelationKind(value.kind) || typeof value.fromQualifiedName !== "string" || typeof value.target !== "string" || !positiveLine(value.line) || (value.confidence !== "resolved" && value.confidence !== "heuristic")) throw new OpenWikiError("INVALID_STATE", "Graph shard relation is invalid.");
+  return { kind: value.kind, fromQualifiedName: value.fromQualifiedName, target: value.target, line: value.line, confidence: value.confidence };
+}
+
+function parseShardDiagnostic(value: unknown): SourceScan["diagnostics"][number] {
+  if (!isRecord(value) || !safeRelativePath(value.path) || typeof value.code !== "string" || typeof value.message !== "string") throw new OpenWikiError("INVALID_STATE", "Graph shard diagnostic is invalid.");
+  return { path: value.path, code: value.code, message: value.message };
+}
+
 function excluded(relative: string): boolean { const parts = relative.split("/"); const name = parts.at(-1) ?? ""; return parts.some((part) => [".git", ".openwiki", "openwiki", "node_modules", "vendor", "dist", "build", "coverage"].includes(part)) || /(?:^|[._-])(generated|min)\./iu.test(name) || /\.map$/iu.test(name); }
 function normalize(relative: string): string { return relative.split(path.sep).join("/"); }
+function parseGitIndexBlobIds(output: string): Map<string, string> { const result = new Map<string, string>(); for (const entry of output.split("\0")) { const tab = entry.indexOf("\t"); if (tab < 0) continue; const header = entry.slice(0, tab).split(" "); const blob = header[1]; const stage = header[2]; const filePath = entry.slice(tab + 1); if (blob !== undefined && stage === "0" && /^[a-f0-9]{40,64}$/iu.test(blob) && safeRelativePath(filePath)) result.set(normalize(filePath), blob); } return result; }
 function parsePorcelainPaths(status: string): string[] { const entries = status.split("\0"); const paths = new Set<string>(); for (let index = 0; index < entries.length; index += 1) { const entry = entries[index] as string; if (entry.length < 4) continue; const code = entry.slice(0, 2); paths.add(normalize(entry.slice(3))); if (code.includes("R") || code.includes("C")) { const original = entries[index + 1]; if (original) { paths.add(normalize(original)); index += 1; } } } return [...paths].sort((a, b) => a.localeCompare(b)); }
 function safeStoredName(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}\.json$/iu.test(value); }
+function safeGeneration(value: unknown): value is string { return typeof value === "string" && /^g-[a-f0-9]{64}$/u.test(value); }
+function safeSnapshot(value: unknown): value is string { return typeof value === "string" && /^g-[a-f0-9]{64}\/snapshot\.json$/u.test(value); }
 function safeRelativePath(value: unknown): value is string { return typeof value === "string" && value.length > 0 && !value.startsWith("/") && !value.includes("\\") && !value.split("/").some((part) => part === "" || part === "." || part === ".."); }
-function confinedStoredPath(root: string, name: string): string { if (!safeStoredName(name)) throw new OpenWikiError("INVALID_STATE", "Graph storage entry is invalid."); return path.join(root, name); }
-function parseShard(value: unknown): GraphShard { if (value === null || typeof value !== "object" || Array.isArray(value)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); const shard = value as Record<string, unknown>; if (!safeRelativePath(shard.path) || typeof shard.language !== "string" || typeof shard.contentHash !== "string" || !/^[a-f0-9]{64}$/iu.test(shard.contentHash) || typeof shard.size !== "number" || !Number.isSafeInteger(shard.size) || shard.size < 0 || shard.scan === null || typeof shard.scan !== "object" || Array.isArray(shard.scan)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); const scan = shard.scan as Record<string, unknown>; const strings = (key: string): string[] => { const valueAtKey: unknown[] = Array.isArray(scan[key]) ? scan[key] : []; if (!valueAtKey.every(isString)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); return valueAtKey; }; const symbolsValue: unknown[] = Array.isArray(scan.symbols) ? scan.symbols : []; if (symbolsValue.length === 0 && !Array.isArray(scan.symbols)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); const symbols = symbolsValue.map((valueAtIndex) => { if (valueAtIndex === null || typeof valueAtIndex !== "object" || Array.isArray(valueAtIndex)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); const symbol = valueAtIndex as Record<string, unknown>; if (typeof symbol.name !== "string" || typeof symbol.kind !== "string" || typeof symbol.startLine !== "number" || typeof symbol.endLine !== "number" || typeof symbol.exported !== "boolean") throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); return { name: symbol.name, kind: symbol.kind, startLine: symbol.startLine, endLine: symbol.endLine, exported: symbol.exported }; }); const diagnosticsValue: unknown[] = Array.isArray(scan.diagnostics) ? scan.diagnostics : []; if (diagnosticsValue.length === 0 && !Array.isArray(scan.diagnostics)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); const diagnostics = diagnosticsValue.map((valueAtIndex) => { if (valueAtIndex === null || typeof valueAtIndex !== "object" || Array.isArray(valueAtIndex)) throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); const diagnostic = valueAtIndex as Record<string, unknown>; if (!safeRelativePath(diagnostic.path) || typeof diagnostic.code !== "string" || typeof diagnostic.message !== "string") throw new OpenWikiError("INVALID_STATE", "Graph shard is invalid."); return { path: diagnostic.path, code: diagnostic.code, message: diagnostic.message }; }); return { path: shard.path, language: shard.language, contentHash: shard.contentHash, size: shard.size, scan: { symbols, imports: strings("imports"), exports: strings("exports"), calls: strings("calls"), inherits: strings("inherits"), implements: strings("implements"), references: strings("references"), diagnostics } }; }
-function isString(value: unknown): value is string { return typeof value === "string"; }
+function positiveLine(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 1; }
+function nonNegativeInteger(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0; }
+function isRelationKind(value: unknown): value is "calls" | "inherits" | "implements" | "references" { return value === "calls" || value === "inherits" || value === "implements" || value === "references"; }
+function isRecord(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function isNotFound(error: unknown): boolean { return error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "ENOTDIR"); }
+function isAlreadyExists(error: unknown): boolean { return error instanceof Error && "code" in error && error.code === "EEXIST"; }
+function wait(milliseconds: number): Promise<void> { return new Promise((resolve) => setTimeout(resolve, milliseconds)); }
 function assertInside(root: string, candidate: string): void { const relative = path.relative(root, candidate); if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))) return; throw new OpenWikiError("PATH_OUTSIDE_ROOT", "Graph file path escapes the repository root."); }
+async function assertRegularDirectory(directory: string): Promise<void> { const details = await lstat(directory); if (details.isSymbolicLink() || !details.isDirectory()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph storage directory must not be a symbolic link."); }
+async function isRegularFile(file: string): Promise<boolean> { try { const details = await lstat(file); if (details.isSymbolicLink()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph manifest must not be a symbolic link."); return details.isFile(); } catch (error) { if (error instanceof OpenWikiError) throw error; if (isNotFound(error)) return false; throw new OpenWikiError("IO_FAILURE", "Unable to probe graph storage."); } }
 function runGit(cwd: string, args: readonly string[]): Promise<string> { return new Promise((resolve, reject) => { const child = spawn("git", [...args], { cwd, shell: false, stdio: ["ignore", "pipe", "ignore"], windowsHide: true }); const chunks: Buffer[] = []; let settled = false; const fail = (): void => { if (!settled) { settled = true; child.kill("SIGKILL"); reject(new OpenWikiError("GIT_FAILURE", "Unable to enumerate repository files for the graph.")); } }; const timeout = setTimeout(fail, 15_000); child.stdout.on("data", (chunk: Buffer) => { if (Buffer.concat(chunks).byteLength + chunk.byteLength > 16 * 1024 * 1024) { fail(); return; } chunks.push(chunk); }); child.once("error", fail); child.once("close", (code: number | null) => { clearTimeout(timeout); if (settled) return; settled = true; if (code !== 0) { reject(new OpenWikiError("GIT_FAILURE", "Unable to enumerate repository files for the graph.")); return; } resolve(Buffer.concat(chunks).toString("utf8")); }); }); }
