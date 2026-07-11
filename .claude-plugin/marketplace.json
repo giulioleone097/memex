@@ -1,0 +1,14 @@
+{
+  "name": "openwiki-local",
+  "description": "Local marketplace for the self-contained OpenWiki plugin.",
+  "owner": {
+    "name": "OpenWiki Plugin Contributors"
+  },
+  "plugins": [
+    {
+      "name": "openwiki",
+      "source": "./plugins/openwiki",
+      "description": "Maintain one interoperable local wiki from Codex and Claude Code."
+    }
+  ]
+}

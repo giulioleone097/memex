@@ -1,0 +1,19 @@
+{
+  "name": "openwiki",
+  "version": "0.1.0",
+  "description": "Openwiki plugin",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Openwiki",
+    "shortDescription": "Use Openwiki in Codex.",
+    "longDescription": "Openwiki adds a local Codex plugin scaffold.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Help me use Openwiki."
+  },
+  "mcpServers": "./.mcp.json"
+}

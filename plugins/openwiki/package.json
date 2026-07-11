@@ -1,0 +1,24 @@
+{
+  "name": "openwiki-dual-host-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependency-free deterministic runtime shared by the OpenWiki Codex and Claude Code plugin surfaces.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "lint": "eslint .",
+    "test": "node --test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.5.0",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.62.0"
+  }
+}
