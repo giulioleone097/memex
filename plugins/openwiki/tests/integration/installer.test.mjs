@@ -430,7 +430,7 @@ describe("repository-local plugin lifecycle", () => {
       ["plugin", "marketplace", "add", REPOSITORY_ROOT, "--json"],
       ["plugin", "marketplace", "remove", MARKETPLACE, "--json"],
     ]) {
-      assert.equal(clientCommandTimeoutMs(argv), 60_000, argv.join(" "));
+      assert.equal(clientCommandTimeoutMs(argv), 90_000, argv.join(" "));
     }
     assert.equal(clientCommandTimeoutMs(["plugin", "list", "--json"]), 30_000);
     assert.equal(

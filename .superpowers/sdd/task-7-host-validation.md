@@ -31,7 +31,7 @@ Final result: exit 0; 5 tests, 5 pass, 0 fail, 0 skipped. The run executes:
 - Claude strict marketplace validation in the installed-copy test.
 - A caller-timeout regression and the exact fixture argv lifecycle contract.
 
-Final measured live timings were 1.81s for Codex lifecycle, 31.82s for Claude lifecycle including `details`, and 5.59s for the two-host installed-copy proof. An earlier exclusive Claude run reached 57.20s while another exceeded the old 30s limit. Lifecycle commands therefore retain 30s for read-only discovery and use a measured 60s bound only for host mutations/copies; the live outer bound is 90s so a mutation plus the 15s readiness budget can report and clean up.
+Historical measurements from prior exclusive runs were 1.81s for Codex lifecycle, 31.82s for Claude lifecycle including `details`, 5.59s for the two-host installed-copy proof, and 57.20s for Claude lifecycle. A later historical exclusive Claude `plugin install openwiki@openwiki-local --scope user` took 62.17s, exceeded the previous 60s mutation bound, and hit `CLIENT_TIMEOUT`; the other four live tests passed and no orphan process or capture remained. These observations are historical, not evidence from this task. Lifecycle commands retain 30s for read-only discovery and use a 90s bound only for host mutations/copies. The live caller outer bound is 120s: 90s mutation budget, 15s readiness budget, and cleanup margin; it introduces no retry, sleep, or unbounded widening.
 
 ## Installed-copy and source-removal proof
 

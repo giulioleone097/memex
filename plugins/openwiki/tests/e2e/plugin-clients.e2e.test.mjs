@@ -24,7 +24,7 @@ const SCRIPT_ROOT = join(PLUGIN_ROOT, "scripts");
 const FIXTURE_BIN = join(PLUGIN_ROOT, "tests/fixtures/client-bin");
 const PLUGIN_ID = "openwiki@openwiki-local";
 const LIVE_SMOKE_ENABLED = process.env.OPENWIKI_RUN_CLIENT_SMOKE === "1";
-const LIVE_LIFECYCLE_TIMEOUT_MS = 90_000;
+const LIVE_LIFECYCLE_TIMEOUT_MS = 120_000;
 const TOOL_NAMES = [
   "init", "status", "context", "search", "read", "write", "ingest",
   "finalize", "check", "doctor", "schedule", "purge", "graph",
@@ -275,6 +275,7 @@ const expectedUninstallArgv = [
 
 describe("OpenWiki plugin clients", { concurrency: 1 }, () => {
   test("honors a caller-provided process timeout", () => {
+    assert.equal(LIVE_LIFECYCLE_TIMEOUT_MS, 120_000);
     const result = run(process.execPath, ["-e", "setTimeout(() => {}, 200)"], {
       timeout: 10,
     });
