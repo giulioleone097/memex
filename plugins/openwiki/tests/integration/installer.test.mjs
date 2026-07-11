@@ -27,6 +27,7 @@ const PLUGIN_ROOT = resolve(TEST_DIR, "../..");
 const REPOSITORY_ROOT = resolve(PLUGIN_ROOT, "../..");
 const SCRIPT_DIR = join(PLUGIN_ROOT, "scripts");
 const FIXTURE_BIN = join(PLUGIN_ROOT, "tests/fixtures/client-bin");
+const NPM_COMMAND = process.platform === "win32" ? "npm.cmd" : "npm";
 const MARKETPLACE = "openwiki-local";
 const PLUGIN = "openwiki";
 const PLUGIN_ID = `${PLUGIN}@${MARKETPLACE}`;
@@ -610,6 +611,27 @@ describe("repository-local plugin lifecycle", () => {
 });
 
 describe("repository validator", () => {
+  test("accepts the built repository without self-reported findings", () => {
+    const build = spawnSync(NPM_COMMAND, ["run", "build"], {
+      cwd: PLUGIN_ROOT,
+      encoding: "utf8",
+      shell: false,
+      timeout: 30_000,
+    });
+    assert.equal(build.status, 0, build.stderr || build.stdout);
+
+    const result = spawnSync(
+      process.execPath,
+      [join(SCRIPT_DIR, "validate.mjs"), "--root", REPOSITORY_ROOT, "--json"],
+      { cwd: REPOSITORY_ROOT, encoding: "utf8", shell: false, timeout: 10_000 },
+    );
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.ok, true);
+    assert.deepEqual(report.summary, { errors: 0, warnings: 0 });
+    assert.deepEqual(report.findings, []);
+  });
+
   test("reports missing integration artifacts as structured findings instead of crashing", (t) => {
     const harness = createHarness(t);
     const missingRoot = mkdtempSync(join(tmpdir(), "openwiki missing integration "));
@@ -671,8 +693,13 @@ describe("repository validator", () => {
     chmodSync(join(pluginRoot, "bin/openwiki"), 0o644);
     writeFileSync(
       join(pluginRoot, "README.md"),
-      "Credential: sk-1234567890abcdefghijklmnopqrstuv\n",
+      "TODO\nCredential: sk-1234567890abcdefghijklmnopqrstuv\n",
     );
+    writeFileSync(join(pluginRoot, "src/placeholder-tbd.md"), "TBD\n");
+    writeFileSync(join(pluginRoot, "src/placeholder-fixme.md"), "FIXME\n");
+    writeFileSync(join(pluginRoot, "src/placeholder-angle.md"), "<owner>\n");
+    writeFileSync(join(pluginRoot, "src/placeholder-your.md"), "YOUR_TOKEN\n");
+    writeFileSync(join(pluginRoot, "src/placeholder-local.md"), "Local developer\n");
 
     const harness = createHarness(t);
     const result = harness.run("validate.mjs", ["--root", temporaryRoot, "--json"]);
@@ -689,6 +716,21 @@ describe("repository validator", () => {
       "MISSING_DIST",
     ]) {
       assert.ok(codes.has(expected), `Expected validator finding ${expected}`);
+    }
+    const placeholderPaths = new Set(
+      result.json.findings
+        .filter(({ code }) => code === "PLACEHOLDER")
+        .map(({ path }) => path),
+    );
+    for (const expectedPath of [
+      "plugins/openwiki/README.md",
+      "plugins/openwiki/src/placeholder-tbd.md",
+      "plugins/openwiki/src/placeholder-fixme.md",
+      "plugins/openwiki/src/placeholder-angle.md",
+      "plugins/openwiki/src/placeholder-your.md",
+      "plugins/openwiki/src/placeholder-local.md",
+    ]) {
+      assert.ok(placeholderPaths.has(expectedPath), `Expected placeholder finding ${expectedPath}`);
     }
     assert.deepEqual(harness.readLog(), []);
   });

@@ -516,11 +516,20 @@ function validateDist(repositoryRoot, pluginRoot, findings) {
 }
 
 function placeholderPatterns() {
+  const markerWords = [
+    ["TO", "DO"],
+    ["T", "BD"],
+    ["FI", "XME"],
+  ].map((parts) => parts.join(""));
+  const yourPrefix = ["YOUR", "_"].join("");
+  const localDeveloper = ["Local", " developer"].join("");
+  const angleMarkers = ["owner", "package", "placeholder", "publisher"].join("|");
+
   return [
-    new RegExp(`\\b(?:TO${"DO"}|TBD|FIXME)\\b`, "iu"),
-    /<(?:owner|package|placeholder|publisher|your[-_ ][^>]*)>/iu,
-    /\bYOUR_[A-Z0-9_]+\b/u,
-    /\bLocal developer\b/iu,
+    new RegExp(`\\b(?:${markerWords.join("|")})\\b`, "iu"),
+    new RegExp(`<(?:${angleMarkers}|your[-_ ][^>]*)>`, "iu"),
+    new RegExp(`\\b${yourPrefix}[A-Z0-9_]+\\b`, "u"),
+    new RegExp(`\\b${localDeveloper}\\b`, "iu"),
   ];
 }
 
