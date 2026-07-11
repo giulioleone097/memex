@@ -1,9 +1,13 @@
 import { stdin, stdout } from "node:process";
 
 import { OPENWIKI_OPERATIONS, dispatch, type OpenWikiOperation } from "./adapter.js";
+import { MAX_ENVELOPE_BYTES } from "./contracts.js";
 
 const CURRENT_PROTOCOL = "2025-11-25";
 const SUPPORTED_PROTOCOLS = new Set([CURRENT_PROTOCOL, "2025-06-18"]);
+// JSON-RPC adds method, id, and tool-wrapper fields around a source envelope.
+const MCP_ENVELOPE_WRAPPER_BYTES = 64 * 1024;
+export const MAX_MCP_FRAME_BYTES = MAX_ENVELOPE_BYTES + MCP_ENVELOPE_WRAPPER_BYTES;
 type JsonRecord = Record<string, unknown>;
 
 interface ToolDefinition {
@@ -171,19 +175,50 @@ function isOperation(value: unknown): value is OpenWikiOperation {
   return typeof value === "string" && OPENWIKI_OPERATIONS.some((operation) => operation === value);
 }
 
-stdin.setEncoding("utf8");
-let buffer = "";
 let queue: Promise<void> = Promise.resolve();
-stdin.on("data", (chunk: string) => {
-  buffer += chunk;
-  let newline = buffer.indexOf("\n");
-  while (newline !== -1) {
-    const line = buffer.slice(0, newline).replace(/\r$/u, "");
-    buffer = buffer.slice(newline + 1);
+let frameChunks: Buffer[] = [];
+let frameBytes = 0;
+let discardingOversizedFrame = false;
+
+stdin.on("data", (chunk: Buffer | string) => {
+  const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+  let start = 0;
+  while (start < bytes.length) {
+    const newline = bytes.indexOf(0x0a, start);
+    const end = newline === -1 ? bytes.length : newline;
+    if (discardingOversizedFrame) {
+      if (newline === -1) return;
+      discardingOversizedFrame = false;
+      start = newline + 1;
+      continue;
+    }
+
+    const fragment = bytes.subarray(start, end);
+    if (frameBytes + fragment.length > MAX_MCP_FRAME_BYTES) {
+      frameChunks = [];
+      frameBytes = 0;
+      discardingOversizedFrame = newline === -1;
+      queue = queue.then(() => {
+        error(null, -32600, "Request exceeds the maximum frame size.");
+      });
+      if (newline === -1) return;
+      start = newline + 1;
+      continue;
+    }
+
+    frameChunks.push(fragment);
+    frameBytes += fragment.length;
+    if (newline === -1) return;
+    const line = Buffer.concat(frameChunks, frameBytes).toString("utf8").replace(/\r$/u, "");
+    frameChunks = [];
+    frameBytes = 0;
     queue = queue.then(() => handle(line));
-    newline = buffer.indexOf("\n");
+    start = newline + 1;
   }
 });
 stdin.on("end", () => {
-  if (buffer.length > 0) queue = queue.then(() => handle(buffer.replace(/\r$/u, "")));
+  if (!discardingOversizedFrame && frameBytes > 0) {
+    const line = Buffer.concat(frameChunks, frameBytes).toString("utf8").replace(/\r$/u, "");
+    queue = queue.then(() => handle(line));
+  }
 });

@@ -1,5 +1,8 @@
+import { constants as fsConstants } from "node:fs";
+import { open } from "node:fs/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { OPENWIKI_OPERATIONS, dispatch, readCliTransport, } from "./adapter.js";
+import { MAX_ENVELOPE_BYTES } from "./contracts.js";
 import { OpenWikiError } from "./errors.js";
 const VALUE_FLAGS = new Set([
     "mode",
@@ -42,11 +45,7 @@ export async function main(argv, stdinText) {
         return result.ok ? 0 : 2;
     }
     catch (error) {
-        const result = error instanceof OpenWikiError
-            ? { ok: false, error: error.toJSON() }
-            : { ok: false, error: { code: "IO_FAILURE", message: "OpenWiki operation failed unexpectedly." } };
-        output.write(`${JSON.stringify(result, null, pretty ? 2 : undefined)}\n`);
-        return error instanceof OpenWikiError ? 2 : 1;
+        return emitFailure(error, pretty);
     }
 }
 function parseCli(argv) {
@@ -147,10 +146,10 @@ async function readIngestTransport(flags, stdinText) {
         throw invalid("Exactly one content transport is required.");
     }
     if (file === undefined)
-        return stdinText;
+        return enforceEnvelopeByteLimit(stdinText);
     if (file === true)
         throw invalid("Input file requires a path.");
-    return readCliTransport(file);
+    return readBoundedEnvelopeFile(file);
 }
 function flagRecord(flags) {
     return Object.fromEntries(Object.entries(flags));
@@ -167,17 +166,81 @@ function isOperation(value) {
 function invalid(message) {
     return new OpenWikiError("INVALID_ARGUMENT", message);
 }
-async function readStdin() {
-    input.setEncoding("utf8");
-    let value = "";
+async function readInputStream(maxBytes) {
+    const chunks = [];
+    let totalBytes = 0;
     for await (const chunk of input) {
-        if (typeof chunk !== "string")
-            continue;
-        value += chunk;
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        totalBytes += bytes.length;
+        if (maxBytes !== undefined && totalBytes > maxBytes) {
+            input.destroy();
+            throw sourceEnvelopeTooLarge();
+        }
+        chunks.push(Buffer.from(bytes));
     }
+    return Buffer.concat(chunks).toString("utf8");
+}
+function enforceEnvelopeByteLimit(value) {
+    if (Buffer.byteLength(value, "utf8") > MAX_ENVELOPE_BYTES)
+        throw sourceEnvelopeTooLarge();
     return value;
 }
+async function readBoundedEnvelopeFile(filePath) {
+    try {
+        const handle = await open(filePath, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+        try {
+            const stat = await handle.stat();
+            if (!stat.isFile())
+                throw new OpenWikiError("NOT_FOUND", "Input file could not be read.");
+            if (stat.size > MAX_ENVELOPE_BYTES)
+                throw sourceEnvelopeTooLarge();
+            const chunks = [];
+            const buffer = Buffer.allocUnsafe(64 * 1024);
+            let totalBytes = 0;
+            for (;;) {
+                const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+                if (bytesRead === 0)
+                    break;
+                totalBytes += bytesRead;
+                if (totalBytes > MAX_ENVELOPE_BYTES)
+                    throw sourceEnvelopeTooLarge();
+                chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
+            }
+            return Buffer.concat(chunks).toString("utf8");
+        }
+        finally {
+            await handle.close();
+        }
+    }
+    catch (error) {
+        if (error instanceof OpenWikiError)
+            throw error;
+        throw new OpenWikiError("NOT_FOUND", "Input file could not be read.");
+    }
+}
+function sourceEnvelopeTooLarge() {
+    return new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`);
+}
+function emitFailure(error, pretty) {
+    const result = error instanceof OpenWikiError
+        ? { ok: false, error: error.toJSON() }
+        : { ok: false, error: { code: "IO_FAILURE", message: "OpenWiki operation failed unexpectedly." } };
+    output.write(`${JSON.stringify(result, null, pretty ? 2 : undefined)}\n`);
+    return error instanceof OpenWikiError ? 2 : 1;
+}
+async function runProcessCli(argv) {
+    try {
+        const shouldReadStdin = argv.includes("--stdin");
+        const stdinText = shouldReadStdin
+            ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES)
+            : "";
+        return await main(argv, stdinText);
+    }
+    catch (error) {
+        return emitFailure(error, argv.includes("--pretty"));
+    }
+}
 if (import.meta.url === new URL(process.argv[1] ?? "", "file:").href) {
-    const exitCode = await main(process.argv.slice(2), await readStdin());
+    const exitCode = await runProcessCli(process.argv.slice(2));
     process.exitCode = exitCode;
 }

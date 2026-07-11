@@ -1,3 +1,5 @@
+import { constants as fsConstants } from "node:fs";
+import { open } from "node:fs/promises";
 import { stdin as input, stdout as output } from "node:process";
 
 import {
@@ -6,6 +8,7 @@ import {
   readCliTransport,
   type OpenWikiOperation,
 } from "./adapter.js";
+import { MAX_ENVELOPE_BYTES } from "./contracts.js";
 import { OpenWikiError } from "./errors.js";
 
 type FlagValue = string | true;
@@ -51,11 +54,7 @@ export async function main(argv: readonly string[], stdinText?: string): Promise
     output.write(`${JSON.stringify(result, null, pretty ? 2 : undefined)}\n`);
     return result.ok ? 0 : 2;
   } catch (error) {
-    const result = error instanceof OpenWikiError
-      ? { ok: false as const, error: error.toJSON() }
-      : { ok: false as const, error: { code: "IO_FAILURE", message: "OpenWiki operation failed unexpectedly." } };
-    output.write(`${JSON.stringify(result, null, pretty ? 2 : undefined)}\n`);
-    return error instanceof OpenWikiError ? 2 : 1;
+    return emitFailure(error, pretty);
   }
 }
 
@@ -145,9 +144,9 @@ async function readIngestTransport(flags: ParsedFlags, stdinText: string): Promi
   if ((file === undefined && stdin !== true) || (file !== undefined && stdin === true)) {
     throw invalid("Exactly one content transport is required.");
   }
-  if (file === undefined) return stdinText;
+  if (file === undefined) return enforceEnvelopeByteLimit(stdinText);
   if (file === true) throw invalid("Input file requires a path.");
-  return readCliTransport(file);
+  return readBoundedEnvelopeFile(file);
 }
 
 function flagRecord(flags: ParsedFlags): Record<string, unknown> {
@@ -168,17 +167,79 @@ function invalid(message: string): OpenWikiError {
   return new OpenWikiError("INVALID_ARGUMENT", message);
 }
 
-async function readStdin(): Promise<string> {
-  input.setEncoding("utf8");
-  let value = "";
+async function readInputStream(maxBytes?: number): Promise<string> {
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
   for await (const chunk of input) {
-    if (typeof chunk !== "string") continue;
-    value += chunk;
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += bytes.length;
+    if (maxBytes !== undefined && totalBytes > maxBytes) {
+      input.destroy();
+      throw sourceEnvelopeTooLarge();
+    }
+    chunks.push(Buffer.from(bytes));
   }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function enforceEnvelopeByteLimit(value: string): string {
+  if (Buffer.byteLength(value, "utf8") > MAX_ENVELOPE_BYTES) throw sourceEnvelopeTooLarge();
   return value;
 }
 
+async function readBoundedEnvelopeFile(filePath: string): Promise<string> {
+  try {
+    const handle = await open(filePath, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+    try {
+      const stat = await handle.stat();
+      if (!stat.isFile()) throw new OpenWikiError("NOT_FOUND", "Input file could not be read.");
+      if (stat.size > MAX_ENVELOPE_BYTES) throw sourceEnvelopeTooLarge();
+
+      const chunks: Buffer[] = [];
+      const buffer = Buffer.allocUnsafe(64 * 1024);
+      let totalBytes = 0;
+      for (;;) {
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+        if (bytesRead === 0) break;
+        totalBytes += bytesRead;
+        if (totalBytes > MAX_ENVELOPE_BYTES) throw sourceEnvelopeTooLarge();
+        chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
+      }
+      return Buffer.concat(chunks).toString("utf8");
+    } finally {
+      await handle.close();
+    }
+  } catch (error) {
+    if (error instanceof OpenWikiError) throw error;
+    throw new OpenWikiError("NOT_FOUND", "Input file could not be read.");
+  }
+}
+
+function sourceEnvelopeTooLarge(): OpenWikiError {
+  return new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`);
+}
+
+function emitFailure(error: unknown, pretty: boolean): number {
+  const result = error instanceof OpenWikiError
+    ? { ok: false as const, error: error.toJSON() }
+    : { ok: false as const, error: { code: "IO_FAILURE", message: "OpenWiki operation failed unexpectedly." } };
+  output.write(`${JSON.stringify(result, null, pretty ? 2 : undefined)}\n`);
+  return error instanceof OpenWikiError ? 2 : 1;
+}
+
+async function runProcessCli(argv: readonly string[]): Promise<number> {
+  try {
+    const shouldReadStdin = argv.includes("--stdin");
+    const stdinText = shouldReadStdin
+      ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES)
+      : "";
+    return await main(argv, stdinText);
+  } catch (error) {
+    return emitFailure(error, argv.includes("--pretty"));
+  }
+}
+
 if (import.meta.url === new URL(process.argv[1] ?? "", "file:").href) {
-  const exitCode = await main(process.argv.slice(2), await readStdin());
+  const exitCode = await runProcessCli(process.argv.slice(2));
   process.exitCode = exitCode;
 }

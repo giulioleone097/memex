@@ -14,6 +14,8 @@ import {
 
 const CURRENT_PROTOCOL = "2025-11-25";
 const SUPPORTED_PROTOCOLS = [CURRENT_PROTOCOL, "2025-06-18"];
+const MAX_ENVELOPE_BYTES = 2 * 1024 * 1024;
+const MAX_MCP_FRAME_BYTES = MAX_ENVELOPE_BYTES + 64 * 1024;
 const TOOL_NAMES = [
   "init",
   "status",
@@ -393,5 +395,51 @@ describe("MCP stdio adapter", () => {
     const exit = await session.finish();
     assert.equal(exit.code, 0);
     assert.deepEqual(session.stdoutLines, []);
+  });
+
+  test("MCP rejects an oversized unterminated UTF-8 frame before parsing and resumes after its delimiter", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp bounded frame");
+    const home = join(sandbox, "home");
+    const marker = "hostile-mcp-frame-marker";
+    mkdirSync(home);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    const repeats = Math.ceil((MAX_MCP_FRAME_BYTES + 1) / Buffer.byteLength(marker, "utf8"));
+    session.sendRaw(marker.repeat(repeats));
+
+    const rejected = await session.nextMessage(10_000);
+    assert.deepEqual(rejected, {
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: -32600, message: "Request exceeds the maximum frame size." },
+    });
+    assert.equal(JSON.stringify(rejected).includes(marker), false);
+
+    session.sendRaw("\r\n");
+    await initialize(session, 1);
+    assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP permits a near-limit source envelope inside a JSON-RPC tools/call frame", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp envelope wrapper");
+    const home = join(sandbox, "home");
+    const repository = join(sandbox, "repository");
+    mkdirSync(home);
+    initializeGitRepository(repository);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    await makeReady(session);
+    const envelope = { x: "x".repeat(MAX_ENVELOPE_BYTES - 1024) };
+    const frame = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: { name: "ingest", arguments: { mode: "code", root: repository, envelope } },
+    });
+    assert.ok(Buffer.byteLength(frame, "utf8") <= MAX_MCP_FRAME_BYTES);
+
+    session.sendRaw(`${frame}\n`);
+    const response = await session.nextMessage();
+    assert.equal(response.error, undefined);
+    assert.equal(response.result.isError, true);
+    assert.equal((await session.finish()).code, 0);
   });
 });

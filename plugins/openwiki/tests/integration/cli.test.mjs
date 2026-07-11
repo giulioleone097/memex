@@ -82,6 +82,28 @@ function assertGraphSlice(data, expected) {
   }
 }
 
+const MAX_ENVELOPE_BYTES = 2 * 1024 * 1024;
+
+function jsonPayloadAtLeast(byteLength, character = "x") {
+  const prefix = '{"x":"';
+  const suffix = '"}';
+  const characterBytes = Buffer.byteLength(character, "utf8");
+  const count = Math.ceil((byteLength - Buffer.byteLength(prefix + suffix, "utf8")) / characterBytes);
+  const payload = `${prefix}${character.repeat(count)}${suffix}`;
+  assert.ok(Buffer.byteLength(payload, "utf8") >= byteLength);
+  return payload;
+}
+
+function assertTooLargeEnvelope(result, marker) {
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 2, result.stderr);
+  const failure = parseSingleJsonDocument(result.stdout);
+  assert.equal(failure.ok, false);
+  assert.equal(failure.error.code, "SOURCE_TOO_LARGE");
+  assert.equal(failure.error.message.includes(marker), false);
+  assert.equal(result.stderr.includes(marker), false);
+}
+
 describe("CLI adapter", () => {
   test("CLI rejects unknown, repeated, missing, conflicting, and unsafe target flags", (t) => {
     const sandbox = makeTemporaryRoot(t, "cli invalid");
@@ -252,6 +274,75 @@ describe("CLI adapter", () => {
         ["ingest", "--mode", "code", "--root", repository, "--stdin"],
         { home, input: readFileSync(SOURCE_ENVELOPE_PATH, "utf8") },
       ),
+    );
+  });
+
+  test("CLI bounds ingest stdin and envelope files by UTF-8 bytes before JSON parsing without limiting write content", (t) => {
+    const sandbox = makeTemporaryRoot(t, "cli bounded ingest");
+    const home = join(sandbox, "home");
+    const repository = join(sandbox, "repository");
+    const overLimitFile = join(sandbox, "oversized-envelope.json");
+    const oversizedWriteFile = join(sandbox, "large-content.md");
+    const marker = "hostile-envelope-marker";
+    mkdirSync(home);
+    initializeGitRepository(repository);
+    assertSuccess(runCli(["init", "--mode", "code", "--root", repository], { home }));
+
+    const exactBoundary = jsonPayloadAtLeast(MAX_ENVELOPE_BYTES);
+    assert.equal(Buffer.byteLength(exactBoundary, "utf8"), MAX_ENVELOPE_BYTES);
+    const exactResult = runCli(
+      ["ingest", "--mode", "code", "--root", repository, "--stdin"],
+      { home, input: exactBoundary },
+    );
+    assert.equal(exactResult.status, 2);
+    assert.equal(parseSingleJsonDocument(exactResult.stdout).error.code, "INVALID_ARGUMENT");
+
+    const oversizedAscii = marker.repeat(Math.ceil((MAX_ENVELOPE_BYTES + 1) / Buffer.byteLength(marker, "utf8")));
+    assertTooLargeEnvelope(
+      runCli(
+        ["ingest", "--mode", "code", "--root", repository, "--stdin"],
+        { home, input: oversizedAscii },
+      ),
+      marker,
+    );
+
+    const oversizedMultibyte = "é".repeat(Math.ceil((MAX_ENVELOPE_BYTES + 1) / Buffer.byteLength("é", "utf8")));
+    assertTooLargeEnvelope(
+      runCli(
+        ["ingest", "--mode", "code", "--root", repository, "--stdin"],
+        { home, input: oversizedMultibyte },
+      ),
+      "é",
+    );
+
+    writeFileSync(overLimitFile, oversizedAscii, "utf8");
+    assertTooLargeEnvelope(
+      runCli(
+        ["ingest", "--mode", "code", "--root", repository, "--envelope-file", overLimitFile],
+        { home },
+      ),
+      marker,
+    );
+
+    const largeContent = "w".repeat(MAX_ENVELOPE_BYTES + 1);
+    writeFileSync(oversizedWriteFile, largeContent, "utf8");
+    assert.deepEqual(
+      assertSuccess(
+        runCli(
+          ["write", "--mode", "code", "--root", repository, "--page", "large-file.md", "--content-file", oversizedWriteFile],
+          { home },
+        ),
+      ),
+      { page: "large-file.md", written: true },
+    );
+    assert.deepEqual(
+      assertSuccess(
+        runCli(
+          ["write", "--mode", "code", "--root", repository, "--page", "large-stdin.md", "--stdin"],
+          { home, input: largeContent },
+        ),
+      ),
+      { page: "large-stdin.md", written: true },
     );
   });
 
