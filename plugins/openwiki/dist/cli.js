@@ -1,6 +1,7 @@
 import { constants as fsConstants } from "node:fs";
 import { open } from "node:fs/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { TextDecoder } from "node:util";
 import { OPENWIKI_OPERATIONS, dispatch, readCliTransport, } from "./adapter.js";
 import { MAX_ENVELOPE_BYTES } from "./contracts.js";
 import { OpenWikiError } from "./errors.js";
@@ -166,7 +167,7 @@ function isOperation(value) {
 function invalid(message) {
     return new OpenWikiError("INVALID_ARGUMENT", message);
 }
-async function readInputStream(maxBytes) {
+async function readInputStream(maxBytes, strictUtf8 = false) {
     const chunks = [];
     let totalBytes = 0;
     for await (const chunk of input) {
@@ -178,7 +179,8 @@ async function readInputStream(maxBytes) {
         }
         chunks.push(Buffer.from(bytes));
     }
-    return Buffer.concat(chunks).toString("utf8");
+    const value = Buffer.concat(chunks);
+    return strictUtf8 ? decodeEnvelopeUtf8(value) : value.toString("utf8");
 }
 function enforceEnvelopeByteLimit(value) {
     if (Buffer.byteLength(value, "utf8") > MAX_ENVELOPE_BYTES)
@@ -206,7 +208,7 @@ async function readBoundedEnvelopeFile(filePath) {
                     throw sourceEnvelopeTooLarge();
                 chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
             }
-            return Buffer.concat(chunks).toString("utf8");
+            return decodeEnvelopeUtf8(Buffer.concat(chunks));
         }
         finally {
             await handle.close();
@@ -221,6 +223,14 @@ async function readBoundedEnvelopeFile(filePath) {
 function sourceEnvelopeTooLarge() {
     return new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`);
 }
+function decodeEnvelopeUtf8(value) {
+    try {
+        return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(value);
+    }
+    catch {
+        throw invalid("Source envelope input must be valid UTF-8.");
+    }
+}
 function emitFailure(error, pretty) {
     const result = error instanceof OpenWikiError
         ? { ok: false, error: error.toJSON() }
@@ -232,7 +242,7 @@ async function runProcessCli(argv) {
     try {
         const shouldReadStdin = argv.includes("--stdin");
         const stdinText = shouldReadStdin
-            ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES)
+            ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES, argv[0] === "ingest")
             : "";
         return await main(argv, stdinText);
     }

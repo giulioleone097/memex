@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { before, describe, test } from "node:test";
+import { setImmediate as waitForImmediate } from "node:timers/promises";
 
 import {
   MCP_PATH,
@@ -417,6 +418,53 @@ describe("MCP stdio adapter", () => {
     session.sendRaw("\r\n");
     await initialize(session, 1);
     assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP rejects a split malformed UTF-8 frame and preserves the following valid frame", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp malformed utf8");
+    const home = join(sandbox, "home");
+    mkdirSync(home);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    const malformed = Buffer.concat([
+      Buffer.from('{"jsonrpc":"2.0","id":"', "utf8"),
+      Buffer.from([0xc3, 0x28]),
+      Buffer.from('","method":"ping"}\n', "utf8"),
+    ]);
+    const splitAt = malformed.indexOf(0xc3) + 1;
+    session.sendRaw(malformed.subarray(0, splitAt));
+    await waitForImmediate();
+    session.sendRaw(Buffer.concat([
+      malformed.subarray(splitAt),
+      Buffer.from('{"jsonrpc":"2.0","id":2,"method":"ping"}\n', "utf8"),
+    ]));
+
+    assert.deepEqual(await session.nextMessage(), {
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: -32700, message: "Parse error." },
+    });
+    assert.deepEqual(await session.nextMessage(), { jsonrpc: "2.0", id: 2, result: {} });
+    assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP rejects malformed UTF-8 at EOF without processing the corrupt frame", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp malformed utf8 eof");
+    const home = join(sandbox, "home");
+    mkdirSync(home);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    session.sendRaw(Buffer.concat([
+      Buffer.from('{"jsonrpc":"2.0","id":"', "utf8"),
+      Buffer.from([0xc3, 0x28]),
+      Buffer.from('","method":"ping"}', "utf8"),
+    ]));
+
+    const finished = session.finish();
+    assert.deepEqual(await session.nextMessage(), {
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: -32700, message: "Parse error." },
+    });
+    assert.deepEqual(await finished, { code: 0, signal: null });
   });
 
   test("MCP permits a near-limit source envelope inside a JSON-RPC tools/call frame", async (t) => {

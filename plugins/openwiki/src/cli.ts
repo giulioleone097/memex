@@ -1,6 +1,7 @@
 import { constants as fsConstants } from "node:fs";
 import { open } from "node:fs/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { TextDecoder } from "node:util";
 
 import {
   OPENWIKI_OPERATIONS,
@@ -167,7 +168,7 @@ function invalid(message: string): OpenWikiError {
   return new OpenWikiError("INVALID_ARGUMENT", message);
 }
 
-async function readInputStream(maxBytes?: number): Promise<string> {
+async function readInputStream(maxBytes?: number, strictUtf8 = false): Promise<string> {
   const chunks: Buffer[] = [];
   let totalBytes = 0;
   for await (const chunk of input) {
@@ -179,7 +180,8 @@ async function readInputStream(maxBytes?: number): Promise<string> {
     }
     chunks.push(Buffer.from(bytes));
   }
-  return Buffer.concat(chunks).toString("utf8");
+  const value = Buffer.concat(chunks);
+  return strictUtf8 ? decodeEnvelopeUtf8(value) : value.toString("utf8");
 }
 
 function enforceEnvelopeByteLimit(value: string): string {
@@ -205,7 +207,7 @@ async function readBoundedEnvelopeFile(filePath: string): Promise<string> {
         if (totalBytes > MAX_ENVELOPE_BYTES) throw sourceEnvelopeTooLarge();
         chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
       }
-      return Buffer.concat(chunks).toString("utf8");
+      return decodeEnvelopeUtf8(Buffer.concat(chunks));
     } finally {
       await handle.close();
     }
@@ -217,6 +219,14 @@ async function readBoundedEnvelopeFile(filePath: string): Promise<string> {
 
 function sourceEnvelopeTooLarge(): OpenWikiError {
   return new OpenWikiError("SOURCE_TOO_LARGE", `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`);
+}
+
+function decodeEnvelopeUtf8(value: Buffer): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(value);
+  } catch {
+    throw invalid("Source envelope input must be valid UTF-8.");
+  }
 }
 
 function emitFailure(error: unknown, pretty: boolean): number {
@@ -231,7 +241,7 @@ async function runProcessCli(argv: readonly string[]): Promise<number> {
   try {
     const shouldReadStdin = argv.includes("--stdin");
     const stdinText = shouldReadStdin
-      ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES)
+      ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES, argv[0] === "ingest")
       : "";
     return await main(argv, stdinText);
   } catch (error) {

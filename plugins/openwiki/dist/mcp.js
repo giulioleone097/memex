@@ -1,4 +1,5 @@
 import { stdin, stdout } from "node:process";
+import { TextDecoder } from "node:util";
 import { OPENWIKI_OPERATIONS, dispatch } from "./adapter.js";
 import { MAX_ENVELOPE_BYTES } from "./contracts.js";
 const CURRENT_PROTOCOL = "2025-11-25";
@@ -190,16 +191,31 @@ stdin.on("data", (chunk) => {
         frameBytes += fragment.length;
         if (newline === -1)
             return;
-        const line = Buffer.concat(frameChunks, frameBytes).toString("utf8").replace(/\r$/u, "");
+        const line = decodeFrame();
         frameChunks = [];
         frameBytes = 0;
-        queue = queue.then(() => handle(line));
+        if (line !== undefined)
+            queue = queue.then(() => handle(line));
         start = newline + 1;
     }
 });
 stdin.on("end", () => {
     if (!discardingOversizedFrame && frameBytes > 0) {
-        const line = Buffer.concat(frameChunks, frameBytes).toString("utf8").replace(/\r$/u, "");
-        queue = queue.then(() => handle(line));
+        const line = decodeFrame();
+        if (line !== undefined)
+            queue = queue.then(() => handle(line));
     }
 });
+function decodeFrame() {
+    try {
+        return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true })
+            .decode(Buffer.concat(frameChunks, frameBytes))
+            .replace(/\r$/u, "");
+    }
+    catch {
+        queue = queue.then(() => {
+            error(null, -32700, "Parse error.");
+        });
+        return undefined;
+    }
+}

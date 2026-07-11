@@ -104,6 +104,29 @@ function assertTooLargeEnvelope(result, marker) {
   assert.equal(result.stderr.includes(marker), false);
 }
 
+function corruptUtf8Envelope() {
+  const valid = readFileSync(SOURCE_ENVELOPE_PATH);
+  const marker = Buffer.from("adapter-fixture", "utf8");
+  const index = valid.indexOf(marker);
+  assert.notEqual(index, -1, "source envelope fixture must contain the source id marker");
+  return Buffer.concat([
+    valid.subarray(0, index),
+    Buffer.from([0xc3, 0x28]),
+    valid.subarray(index + marker.length),
+  ]);
+}
+
+function assertInvalidUtf8Envelope(result) {
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 2, result.stderr);
+  const failure = parseSingleJsonDocument(result.stdout);
+  assert.equal(failure.ok, false);
+  assert.equal(failure.error.code, "INVALID_ARGUMENT");
+  assert.equal(failure.error.message, "Source envelope input must be valid UTF-8.");
+  assert.equal(result.stdout.includes("\uFFFD"), false);
+  assert.equal(result.stderr, "");
+}
+
 describe("CLI adapter", () => {
   test("CLI rejects unknown, repeated, missing, conflicting, and unsafe target flags", (t) => {
     const sandbox = makeTemporaryRoot(t, "cli invalid");
@@ -343,6 +366,32 @@ describe("CLI adapter", () => {
         ),
       ),
       { page: "large-stdin.md", written: true },
+    );
+  });
+
+  test("CLI rejects malformed UTF-8 source envelopes before JSON parsing for stdin and files", (t) => {
+    const sandbox = makeTemporaryRoot(t, "cli malformed utf8");
+    const home = join(sandbox, "home");
+    const repository = join(sandbox, "repository");
+    const envelopeFile = join(sandbox, "malformed-envelope.json");
+    mkdirSync(home);
+    initializeGitRepository(repository);
+    assertSuccess(runCli(["init", "--mode", "code", "--root", repository], { home }));
+
+    const malformed = corruptUtf8Envelope();
+    assertInvalidUtf8Envelope(
+      runCli(
+        ["ingest", "--mode", "code", "--root", repository, "--stdin"],
+        { home, input: malformed },
+      ),
+    );
+
+    writeFileSync(envelopeFile, malformed);
+    assertInvalidUtf8Envelope(
+      runCli(
+        ["ingest", "--mode", "code", "--root", repository, "--envelope-file", envelopeFile],
+        { home },
+      ),
     );
   });
 
