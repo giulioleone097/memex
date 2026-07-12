@@ -58,8 +58,9 @@ Coverage includes:
 - Exact-tip review `019f5559-86a9-7df2-aff1-c42cc812f1fd` found one P1 at SHA `6993175`: noncanonical Codex MCP path. The finding was reproduced with the canonical validator and fixed by task `019f555f-47b4-7c43-8ad5-d45c67edd0d9`; implementation landed as `21dbe7d`.
 - Global review 1 `019f556c-dd0e-7c20-9505-47dc14a36e15` on `21dbe7d`: CLEAN.
 - Global review 2 `019f5559-86a9-7df2-aff1-c42cc812f1fd` (second turn, Terra/high) on the authoritative central worktree at `21dbe7d`: CLEAN.
+- First report-inclusive review was CLEAN. Its consecutive review found that the report did not explain why it cannot embed its own containing commit hash. This documentation finding was corrected before restarting the final review pair.
 
-Because this report is itself a tracked deliverable, a final pair of consecutive reviews is run again after the report commit. Those final verdicts and the containing publication SHA are authoritative in the handoff.
+Because this report is itself a tracked deliverable, a final pair of consecutive reviews is run again after its last content change. A file cannot embed the SHA of the commit that contains that exact content without creating a self-reference. The final handoff therefore records and live-verifies the containing publication SHA against `origin/main` and `origin/feature/openwiki-dual-plugin`; the implementation SHA inside this report remains the immutable code-evidence target.
 
 ## Historical evidence, not final counts
 
