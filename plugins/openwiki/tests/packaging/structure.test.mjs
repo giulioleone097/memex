@@ -101,11 +101,12 @@ describe("native plugin packaging", () => {
       assert.equal(assetField in codex.interface, false, `${assetField} requires a real asset`);
     }
     if ("mcpServers" in codex) {
-      assert.equal(codex.mcpServers, "./.codex-plugin/mcp.json");
-      const mcp = await readJson(resolve(PLUGIN_ROOT, ".codex-plugin/mcp.json"));
-      assert.deepEqual(Object.keys(mcp), ["openwiki"]);
-      assert.equal(mcp.openwiki.command, "node");
-      assert.deepEqual(mcp.openwiki.args, ["${PLUGIN_ROOT}/dist/mcp.js"]);
+      assert.equal(codex.mcpServers, "./.mcp.json");
+      const mcp = await readJson(resolve(PLUGIN_ROOT, ".mcp.json"));
+      assert.deepEqual(Object.keys(mcp.mcpServers), ["openwiki"]);
+      assert.equal(mcp.mcpServers.openwiki.command, "node");
+      assert.deepEqual(mcp.mcpServers.openwiki.args, ["${PLUGIN_ROOT}/dist/mcp.js"]);
+      await assert.rejects(stat(resolve(PLUGIN_ROOT, ".codex-plugin", "mcp.json")));
     }
 
     assert.equal(

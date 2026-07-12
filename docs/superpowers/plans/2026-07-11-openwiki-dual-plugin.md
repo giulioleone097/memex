@@ -199,7 +199,7 @@ git commit -m "feat: add native incremental code graph"
 - Create: `plugins/openwiki/src/hook.ts`
 - Create: `plugins/openwiki/bin/openwiki`
 - Create: `plugins/openwiki/bin/openwiki.cmd`
-- Create: `plugins/openwiki/.codex-plugin/mcp.json`
+- Create: `plugins/openwiki/.mcp.json`
 - Create: `plugins/openwiki/.claude-plugin/mcp.json`
 - Create: `plugins/openwiki/hooks/hooks.json`
 - Create: `plugins/openwiki/tests/integration/cli.test.mjs`
@@ -232,7 +232,7 @@ Run: `npm --prefix plugins/openwiki run build && node --test plugins/openwiki/te
 Expected: PASS.
 
 ```bash
-git add plugins/openwiki/src plugins/openwiki/bin plugins/openwiki/.codex-plugin/mcp.json plugins/openwiki/.claude-plugin/mcp.json plugins/openwiki/hooks plugins/openwiki/tests/integration
+git add plugins/openwiki/src plugins/openwiki/bin plugins/openwiki/.mcp.json plugins/openwiki/.claude-plugin/mcp.json plugins/openwiki/hooks plugins/openwiki/tests/integration
 git commit -m "feat: expose OpenWiki through CLI and MCP"
 ```
 

@@ -51,7 +51,7 @@ The pre-existing repository validator was also run:
 node plugins/openwiki/scripts/validate.mjs --json
 ```
 
-It remains blocked by the checkout's pre-existing scaffold mismatch: it expects absent `.codex-plugin/mcp.json`, `.claude-plugin/mcp.json`, `bin/`, `hooks/`, and adapter source files, and flags its own existing placeholder. This task did not edit those out-of-scope runtime/scaffold files.
+It remains blocked by the checkout's pre-existing scaffold mismatch: it expects absent `.mcp.json`, `.claude-plugin/mcp.json`, `bin/`, `hooks/`, and adapter source files, and flags its own existing placeholder. This task did not edit those out-of-scope runtime/scaffold files.
 
 ## Review
 

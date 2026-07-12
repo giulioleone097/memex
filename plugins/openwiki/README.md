@@ -53,6 +53,7 @@ Restart Claude Code after installation. Claude copies the plugin into a versione
 - `openwiki-ops`: run doctor, schedule, recovery, purge, privacy, or uninstall workflows.
 
 Claude Code exposes plugin skills under the `openwiki:` namespace. Codex discovers the same skill folders through the Codex manifest.
+Its manifest resolves the bundled MCP server through the canonical root `.mcp.json`; Claude keeps its separate `.claude-plugin/mcp.json` contract.
 
 Supported source kinds: `git-repo`, `gmail`, `hackernews`, `notion`, `slack`, `web-search`, and `x`.
 

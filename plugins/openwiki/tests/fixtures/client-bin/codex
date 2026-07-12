@@ -41,7 +41,7 @@ function materializeRuntime() {
     "dist/cli.js",
     "dist/mcp.js",
     ".codex-plugin/plugin.json",
-    ".codex-plugin/mcp.json",
+    ".mcp.json",
     "skills/openwiki/SKILL.md",
   ]) {
     const path = join(root, file);

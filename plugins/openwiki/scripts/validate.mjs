@@ -32,7 +32,7 @@ const REQUIRED_REPOSITORY_FILES = [
 const REQUIRED_PLUGIN_FILES = [
   ".codex-plugin/plugin.json",
   ".claude-plugin/plugin.json",
-  ".codex-plugin/mcp.json",
+  ".mcp.json",
   ".claude-plugin/mcp.json",
   "hooks/hooks.json",
   "bin/openwiki",
@@ -399,7 +399,7 @@ function validatePluginDocuments(repositoryRoot, pluginRoot, documents, findings
   for (const relativePath of [
     ".codex-plugin/plugin.json",
     ".claude-plugin/plugin.json",
-    ".codex-plugin/mcp.json",
+    ".mcp.json",
     ".claude-plugin/mcp.json",
     "hooks/hooks.json",
   ]) {

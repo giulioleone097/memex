@@ -166,7 +166,7 @@ function assertInstalledArtifacts(client, root) {
     "dist/cli.js",
     "dist/mcp.js",
     client === "codex" ? ".codex-plugin/plugin.json" : ".claude-plugin/plugin.json",
-    client === "codex" ? ".codex-plugin/mcp.json" : ".claude-plugin/mcp.json",
+    client === "codex" ? ".mcp.json" : ".claude-plugin/mcp.json",
     "skills/openwiki/SKILL.md",
     ...(client === "claude" ? ["hooks/hooks.json", "dist/hook.js"] : []),
   ];

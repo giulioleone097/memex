@@ -63,7 +63,7 @@ dist/cli.js
 dist/mcp.js
 skills/openwiki/SKILL.md
 .codex-plugin/plugin.json  (Codex)
-.codex-plugin/mcp.json     (Codex)
+.mcp.json                  (Codex)
 .claude-plugin/plugin.json (Claude)
 .claude-plugin/mcp.json    (Claude)
 hooks/hooks.json           (Claude)
