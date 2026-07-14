@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
+  "generatedAt": "2026-07-14T07:45:51.781Z",
+  "totalBytes": 149020859,
+  "assets": [
+    {
+      "path": "model/multilingual-e5-small-int8/model.onnx",
+      "sha256": "dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88",
+      "bytes": 118346824,
+      "license": "MIT",
+      "upstream": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/onnx/model_qint8_avx512_vnni.onnx",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3"
+    },
+    {
+      "path": "model/multilingual-e5-small-int8/tokenizer.json",
+      "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+      "bytes": 17082730,
+      "license": "MIT",
+      "upstream": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/onnx/tokenizer.json",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/backend-impl.js",
+      "sha256": "97dd81b055a06f61120f09468fe59f046a9262b7b87bf5d05bceb085bf4f5558",
+      "bytes": 5339,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/backend.js",
+      "sha256": "017ce2ec9dc2021ebc1ef2c4f04e1bc74276c65921b0297e7ed8cc16e640495b",
+      "bytes": 184,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/env-impl.js",
+      "sha256": "0da4c562a49fe147e19320a64cbb456184eb0e6242b1fe69c65c8368c55f3d97",
+      "bytes": 848,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/env.js",
+      "sha256": "b2bbd3d3b00a95765713c57cd0f5ef73718ae5b8322e07cb47a43e2accb21f15",
+      "bytes": 262,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/index.js",
+      "sha256": "ad23f6d6ce2c99c449031f24a5181f259516c64a9a67428c98a8539b857729bd",
+      "bytes": 1036,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/inference-session-impl.js",
+      "sha256": "0446814a392c147b5c38ba242d9911ee54002b5d01a8e19fb4895fb8f8a0cdd3",
+      "bytes": 8703,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/inference-session.js",
+      "sha256": "3ad4271a88edb3d242dc1e0e7bbf66510f9a56eff874c433b3b37f900ac007b1",
+      "bytes": 348,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/onnx-model.js",
+      "sha256": "9e9dc8678be0ea04575a542894508db355a4f9f2155ac7f4c17a697c5f843382",
+      "bytes": 145,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/onnx-value.js",
+      "sha256": "33dc232498753fc9026dfa44c99440cb1a6d29f3e53e1ad2fb8b696705158f06",
+      "bytes": 145,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/package.json",
+      "sha256": "5a065fe7d8eab2a582f428e11c2ea63aaf70607a54f69cfd5c711b5c53d91b32",
+      "bytes": 21,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-conversion-impl.js",
+      "sha256": "df6fa3cd1813c2d3e588cc07973cfe5ea2ab8647c957168200caa58e51440161",
+      "bytes": 7852,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-conversion.js",
+      "sha256": "8c43ec1d061ab71032a1b28f45d85ef95f8d7bd2d4cd71d059e96d83e3a8f422",
+      "bytes": 152,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-factory-impl.js",
+      "sha256": "cf5606fe23461e01bff59c2d72ac47d74e652548718f1e5fab07a22b441379b4",
+      "bytes": 11002,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-factory.js",
+      "sha256": "68b9f4f4573f25012ce8a4f73c9a2cee3a28db91de8bbb0a20ddb08bcba33c4b",
+      "bytes": 149,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-impl-type-mapping.js",
+      "sha256": "20bd5ddb858954cf071bace6c7a6628c8e311433798ec172f4c778bebd81d407",
+      "bytes": 2706,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-impl.js",
+      "sha256": "6a749be63055f9d21069566b1515412484a3a03448ca20427c8f8d29328a2843",
+      "bytes": 16091,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-utils-impl.js",
+      "sha256": "87d3e07c153616138c2f57846545eea9c47957c714d50c0264696bdc293e6732",
+      "bytes": 1920,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor-utils.js",
+      "sha256": "7acfdb2f8403ae84b7ae62d55d6eeb01519108be8874337b317b911ed60190cd",
+      "bytes": 147,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/tensor.js",
+      "sha256": "721d24a538de5333057bfc423bc00c3453a1c483f4495c857d0a6f9b8f2d330e",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/trace.js",
+      "sha256": "9b87e6309a1c502b03558aa94b0a65c8ea1e8eb59cb46090f54f6eacd191b841",
+      "bytes": 1891,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/type-helper.js",
+      "sha256": "3e2588c6a5ee7b9755e199eef10c6aa2e777d0366ea47d27953657a5638deeae",
+      "bytes": 146,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/dist/esm/version.js",
+      "sha256": "00a18ffb867b29a3855fe00e965797dba270849134f1e0ab2929fb2761c0fe44",
+      "bytes": 263,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/node_modules/onnxruntime-common/package.json",
+      "sha256": "44013ff974bcdb680b1aee98429c4bb12a0e6f983696abb56ed31ff41f3e3b46",
+      "bytes": 507,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-common/-/onnxruntime-common-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/ort-wasm-simd-threaded.mjs",
+      "sha256": "0a1e718d99c41b22c21f2520ff4f9e883a6b5533856e398d21816ee8eb8185d3",
+      "bytes": 24180,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/ort-wasm-simd-threaded.wasm",
+      "sha256": "d1ab1b94b16a65b29d710d0b587b29e7bed336827577623913479b8afe8113e6",
+      "bytes": 13479978,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.27.0.tgz",
+      "revision": "1.27.0"
+    },
+    {
+      "path": "ort/ort.node.min.mjs",
+      "sha256": "e89f5e9feb40384ab2bd1f95ade074e3de8ce3b64485bd03fb79d2cde2a620f1",
+      "bytes": 27004,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.27.0.tgz",
+      "revision": "1.27.0"
+    }
+  ]
+}

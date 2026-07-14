@@ -119,7 +119,7 @@ test("license texts are present and non-empty for every distinct license", () =>
   const manifest = readManifest();
   const licensesDir = path.join(vendorRoot, "licenses");
   assert.ok(existsSync(licensesDir), "vendor/licenses/ must exist");
-  const licenseFiles = readdirSync(licensesDir).filter((name) => name.toLowerCase().includes("license"));
+  const licenseFiles = readdirSync(licensesDir).filter((name) => name.endsWith(".txt"));
   assert.ok(licenseFiles.length > 0, "vendor/licenses/ must contain at least one license file");
   for (const name of licenseFiles) {
     const full = path.join(licensesDir, name);
