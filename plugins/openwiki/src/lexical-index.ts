@@ -49,19 +49,47 @@ export async function openLexicalIndex(storageRoot: string): Promise<LexicalInde
       await withFileWriteLock(lockPath, async () => {
         const manifest = await readManifest();
         const chunksById = new Map(manifest.chunks.map((entry) => [entry.ref.id, entry]));
+        // Bucket contents are cached and mutated in memory for the whole
+        // batch, then each touched bucket is written to disk exactly once at
+        // the end — mirroring vector-store.ts's touchedBuckets pattern. The
+        // previous per-document read-modify-write (readBucketFile + filter +
+        // atomicWriteFile per chunk) made every single upsert() call in a
+        // large batch re-read and rewrite its entire, growing bucket file —
+        // an O(n^2) I/O cost at real corpus scale. Measured building this
+        // repository's own ~4.3k symbols: this dominated the reindex, taking
+        // longer than the real embedding step itself. Loading each bucket
+        // once and writing once bounds bucket I/O to O(distinct touched
+        // buckets) regardless of batch size.
+        const bucketCache = new Map<string, Map<string, BucketEntry>>();
+        const loadBucket = async (bucket: string): Promise<Map<string, BucketEntry>> => {
+          const cached = bucketCache.get(bucket);
+          if (cached !== undefined) return cached;
+          const entries = new Map((await readBucketFile(storageRoot, bucket)).map((entry) => [entry.ref.id, entry]));
+          bucketCache.set(bucket, entries);
+          return entries;
+        };
         for (const entry of chunks) {
           const existing = chunksById.get(entry.ref.id);
           if (existing !== undefined && existing.ref.contentHash === entry.ref.contentHash) continue;
           if (existing !== undefined) {
-            const previous = await readBucketEntry(storageRoot, existing.bucket, existing.ref.id);
-            if (previous !== undefined) removeDocument(manifest, existing.ref.id, previous);
+            const existingBucketEntries = await loadBucket(existing.bucket);
+            const previous = existingBucketEntries.get(existing.ref.id);
+            if (previous !== undefined) {
+              removeDocument(manifest, existing.ref.id, previous);
+              existingBucketEntries.delete(existing.ref.id);
+            }
           }
           const tokens = tokenize(entry.text);
           const frequencies = frequencyMap(tokens);
           const bucket = bucketFor(entry.ref.contentHash);
           addDocument(manifest, entry.ref, frequencies, tokens.length);
-          await writeBucketEntry(storageRoot, bucket, { ref: entry.ref, termFrequencies: frequencies, length: tokens.length });
+          const bucketEntries = await loadBucket(bucket);
+          bucketEntries.set(entry.ref.id, { ref: entry.ref, termFrequencies: frequencies, length: tokens.length });
           chunksById.set(entry.ref.id, { ref: entry.ref, bucket });
+        }
+        for (const [bucket, entries] of bucketCache) {
+          const sorted = [...entries.values()].sort((left, right) => left.ref.id.localeCompare(right.ref.id));
+          await atomicWriteFile(path.join(storageRoot, "segments", `${bucket}.json`), `${JSON.stringify(sorted)}\n`);
         }
         manifest.chunks = [...chunksById.values()].sort((left, right) => left.ref.id.localeCompare(right.ref.id));
         await atomicWriteFile(manifestPath, `${JSON.stringify(manifest)}\n`);
@@ -103,7 +131,25 @@ export async function openLexicalIndex(storageRoot: string): Promise<LexicalInde
 }
 
 function emptyManifest(): LexicalManifest {
-  return { schemaVersion: 1, k1: BM25_K1, b: BM25_B, totalDocs: 0, totalLength: 0, documentFrequency: {}, postings: {}, trigramPostings: {}, lengths: {}, chunks: [] };
+  return { schemaVersion: 1, k1: BM25_K1, b: BM25_B, totalDocs: 0, totalLength: 0, documentFrequency: emptyDict(), postings: emptyDict(), trigramPostings: emptyDict(), lengths: emptyDict(), chunks: [] };
+}
+
+// Object.create(null), not {}: every dictionary in this file is keyed by
+// arbitrary real-world tokens extracted from indexed text (BM25 terms,
+// trigrams) — not hashes — and a plain {} inherits Object.prototype members
+// ("constructor", "toString", "valueOf", ...). Any indexed symbol literally
+// named "constructor" (every class constructor method) tokenizes to that
+// exact word, so `postings["constructor"] ?? []` would resolve to the
+// inherited Object constructor function instead of the intended fallback
+// array — confirmed to crash (`.filter is not a function`) and silently
+// corrupt documentFrequency (string-concatenates instead of incrementing) in
+// this exact codebase (graph-index.ts's own errors.ts has a constructor()).
+// A null-prototype object has no inherited members, so every lookup for a
+// key not yet explicitly set is genuinely undefined. Serializes identically
+// to plain-object JSON (JSON.stringify/Object.entries only consider own
+// enumerable properties), so the on-disk manifest format is unchanged.
+function emptyDict<T>(): Record<string, T> {
+  return Object.create(null) as Record<string, T>;
 }
 
 function tokenize(text: string): string[] {
@@ -111,7 +157,7 @@ function tokenize(text: string): string[] {
 }
 
 function frequencyMap(tokens: readonly string[]): Record<string, number> {
-  const counts: Record<string, number> = {};
+  const counts: Record<string, number> = emptyDict();
   for (const token of tokens) counts[token] = (counts[token] ?? 0) + 1;
   return counts;
 }
@@ -132,18 +178,32 @@ function bucketFor(contentHash: string): string {
   return first;
 }
 
+// Appends directly (no filter/includes-then-spread rebuild): upsert()'s loop
+// (openLexicalIndex above) always calls removeDocument for any chunk id
+// already present *before* calling addDocument, so by the time addDocument
+// runs, no stale posting for this ref.id can already exist in any of these
+// arrays — the append is always adding a genuinely new entry, never
+// deduplicating one. The previous filter/includes-then-spread pattern
+// reallocated and rescanned the entire (growing) postings/trigramPostings
+// array on every single call — an O(n) cost per insert, O(n^2) total across
+// a corpus — measured as the dominant cost (more than real embedding)
+// reindexing this repository's own ~4.3k symbols. addDocument/removeDocument
+// are private to this module and only ever called from upsert()'s loop, so
+// this invariant is enforced locally, not by an external contract.
 function addDocument(manifest: LexicalManifest, ref: ChunkRef, frequencies: Record<string, number>, length: number): void {
   manifest.totalDocs += 1;
   manifest.totalLength += length;
   manifest.lengths[ref.id] = length;
   for (const [term, frequency] of Object.entries(frequencies)) {
     manifest.documentFrequency[term] = (manifest.documentFrequency[term] ?? 0) + 1;
-    const postings = (manifest.postings[term] ?? []).filter((posting) => posting.id !== ref.id);
-    manifest.postings[term] = [...postings, { id: ref.id, frequency }];
+    const postings = manifest.postings[term];
+    if (postings === undefined) manifest.postings[term] = [{ id: ref.id, frequency }];
+    else postings.push({ id: ref.id, frequency });
   }
   for (const trigram of trigramsOf(Object.keys(frequencies).join(" "))) {
-    const ids = manifest.trigramPostings[trigram] ?? [];
-    if (!ids.includes(ref.id)) manifest.trigramPostings[trigram] = [...ids, ref.id];
+    const ids = manifest.trigramPostings[trigram];
+    if (ids === undefined) manifest.trigramPostings[trigram] = [ref.id];
+    else ids.push(ref.id);
   }
 }
 
@@ -171,17 +231,6 @@ function removeDocument(manifest: LexicalManifest, id: string, previous: BucketE
   }
 }
 
-async function readBucketEntry(storageRoot: string, bucket: string, id: string): Promise<BucketEntry | undefined> {
-  return (await readBucketFile(storageRoot, bucket)).find((entry) => entry.ref.id === id);
-}
-
-async function writeBucketEntry(storageRoot: string, bucket: string, entry: BucketEntry): Promise<void> {
-  const entries = (await readBucketFile(storageRoot, bucket)).filter((existing) => existing.ref.id !== entry.ref.id);
-  entries.push(entry);
-  entries.sort((left, right) => left.ref.id.localeCompare(right.ref.id));
-  await atomicWriteFile(path.join(storageRoot, "segments", `${bucket}.json`), `${JSON.stringify(entries)}\n`);
-}
-
 async function readBucketFile(storageRoot: string, bucket: string): Promise<BucketEntry[]> {
   try {
     const parsed = JSON.parse(await readFile(path.join(storageRoot, "segments", `${bucket}.json`), "utf8")) as unknown;
@@ -195,7 +244,7 @@ async function readBucketFile(storageRoot: string, bucket: string): Promise<Buck
 
 function parseBucketEntry(value: unknown): BucketEntry {
   if (!isRecord(value) || !isRecord(value.termFrequencies) || !isNonNegativeInteger(value.length)) throw new OpenWikiError("INVALID_STATE", "Lexical index segment entry is invalid.");
-  const termFrequencies: Record<string, number> = {};
+  const termFrequencies: Record<string, number> = emptyDict();
   for (const [term, count] of Object.entries(value.termFrequencies)) {
     if (!isNonNegativeInteger(count)) throw new OpenWikiError("INVALID_STATE", "Lexical index segment entry is invalid.");
     termFrequencies[term] = count;
@@ -232,7 +281,7 @@ function parseManifestChunk(value: unknown): LexicalManifest["chunks"][number] {
 }
 
 function parseNumberRecord(value: Record<string, unknown>): Record<string, number> {
-  const result: Record<string, number> = {};
+  const result: Record<string, number> = emptyDict();
   for (const [key, entry] of Object.entries(value)) {
     if (typeof entry !== "number" || !Number.isFinite(entry)) throw new OpenWikiError("INVALID_STATE", "Lexical index manifest is invalid.");
     result[key] = entry;
@@ -241,7 +290,7 @@ function parseNumberRecord(value: Record<string, unknown>): Record<string, numbe
 }
 
 function parseStringListRecord(value: Record<string, unknown>): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
+  const result: Record<string, string[]> = emptyDict();
   for (const [key, entry] of Object.entries(value)) {
     if (!Array.isArray(entry) || !entry.every((item) => typeof item === "string")) throw new OpenWikiError("INVALID_STATE", "Lexical index manifest is invalid.");
     result[key] = entry;
@@ -250,7 +299,7 @@ function parseStringListRecord(value: Record<string, unknown>): Record<string, s
 }
 
 function parsePostings(value: Record<string, unknown>): Record<string, Posting[]> {
-  const result: Record<string, Posting[]> = {};
+  const result: Record<string, Posting[]> = emptyDict();
   for (const [term, entry] of Object.entries(value)) {
     if (!Array.isArray(entry)) throw new OpenWikiError("INVALID_STATE", "Lexical index manifest is invalid.");
     result[term] = entry.map((posting) => {
