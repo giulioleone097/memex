@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
@@ -65,6 +65,24 @@ function parseFrontmatter(contents, skillName) {
   return { fields, body: contents.slice(boundary + 5) };
 }
 
+async function walkFiles(root) {
+  const files = [];
+  const pending = [root];
+  while (pending.length > 0) {
+    const directory = pending.pop();
+    const entries = await readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(entryPath);
+      } else if (entry.isFile()) {
+        files.push(entryPath);
+      }
+    }
+  }
+  return files;
+}
+
 function assertRelativePluginPath(value, label) {
   assert.equal(typeof value, "string", `${label} must be a string`);
   assert.ok(value.startsWith("./"), `${label} must start with ./`);
@@ -79,7 +97,7 @@ describe("native plugin packaging", () => {
 
     for (const manifest of [codex, claude]) {
       assert.equal(manifest.name, "memex");
-      assert.equal(manifest.version, "0.1.0");
+      assert.equal(manifest.version, "0.2.0");
       assert.equal(manifest.author?.name, "Giulio Leone");
       assert.equal(manifest.license, "MIT");
       assert.equal(manifest.skills, "./skills/");
@@ -139,7 +157,7 @@ describe("native plugin packaging", () => {
     });
     assert.equal(claude.plugins[0].source, "./plugins/memex");
     assert.equal(claude.owner?.name, "Giulio Leone");
-    assert.equal(claude.plugins[0].version, "0.1.0");
+    assert.equal(claude.plugins[0].version, "0.2.0");
     assert.equal(claude.plugins[0].strict, true);
   });
 
@@ -286,8 +304,11 @@ describe("native plugin packaging", () => {
     assert.match(upstreamLicense, /Copyright \(c\) 2026/);
 
     const thirdParty = await readText(resolve(PLUGIN_ROOT, "THIRD_PARTY_NOTICES.md"));
-    assert.match(thirdParty, /langchain-ai\/memex/i);
+    // The pinned upstream project keeps its own real name; this plugin's
+    // rename to `memex` does not rewrite third-party provenance history.
+    assert.match(thirdParty, /langchain-ai\/openwiki/i);
     assert.match(thirdParty, /MIT License/i);
+    assert.match(thirdParty, /Memex/);
   });
 
   test("packaged surfaces contain no placeholders or external Memex runtime dependency", async () => {
@@ -332,6 +353,61 @@ describe("native plugin packaging", () => {
         await readText(resolve(PLUGIN_ROOT, file)),
         /gitnexus/i,
         `${file} must remain Memex-native`,
+      );
+    }
+  });
+
+  test("no stray openwiki identity strings remain outside the allowed legacy-path files", async () => {
+    // The plugin was renamed from `openwiki` to `memex`. Exactly three source
+    // files legitimately detect and migrate a prior install's `.openwiki`
+    // storage root, and may reference the old distribution name in prose,
+    // comments, and the migration tombstone; they are still held to a
+    // case-sensitive check that a class/constant rename was never missed
+    // (`OpenWiki`/`OPENWIKI`, as opposed to the lowercase legacy name). Every
+    // other file must contain zero occurrences in any casing.
+    const ALLOWED_LEGACY_PATH_FILES = new Set([
+      join("src", "migrate.ts"),
+      join("src", "paths.ts"),
+      join("src", "doctor.ts"),
+    ]);
+    const STRICT_PATTERN = /openwiki/i;
+    const IDENTITY_LEFTOVER_PATTERN = /OpenWiki|OPENWIKI/;
+
+    const targets = [];
+    for (const directory of ["src", "skills"]) {
+      const absoluteDirectory = resolve(PLUGIN_ROOT, directory);
+      for (const filePath of await walkFiles(absoluteDirectory)) {
+        targets.push(relative(PLUGIN_ROOT, filePath));
+      }
+    }
+    targets.push(
+      join(".codex-plugin", "plugin.json"),
+      join(".claude-plugin", "plugin.json"),
+      join(".claude-plugin", "mcp.json"),
+      ".mcp.json",
+    );
+    for (const marketplace of [
+      resolve(REPOSITORY_ROOT, ".agents/plugins/marketplace.json"),
+      resolve(REPOSITORY_ROOT, ".claude-plugin/marketplace.json"),
+    ]) {
+      targets.push(relative(PLUGIN_ROOT, marketplace));
+    }
+
+    for (const target of targets) {
+      const absolutePath = resolve(PLUGIN_ROOT, target);
+      const contents = await readText(absolutePath);
+      if (ALLOWED_LEGACY_PATH_FILES.has(target)) {
+        assert.doesNotMatch(
+          contents,
+          IDENTITY_LEFTOVER_PATTERN,
+          `${target} may reference the legacy openwiki distribution name in prose, but must not leave an un-renamed OpenWiki/OPENWIKI identifier`,
+        );
+        continue;
+      }
+      assert.doesNotMatch(
+        contents,
+        STRICT_PATTERN,
+        `${target} must not reference the legacy openwiki identity`,
       );
     }
   });

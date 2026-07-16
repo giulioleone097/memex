@@ -39,7 +39,7 @@ const tools: readonly ToolDefinition[] = [
   tool("schedule", "Set, list, or remove local schedule intent.", scheduleSchema(), [false, true, true, false]),
   tool("purge", "Purge selected local Memex data.", commonMode({ root, scope: { type: "string", enum: ["raw", "schedules", "personal-wiki", "all"] } }, ["scope"]), [false, true, true, false]),
   tool("graph", "Build or query the native bounded code graph.", graphSchema(), [false, true, true, false]),
-  tool("migrate", "Migrate a legacy ~/.openwiki storage root to ~/.memex, if present.", object({}, []), [false, true, true, false]),
+  tool("migrate", "Migrate a legacy storage root from the plugin's prior distribution to the current data root, if present.", object({}, []), [false, true, true, false]),
 ];
 
 function tool(name: MemexOperation, description: string, inputSchema: JsonRecord, annotationValues: readonly boolean[]): ToolDefinition {
