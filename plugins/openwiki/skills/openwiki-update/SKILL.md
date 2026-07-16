@@ -23,15 +23,16 @@ Detect changes first. Write only affected pages and record a run only after succ
 
 1. Run `status` using the same mode/root. In code mode, delegate graph freshness and changed-path mapping to `openwiki-graph`'s `changes` action; that skill owns graph status, authorized refresh, limits, and confidence reporting. In personal mode, skip graph work.
 2. Run `context` using the same mode/root.
-3. If context reports no changed evidence, run `check`, return a no-op result, and do not call `write` or `finalize`.
+3. If context reports no changed evidence, run `check`, return a no-op result, and do not call `write`, `enrich`, or `finalize`.
 4. Map changed evidence to affected pages; read those pages before generating replacements.
 5. Write only changed markdown pages through the confined `write` operation and preserve unrelated page content.
-6. Run `check`; repair every failure before continuing.
-7. Run `finalize` with a bounded summary and changed flag, then rerun `status` to confirm the new content hash and run id.
+6. In code mode, for every page written in step 5, submit one `enrich` envelope re-extracting its concepts, entities, and mentions, exactly as in `openwiki-init` step 6. Unchanged pages need no re-enrichment; resubmitting an unchanged page's envelope is a safe no-op. Skip in personal mode.
+7. Run `check`; repair every failure before continuing.
+8. Run `finalize` with a bounded summary and changed flag, then rerun `status` to confirm the new content hash and run id.
 
 ## Evidence
 
-- Capture before/after content hashes, before/after Git HEAD evidence, changed source ids, updated page paths, `check` output, and the finalized run id.
+- Capture before/after content hashes, before/after Git HEAD evidence, changed source ids, updated page paths, enrich results for each changed page in code mode (sourcePath, applied, nodesWritten, edgesWritten), `check` output, and the finalized run id.
 - In code mode, preserve the delegated graph `changes` evidence, including freshness, confidence, diagnostics, unresolved edges, and truncation; personal mode has no graph evidence.
 - For a no-op, preserve the unchanged hash and explicit `changed: false` proof.
 
@@ -47,4 +48,4 @@ Modify only affected markdown pages, OpenWiki-owned instruction blocks, and the 
 
 ## Completion proof
 
-An update completes only when the no-op path proves no writes, or the changed path passes `check`, finalizes once, reports exact updated pages, and leaves `status` healthy.
+An update completes only when the no-op path proves no writes, or the changed path writes affected pages, enriches each in code mode, passes `check`, finalizes once, reports exact updated pages, and leaves `status` healthy.

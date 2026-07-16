@@ -27,12 +27,13 @@ Create the standard wiki page map, synthesize from verified evidence, validate i
 3. Run `<cli> context --mode <mode> --root <root> --json` and bound synthesis to the returned evidence.
 4. Run `<cli> init --mode <mode> --root <root> --json` once to create confined state and standard pages idempotently.
 5. Write concise pages through the `write` operation: quickstart, architecture, source map, workflows, domain concepts, operations, integrations, and testing. Preserve unrelated instruction-file content byte-for-byte.
-6. Run `check`; fix every reported missing page, broken internal link, provenance gap, or instruction-block mismatch.
-7. Run `finalize` only after all writes and `check` succeed, then run `status` again.
+6. In code mode, extract concepts, entities, and decisions from every page written or changed in step 5. For each such page, submit one `enrich` envelope (`--stdin` or `--envelope-file`, schema `memex.enrich.v1`) declaring a `page` node for that page, `concept` nodes for the concepts it introduces, and `mentions`/`describes` edges linking the page to those concepts and to code symbols surfaced by `openwiki-graph`. Compute `sourceContentHash` from the page content actually on disk; the runtime rejects a mismatched hash with `INVALID_ARGUMENT`. Resubmitting an unchanged page's envelope is a safe no-op. Skip this step in personal mode, which has no graph.
+7. Run `check`; fix every reported missing page, broken internal link, provenance gap, missing page node, missing page edge, dangling reference, or instruction-block mismatch.
+8. Run `finalize` only after all writes, enrichment, and `check` succeed, then run `status` again.
 
 ## Evidence
 
-- Capture canonical mode/root, Git HEAD for code mode, written page paths, `check` result, final content hash, and final run id.
+- Capture canonical mode/root, Git HEAD for code mode, written page paths, enrich results (sourcePath, applied, nodesWritten, edgesWritten) for code mode, `check` result, final content hash, and final run id.
 - In code mode, preserve the delegated `openwiki-graph` status/action evidence and disclose its freshness, confidence, diagnostics, and truncation; personal mode has no graph evidence.
 - Cite repository evidence used for synthesis; do not claim external connector coverage unless that connector was read through an authenticated host tool.
 
@@ -45,8 +46,8 @@ Create the standard wiki page map, synthesize from verified evidence, validate i
 
 ## Mutation boundary
 
-Write only the selected wiki root, private OpenWiki state under `~/.openwiki/data/`, and the idempotent OpenWiki blocks in code-mode `AGENTS.md` and `CLAUDE.md`. Never alter unrelated instruction content or provider credentials.
+Write only the selected wiki root, private OpenWiki state under `~/.openwiki/data/` (including enrichment shards under `~/.openwiki/data/<workspace-id>/graph/enrichment/`), and the idempotent OpenWiki blocks in code-mode `AGENTS.md` and `CLAUDE.md`. Never alter unrelated instruction content or provider credentials.
 
 ## Completion proof
 
-Initialization completes only when `check` passes, `finalize` records the run, final `status` is healthy, standard pages exist, and every changed path is inside the approved boundary.
+Initialization completes only when every code-mode page has been enriched (or the run is personal mode, which has no graph to enrich), `check` passes, `finalize` records the run, final `status` is healthy, standard pages exist, and every changed path is inside the approved boundary.
