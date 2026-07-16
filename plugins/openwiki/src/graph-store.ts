@@ -4,7 +4,7 @@ import { lstat, mkdir, open, readFile, readdir, rm, unlink } from "node:fs/promi
 import path from "node:path";
 
 import { atomicWriteFile } from "./atomic.js";
-import { canonicalizeGraph, graphHash, parseCodeGraph, GRAPH_SCANNER_VERSION, type CodeGraphV1 } from "./graph-contracts.js";
+import { canonicalizeGraph, graphHash, parseCodeGraph, parseEnrichmentShard, GRAPH_SCANNER_VERSION, type CodeGraphV1, type EnrichmentShardV1 } from "./graph-contracts.js";
 import { OpenWikiError } from "./errors.js";
 import {
   GRAPH_STORE_SCHEMA_VERSION,
@@ -31,6 +31,7 @@ export interface GraphManifest {
   source: CodeGraphV1["source"];
   counts: { files: number; nodes: number; edges: number; diagnostics: number };
   shards: Array<{ path: string; contentHash: string; sourceId: string; shard: string }>;
+  enrichmentShards: Array<{ sourcePath: string; sourceContentHash: string; shard: string }>;
 }
 export interface GraphStorage {
   root: string;
@@ -39,6 +40,7 @@ export interface GraphStorage {
   writeLockPath: string;
   generationRoot: string;
   shardRoot: string;
+  enrichmentRoot: string;
   snapshotRoot: string;
 }
 export interface GraphStorageProbe { initialized: boolean; storage: GraphStorage; workspaceId: string; repositoryRoot: string; }
@@ -137,6 +139,14 @@ export async function readGraphShard(storage: GraphStorage, shardName: string): 
   return parseShard(JSON.parse(await readFile(confinedStoredName(storage.shardRoot, shardName), "utf8")) as unknown);
 }
 
+export async function readEnrichmentShard(storage: GraphStorage, shardName: string): Promise<EnrichmentShardV1> {
+  return parseEnrichmentShard(JSON.parse(await readFile(confinedStoredName(storage.enrichmentRoot, shardName), "utf8")) as unknown);
+}
+
+export function enrichmentShardFileName(sourcePath: string, sourceContentHash: string): string {
+  return `${graphHash(["enrichment", sourcePath, sourceContentHash])}.json`;
+}
+
 export async function readManifest(storage: GraphStorage): Promise<GraphManifest> {
   const manifests = await readManifests(storage);
   const first = manifests.at(0);
@@ -154,8 +164,8 @@ export async function openGraphIndex(storage: GraphStorage): Promise<GraphIndexP
   throw new OpenWikiError("NOT_INITIALIZED", "No recoverable OpenWiki graph index exists.");
 }
 
-export async function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
-  return withGraphWriteLock(storage, async () => writeGraphUnlocked(storage, graph, shards));
+export async function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[], enrichmentShards: readonly EnrichmentShardV1[] = []): Promise<{ manifestPath: string; reusedShardCount: number }> {
+  return withGraphWriteLock(storage, async () => writeGraphUnlocked(storage, graph, shards, enrichmentShards));
 }
 
 export async function withGraphWriteLock<T>(storage: GraphStorage, operation: () => Promise<T>): Promise<T> {
@@ -222,12 +232,14 @@ export async function changedRepositoryEvidence(root: string, base?: string): Pr
   return { paths, ...(current.gitHead === undefined ? {} : { head: current.gitHead }), changeState: workingTree ? "working-tree" : paths.length > 0 ? "committed" : "clean" };
 }
 
-async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
+async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[], enrichmentShards: readonly EnrichmentShardV1[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
   const previous = await readManifest(storage).catch(() => undefined);
   const reusable = new Map(previous?.shards.map((entry) => [`${entry.path}\0${entry.contentHash}`, entry]) ?? []);
   await mkdir(storage.shardRoot, { recursive: true, mode: 0o700 });
+  await mkdir(storage.enrichmentRoot, { recursive: true, mode: 0o700 });
   await mkdir(storage.generationRoot, { recursive: true, mode: 0o700 });
   await assertRegularDirectory(storage.shardRoot);
+  await assertRegularDirectory(storage.enrichmentRoot);
   await assertRegularDirectory(storage.generationRoot);
   let reusedShardCount = 0;
   const manifestShards: GraphManifest["shards"] = [];
@@ -238,6 +250,13 @@ async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, sha
     if (reused !== undefined) reusedShardCount += 1;
     else await atomicWriteFile(confinedStoredName(storage.shardRoot, shardFile), `${JSON.stringify(shard)}\n`);
     manifestShards.push({ path: shard.path, contentHash: shard.contentHash, sourceId: shard.sourceId, shard: shardFile });
+  }
+  const manifestEnrichmentShards: GraphManifest["enrichmentShards"] = [];
+  for (const shard of enrichmentShards) {
+    const fileName = enrichmentShardFileName(shard.sourcePath, shard.sourceContentHash);
+    const target = confinedStoredName(storage.enrichmentRoot, fileName);
+    if (!(await isRegularFile(target))) await atomicWriteFile(target, `${JSON.stringify(shard)}\n`);
+    manifestEnrichmentShards.push({ sourcePath: shard.sourcePath, sourceContentHash: shard.sourceContentHash, shard: fileName });
   }
   const canonical = canonicalizeGraph(graph);
   const generation = `g-${createHash("sha256").update(JSON.stringify(canonical), "utf8").digest("hex")}`;
@@ -259,11 +278,17 @@ async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, sha
       source: canonical.source,
       counts: { files: canonical.files.length, nodes: canonical.nodes.length, edges: canonical.edges.length, diagnostics: canonical.diagnostics.length },
       shards: manifestShards.sort((left, right) => left.path.localeCompare(right.path)),
+      enrichmentShards: manifestEnrichmentShards.sort((left, right) => left.sourcePath.localeCompare(right.sourcePath)),
     };
     await publishManifest(storage, previous, manifest);
   } else {
     const existing = await readManifest(storage);
     if (existing.generation !== generation) throw new OpenWikiError("INVALID_STATE", "Graph generation publication changed during write.");
+    const sortedShards = manifestShards.sort((left, right) => left.path.localeCompare(right.path));
+    const sortedEnrichmentShards = manifestEnrichmentShards.sort((left, right) => left.sourcePath.localeCompare(right.sourcePath));
+    if (JSON.stringify(existing.shards) !== JSON.stringify(sortedShards) || JSON.stringify(existing.enrichmentShards) !== JSON.stringify(sortedEnrichmentShards)) {
+      await publishManifest(storage, previous, { ...existing, shards: sortedShards, enrichmentShards: sortedEnrichmentShards });
+    }
   }
   await garbageCollect(storage, previous);
   return { manifestPath: storage.manifestPath, reusedShardCount };
@@ -288,13 +313,21 @@ async function readManifests(storage: GraphStorage): Promise<Array<{ manifest: G
 }
 
 function parseManifest(value: unknown): GraphManifest {
-  if (!isRecord(value) || value.schemaVersion !== GRAPH_STORE_SCHEMA_VERSION || value.scannerVersion !== GRAPH_SCANNER_VERSION || !safeGeneration(value.generation) || !safeSnapshot(value.snapshot) || !Array.isArray(value.shards) || typeof value.generatedAt !== "string" || !isRecord(value.source) || typeof value.source.dirtyFingerprint !== "string" || typeof value.source.scannerVersion !== "string" || !isRecord(value.counts) || !nonNegativeInteger(value.counts.files) || !nonNegativeInteger(value.counts.nodes) || !nonNegativeInteger(value.counts.edges) || !nonNegativeInteger(value.counts.diagnostics)) {
+  if (!isRecord(value) || value.schemaVersion !== GRAPH_STORE_SCHEMA_VERSION || value.scannerVersion !== GRAPH_SCANNER_VERSION || !safeGeneration(value.generation) || !safeSnapshot(value.snapshot) || !Array.isArray(value.shards) || (value.enrichmentShards !== undefined && !Array.isArray(value.enrichmentShards)) || typeof value.generatedAt !== "string" || !isRecord(value.source) || typeof value.source.dirtyFingerprint !== "string" || typeof value.source.scannerVersion !== "string" || !isRecord(value.counts) || !nonNegativeInteger(value.counts.files) || !nonNegativeInteger(value.counts.nodes) || !nonNegativeInteger(value.counts.edges) || !nonNegativeInteger(value.counts.diagnostics)) {
     throw new OpenWikiError("INVALID_STATE", "Graph manifest schema is incompatible.");
   }
   const index = parseManifestIndex(value.index, value.generation);
   const shards = value.shards.map(parseManifestShard).sort((left, right) => left.path.localeCompare(right.path));
   if (JSON.stringify(shards) !== JSON.stringify(value.shards)) throw new OpenWikiError("INVALID_STATE", "Graph manifest shards are not canonical.");
-  return { schemaVersion: GRAPH_STORE_SCHEMA_VERSION, scannerVersion: GRAPH_SCANNER_VERSION, generation: value.generation, snapshot: value.snapshot, index, generatedAt: value.generatedAt, source: { ...(typeof value.source.gitHead === "string" ? { gitHead: value.source.gitHead } : {}), dirtyFingerprint: value.source.dirtyFingerprint, scannerVersion: value.source.scannerVersion }, counts: { files: value.counts.files, nodes: value.counts.nodes, edges: value.counts.edges, diagnostics: value.counts.diagnostics }, shards };
+  const enrichmentShardsInput = value.enrichmentShards ?? [];
+  const enrichmentShards = enrichmentShardsInput.map(parseManifestEnrichmentShard).sort((left, right) => left.sourcePath.localeCompare(right.sourcePath));
+  if (JSON.stringify(enrichmentShards) !== JSON.stringify(enrichmentShardsInput)) throw new OpenWikiError("INVALID_STATE", "Graph manifest enrichment shards are not canonical.");
+  return { schemaVersion: GRAPH_STORE_SCHEMA_VERSION, scannerVersion: GRAPH_SCANNER_VERSION, generation: value.generation, snapshot: value.snapshot, index, generatedAt: value.generatedAt, source: { ...(typeof value.source.gitHead === "string" ? { gitHead: value.source.gitHead } : {}), dirtyFingerprint: value.source.dirtyFingerprint, scannerVersion: value.source.scannerVersion }, counts: { files: value.counts.files, nodes: value.counts.nodes, edges: value.counts.edges, diagnostics: value.counts.diagnostics }, shards, enrichmentShards };
+}
+
+function parseManifestEnrichmentShard(value: unknown): { sourcePath: string; sourceContentHash: string; shard: string } {
+  if (!isRecord(value) || !safeRelativePath(value.sourcePath) || typeof value.sourceContentHash !== "string" || !/^[a-f0-9]{64}$/iu.test(value.sourceContentHash) || !safeStoredName(value.shard)) throw new OpenWikiError("INVALID_STATE", "Graph manifest enrichment shard is invalid.");
+  return { sourcePath: value.sourcePath, sourceContentHash: value.sourceContentHash, shard: value.shard };
 }
 
 function parseManifestIndex(value: unknown, generation: string): GraphIndexManifest {
@@ -325,6 +358,8 @@ async function garbageCollect(storage: GraphStorage, previous: GraphManifest | u
   }
   const shards = new Set((current?.shards ?? []).concat(previous?.shards ?? []).map((entry) => entry.shard));
   for (const entry of await readdir(storage.shardRoot).catch(() => [])) if (!shards.has(entry)) await rm(confinedStoredName(storage.shardRoot, entry), { force: true });
+  const enrichmentShards = new Set((current?.enrichmentShards ?? []).concat(previous?.enrichmentShards ?? []).map((entry) => entry.shard));
+  for (const entry of await readdir(storage.enrichmentRoot).catch(() => [])) if (!enrichmentShards.has(entry)) await rm(confinedStoredName(storage.enrichmentRoot, entry), { force: true });
 }
 
 async function recoverStaleGraphLock(lockPath: string): Promise<boolean> {
@@ -370,7 +405,7 @@ function processAlive(pid: number): boolean {
 }
 
 function createStorage(root: string): GraphStorage {
-  return { root, manifestPath: path.join(root, "manifest.json"), previousManifestPath: path.join(root, "manifest.previous.json"), writeLockPath: path.join(root, "writer.lock"), generationRoot: path.join(root, "generations"), shardRoot: path.join(root, "shards"), snapshotRoot: path.join(root, "snapshots") };
+  return { root, manifestPath: path.join(root, "manifest.json"), previousManifestPath: path.join(root, "manifest.previous.json"), writeLockPath: path.join(root, "writer.lock"), generationRoot: path.join(root, "generations"), shardRoot: path.join(root, "shards"), enrichmentRoot: path.join(root, "enrichment"), snapshotRoot: path.join(root, "snapshots") };
 }
 
 function manifestGenerationPath(storage: GraphStorage, generation: string): string {

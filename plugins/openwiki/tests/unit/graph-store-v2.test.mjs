@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, test } from "node:test";
@@ -12,6 +12,7 @@ import {
 } from "../../dist/graph-contracts.js";
 import {
   openGraphIndex,
+  readEnrichmentShard,
   readGraphShard,
   probeGraphStorage,
   resolveGraphStorage,
@@ -157,5 +158,79 @@ describe("graph store v2", () => {
     await writeFile(path.join(root, "untracked.ts"), "export const untracked = true;\n", "utf8");
 
     assert.deepEqual(await changedRepositoryPaths(root, base), ["src/deleted.ts", "src/tracked.ts", "src-renamed/deleted.ts", "src-renamed/tracked.ts", "untracked.ts"].sort((left, right) => left.localeCompare(right)));
+  });
+
+  test("allNodes and allEdges enumerate the complete bucketed graph", async () => {
+    const root = await temporaryRoot("all");
+    const home = await temporaryRoot("home");
+    const resolved = await resolveGraphStorage(root, home);
+    const source = graph("1");
+    await writeGraph(resolved.storage, source, []);
+    const index = await openGraphIndex(resolved.storage);
+    const allNodes = await index.allNodes();
+    const allEdges = await index.allEdges();
+    assert.deepEqual(allNodes.map((node) => node.id).sort(), source.nodes.map((node) => node.id).sort());
+    assert.deepEqual(allEdges.map((edge) => edge.id), source.edges.map((edge) => edge.id));
+  });
+
+  test("persists, reuses, and garbage collects enrichment shards alongside code shards", async () => {
+    const root = await temporaryRoot("enrichment");
+    const home = await temporaryRoot("home");
+    const resolved = await resolveGraphStorage(root, home);
+    const pageId = createGraphNodeId("page", "architecture.md", "architecture.md");
+    const shardV1 = { sourcePath: "architecture.md", sourceContentHash: "a".repeat(64), nodes: [{ id: pageId, kind: "page", path: "architecture.md", name: "architecture.md" }], edges: [], enrichedAt: "2026-07-14T00:00:00.000Z" };
+    await writeGraph(resolved.storage, graph("1"), [], [shardV1]);
+    const manifestAfterFirst = JSON.parse(await readFile(resolved.storage.manifestPath, "utf8"));
+    assert.equal(manifestAfterFirst.enrichmentShards.length, 1);
+    const restored = await readEnrichmentShard(resolved.storage, manifestAfterFirst.enrichmentShards[0].shard);
+    assert.deepEqual(restored, shardV1);
+
+    const shardV2 = { ...shardV1, sourceContentHash: "b".repeat(64) };
+    await writeGraph(resolved.storage, graph("1"), [], [shardV2]);
+    const manifestAfterSecond = JSON.parse(await readFile(resolved.storage.manifestPath, "utf8"));
+    assert.equal(manifestAfterSecond.enrichmentShards.length, 1);
+    assert.equal(manifestAfterSecond.enrichmentShards[0].sourceContentHash, "b".repeat(64));
+
+    await writeGraph(resolved.storage, graph("2"), [], []);
+    await writeGraph(resolved.storage, graph("2"), [], []);
+    assert.deepEqual(await readdir(resolved.storage.enrichmentRoot).catch(() => []), []);
+  });
+
+  test("reads back enriched node kinds, edge kinds, and agent confidence through every index read path without throwing", async () => {
+    const root = await temporaryRoot("enriched-read");
+    const home = await temporaryRoot("home");
+    const resolved = await resolveGraphStorage(root, home);
+    const repositoryId = createGraphNodeId("repository", ".", "repository");
+    const pageId = createGraphNodeId("page", "architecture.md", "architecture.md");
+    const conceptId = createGraphNodeId("concept", "concepts/x.md", "x");
+    const describesId = createGraphEdgeId("describes", pageId, conceptId, "extracted");
+    const enrichedGraph = {
+      schemaVersion: 2,
+      workspaceId: resolved.workspaceId,
+      generatedAt: "2026-07-14T00:00:00.000Z",
+      source: { dirtyFingerprint: "a".repeat(64), scannerVersion: "openwiki-graph-v1" },
+      files: [],
+      nodes: [
+        { id: repositoryId, kind: "repository", path: ".", name: "repository" },
+        { id: pageId, kind: "page", path: "architecture.md", name: "architecture.md" },
+        { id: conceptId, kind: "concept", path: "concepts/x.md", name: "x", summary: "A concept summary." },
+      ],
+      edges: [{ id: describesId, kind: "describes", from: pageId, to: conceptId, confidence: "extracted" }],
+      diagnostics: [],
+    };
+    await writeGraph(resolved.storage, enrichedGraph, []);
+    const index = await openGraphIndex(resolved.storage);
+
+    const conceptNode = await index.node(conceptId);
+    assert.equal(conceptNode.summary, "A concept summary.");
+    assert.deepEqual(await index.edge(describesId), enrichedGraph.edges[0]);
+    assert.equal((await index.inbound(conceptId, 10)).edges[0].kind, "describes");
+    assert.equal((await index.outbound(pageId, 10)).edges[0].kind, "describes");
+    const summary = await index.architectureSummary();
+    assert.equal(summary.nodeCount, 3);
+    const allNodes = await index.allNodes();
+    const allEdges = await index.allEdges();
+    assert.equal(allNodes.some((node) => node.kind === "concept"), true);
+    assert.equal(allEdges.some((edge) => edge.kind === "describes" && edge.confidence === "extracted"), true);
   });
 });

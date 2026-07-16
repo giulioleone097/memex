@@ -35,6 +35,8 @@ export interface GraphIndexPort {
     outbound(id: string, limit: number): Promise<GraphAdjacency>;
     changedPathSeeds(paths: readonly string[], limit: number): Promise<string[]>;
     architectureSummary(): Promise<Readonly<GraphArchitectureSummary>>;
+    allNodes(): Promise<GraphNodeV1[]>;
+    allEdges(): Promise<GraphEdgeV1[]>;
     metrics(): GraphIndexMetrics;
     status(): GraphIndexStatus;
 }

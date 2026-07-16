@@ -1,4 +1,4 @@
-import { type CodeGraphV1 } from "./graph-contracts.js";
+import { type CodeGraphV1, type EnrichmentShardV1 } from "./graph-contracts.js";
 import { GRAPH_STORE_SCHEMA_VERSION, type GraphIndexManifest, type GraphIndexPort } from "./graph-index.js";
 import { type SourceScan } from "./graph-scan.js";
 export interface GraphShard {
@@ -35,6 +35,11 @@ export interface GraphManifest {
         sourceId: string;
         shard: string;
     }>;
+    enrichmentShards: Array<{
+        sourcePath: string;
+        sourceContentHash: string;
+        shard: string;
+    }>;
 }
 export interface GraphStorage {
     root: string;
@@ -43,6 +48,7 @@ export interface GraphStorage {
     writeLockPath: string;
     generationRoot: string;
     shardRoot: string;
+    enrichmentRoot: string;
     snapshotRoot: string;
 }
 export interface GraphStorageProbe {
@@ -92,9 +98,11 @@ export declare function enumerateRepositoryFiles(root: string, limits: {
 /** @deprecated Compatibility reader. Stage B query paths must use openGraphIndex. */
 export declare function readStoredGraph(storage: GraphStorage): Promise<CodeGraphV1>;
 export declare function readGraphShard(storage: GraphStorage, shardName: string): Promise<GraphShard>;
+export declare function readEnrichmentShard(storage: GraphStorage, shardName: string): Promise<EnrichmentShardV1>;
+export declare function enrichmentShardFileName(sourcePath: string, sourceContentHash: string): string;
 export declare function readManifest(storage: GraphStorage): Promise<GraphManifest>;
 export declare function openGraphIndex(storage: GraphStorage): Promise<GraphIndexPort>;
-export declare function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[]): Promise<{
+export declare function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[], enrichmentShards?: readonly EnrichmentShardV1[]): Promise<{
     manifestPath: string;
     reusedShardCount: number;
 }>;

@@ -3,6 +3,9 @@ import path from "node:path";
 
 import {
   GRAPH_SCANNER_VERSION,
+  isGraphConfidence,
+  isGraphEdgeKind,
+  isGraphNodeKind,
   type CodeGraphV1,
   type GraphDiagnosticV1,
   type GraphEdgeV1,
@@ -51,6 +54,8 @@ export interface GraphIndexPort {
   outbound(id: string, limit: number): Promise<GraphAdjacency>;
   changedPathSeeds(paths: readonly string[], limit: number): Promise<string[]>;
   architectureSummary(): Promise<Readonly<GraphArchitectureSummary>>;
+  allNodes(): Promise<GraphNodeV1[]>;
+  allEdges(): Promise<GraphEdgeV1[]>;
   metrics(): GraphIndexMetrics;
   status(): GraphIndexStatus;
 }
@@ -237,6 +242,20 @@ export async function openGraphIndexGeneration(
     },
     async architectureSummary() {
       return parseArchitectureSummary(await read(manifest.architecture));
+    },
+    async allNodes() {
+      const nodes: GraphNodeV1[] = [];
+      for (const bucket of manifest.nodeBuckets) {
+        for (const node of parseNodeBucket(await read(`nodes/${bucket}.json`)).values()) nodes.push(node);
+      }
+      return nodes.sort((left, right) => left.id.localeCompare(right.id));
+    },
+    async allEdges() {
+      const edges: GraphEdgeV1[] = [];
+      for (const bucket of manifest.edgeBuckets) {
+        for (const edge of parseEdgeRecordBucket(await read(`edges/${bucket}.json`)).values()) edges.push(edge);
+      }
+      return edges.sort((left, right) => left.id.localeCompare(right.id));
     },
     metrics() {
       return { bytesRead, filesRead };
@@ -438,7 +457,7 @@ function parseRecord<T>(value: unknown, parse: (entry: unknown) => T): Map<strin
 }
 
 function parseNode(value: unknown): GraphNodeV1 {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.path !== "string" || typeof value.name !== "string" || !isNodeKind(value.kind)) throw new OpenWikiError("INVALID_STATE", "Graph node bucket is invalid.");
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.path !== "string" || typeof value.name !== "string" || !isGraphNodeKind(value.kind)) throw new OpenWikiError("INVALID_STATE", "Graph node bucket is invalid.");
   const node: GraphNodeV1 = { id: value.id, kind: value.kind, path: value.path, name: value.name };
   if (value.symbolKind !== undefined) {
     if (typeof value.symbolKind !== "string") throw new OpenWikiError("INVALID_STATE", "Graph node bucket is invalid.");
@@ -456,11 +475,15 @@ function parseNode(value: unknown): GraphNodeV1 {
     if (!positiveInteger(value.endLine)) throw new OpenWikiError("INVALID_STATE", "Graph node bucket is invalid.");
     node.endLine = value.endLine;
   }
+  if (value.summary !== undefined) {
+    if (typeof value.summary !== "string") throw new OpenWikiError("INVALID_STATE", "Graph node bucket is invalid.");
+    node.summary = value.summary;
+  }
   return node;
 }
 
 function parseEdge(value: unknown): GraphEdgeV1 {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.from !== "string" || typeof value.to !== "string" || !isEdgeKind(value.kind) || !isConfidence(value.confidence)) throw new OpenWikiError("INVALID_STATE", "Graph edge bucket is invalid.");
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.from !== "string" || typeof value.to !== "string" || !isGraphEdgeKind(value.kind) || !isGraphConfidence(value.confidence)) throw new OpenWikiError("INVALID_STATE", "Graph edge bucket is invalid.");
   return { id: value.id, kind: value.kind, from: value.from, to: value.to, confidence: value.confidence };
 }
 
@@ -490,7 +513,7 @@ function parseHub(value: unknown): { id: string; degree: number } {
 }
 
 function parseFlow(value: unknown): { from: string; to: string; kind: GraphEdgeV1["kind"] } {
-  if (!isRecord(value) || typeof value.from !== "string" || typeof value.to !== "string" || !isEdgeKind(value.kind)) throw new OpenWikiError("INVALID_STATE", "Graph architecture index is invalid.");
+  if (!isRecord(value) || typeof value.from !== "string" || typeof value.to !== "string" || !isGraphEdgeKind(value.kind)) throw new OpenWikiError("INVALID_STATE", "Graph architecture index is invalid.");
   return { from: value.from, to: value.to, kind: value.kind };
 }
 
@@ -544,10 +567,6 @@ function safeGeneration(value: unknown): value is string {
 function emptyRecord<T>(): Record<string, T> { return {}; }
 function positiveInteger(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 1; }
 function nonNegativeInteger(value: unknown): value is number { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0; }
-function isNodeKind(value: unknown): value is GraphNodeV1["kind"] { return value === "repository" || value === "directory" || value === "file" || value === "module" || value === "symbol"; }
-function isEdgeKind(value: unknown): value is GraphEdgeV1["kind"] { return value === "contains" || value === "declares" || value === "imports" || value === "exports" || value === "calls" || value === "inherits" || value === "implements" || value === "references"; }
-function isConfidence(value: unknown): value is GraphEdgeV1["confidence"] { return value === "exact" || value === "resolved" || value === "heuristic"; }
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
