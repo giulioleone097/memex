@@ -122,3 +122,13 @@ export declare function repositoryMetadataFingerprint(files: ReadonlyArray<{
 }>): string;
 export declare function changedRepositoryPaths(root: string, base?: string): Promise<string[]>;
 export declare function changedRepositoryEvidence(root: string, base?: string): Promise<GraphChangeEvidence>;
+/**
+ * Same persistence logic as {@link writeGraph}, without acquiring the graph writer lock.
+ * Use only from within a callback already running inside {@link withGraphWriteLock} for the
+ * same storage (for example `enrichGraph`'s read-check-write critical section) -- calling
+ * {@link writeGraph} there would re-acquire the same lock file and deadlock.
+ */
+export declare function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[], enrichmentShards: readonly EnrichmentShardV1[]): Promise<{
+    manifestPath: string;
+    reusedShardCount: number;
+}>;

@@ -232,7 +232,13 @@ export async function changedRepositoryEvidence(root: string, base?: string): Pr
   return { paths, ...(current.gitHead === undefined ? {} : { head: current.gitHead }), changeState: workingTree ? "working-tree" : paths.length > 0 ? "committed" : "clean" };
 }
 
-async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[], enrichmentShards: readonly EnrichmentShardV1[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
+/**
+ * Same persistence logic as {@link writeGraph}, without acquiring the graph writer lock.
+ * Use only from within a callback already running inside {@link withGraphWriteLock} for the
+ * same storage (for example `enrichGraph`'s read-check-write critical section) -- calling
+ * {@link writeGraph} there would re-acquire the same lock file and deadlock.
+ */
+export async function writeGraphUnlocked(storage: GraphStorage, graph: CodeGraphV1, shards: readonly GraphShard[], enrichmentShards: readonly EnrichmentShardV1[]): Promise<{ manifestPath: string; reusedShardCount: number }> {
   const previous = await readManifest(storage).catch(() => undefined);
   const reusable = new Map(previous?.shards.map((entry) => [`${entry.path}\0${entry.contentHash}`, entry]) ?? []);
   await mkdir(storage.shardRoot, { recursive: true, mode: 0o700 });
