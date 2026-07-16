@@ -7,7 +7,7 @@ import { afterEach, describe, test } from "node:test";
 import { promisify } from "node:util";
 
 import { OpenWikiError } from "../../dist/errors.js";
-import { buildGraph, getGraphPath, listGraphCommunities, renderGraphReport } from "../../dist/graph.js";
+import { buildGraph, explainGraphNode, getGraphPath, listGraphCommunities, renderGraphReport } from "../../dist/graph.js";
 import { readPage } from "../../dist/wiki.js";
 import { initializeWiki } from "../../dist/wiki.js";
 import { resolveWikiLocation } from "../../dist/paths.js";
@@ -216,5 +216,36 @@ describe("graph analytics: path action", () => {
     await initializeWiki({ mode: "code", root, homeDir });
     await buildGraph({ root, homeDir, force: true });
     await assert.rejects(getGraphPath({ root, homeDir, from: "hub", to: "doesNotExist" }), (error) => error instanceof OpenWikiError && error.code === "NOT_FOUND");
+  });
+});
+
+describe("graph analytics: explain action", () => {
+  test("graph: explain returns the node, its neighborhood, and its community after a report has run", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+    await renderGraphReport({ root, homeDir });
+
+    const explanation = await explainGraphNode({ root, homeDir, target: "hub" });
+    assert.equal(explanation.schemaVersion, 1);
+    assert.equal(explanation.action, "explain");
+    assert.equal(explanation.node.name, "hub");
+    assert.ok(explanation.neighborhood.nodes.some((candidate) => candidate.name === "leaf"));
+    assert.equal(explanation.communityStale, false);
+    assert.ok(explanation.community !== undefined);
+    assert.ok(Number.isInteger(explanation.community.memberCount) && explanation.community.memberCount >= 1);
+    assert.deepEqual(explanation.citingPages, []);
+  });
+
+  test("graph: explain reports communityStale before any report has run and omits community", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+
+    const explanation = await explainGraphNode({ root, homeDir, target: "hub" });
+    assert.equal(explanation.community, undefined);
+    assert.equal(explanation.communityStale, true);
   });
 });

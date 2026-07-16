@@ -3,7 +3,7 @@ import { GRAPH_CONTRACTS_SCHEMA_VERSION, GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, 
 import { entityLimit, matchTargets, responseLimit } from "./graph-query.js";
 import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readEnrichmentShard, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
 import { scanSourceFile } from "./graph-scan.js";
-import { computeCommunities, computeCoverageStats, computeGodNodes, computeShortestPath, computeSuggestedQuestions, computeSurprisingConnections, summarizeCommunities, synthesizeMemberOfEdges, } from "./analyze.js";
+import { computeCommunities, computeCoverageStats, computeGodNodes, computeShortestPath, computeSuggestedQuestions, computeSurprisingConnections, findCitingPages, summarizeCommunities, synthesizeMemberOfEdges, } from "./analyze.js";
 import { probeAnalysisStorage, readCommunitiesSnapshot, resolveAnalysisStorage, writeCommunitiesSnapshot } from "./analysis-store.js";
 import { renderGraphReportMarkdown } from "./report.js";
 import { resolveWikiLocation } from "./paths.js";
@@ -381,5 +381,41 @@ export async function getGraphPath(options) {
         edges,
         totalWeight: found.totalWeight,
         truncated,
+    };
+}
+export async function explainGraphNode(options) {
+    const context = await getGraphContext(options);
+    const needle = options.target.toLocaleLowerCase();
+    const node = context.nodes.find((candidate) => candidate.id === options.target || candidate.path === options.target || candidate.name.toLocaleLowerCase() === needle) ??
+        context.nodes[0];
+    if (node === undefined) {
+        throw new OpenWikiError("NOT_FOUND", "Graph target was not found.");
+    }
+    const citingPages = findCitingPages(context.nodes, context.edges, node.id);
+    const analysis = await probeAnalysisStorage(options.root, options.homeDir);
+    let community;
+    let communityStale = true;
+    if (analysis.initialized) {
+        const snapshot = await readCommunitiesSnapshot(analysis.storage);
+        const graphResolved = await resolveGraphStorage(options.root, options.homeDir);
+        const manifest = await readManifest(graphResolved.storage).catch(() => undefined);
+        communityStale = manifest === undefined || manifest.generation !== snapshot.generation;
+        const communityId = snapshot.membership[node.id];
+        const summary = communityId === undefined ? undefined : snapshot.communities.find((entry) => entry.id === communityId);
+        if (summary !== undefined) {
+            community = { id: summary.id, memberCount: summary.memberCount, topTerms: summary.topTerms };
+        }
+    }
+    return {
+        schemaVersion: 1,
+        action: "explain",
+        root: context.root,
+        target: options.target,
+        node,
+        neighborhood: { nodes: context.nodes, edges: context.edges, truncated: context.truncated },
+        ...(community === undefined ? {} : { community }),
+        communityStale,
+        citingPages,
+        diagnostics: context.diagnostics,
     };
 }

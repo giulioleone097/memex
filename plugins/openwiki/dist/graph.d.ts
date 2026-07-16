@@ -172,3 +172,24 @@ export interface GraphPathEnvelope {
     truncated: boolean;
 }
 export declare function getGraphPath(options: GraphPathOptions): Promise<GraphPathEnvelope>;
+export interface GraphExplainEnvelope {
+    schemaVersion: 1;
+    action: "explain";
+    root: string;
+    target: string;
+    node: GraphNodeV1;
+    neighborhood: {
+        nodes: GraphNodeV1[];
+        edges: GraphEdgeV1[];
+        truncated: boolean;
+    };
+    community?: {
+        id: string;
+        memberCount: number;
+        topTerms: string[];
+    };
+    communityStale: boolean;
+    citingPages: GraphNodeV1[];
+    diagnostics: GraphDiagnosticV1[];
+}
+export declare function explainGraphNode(options: TargetGraphOptions): Promise<GraphExplainEnvelope>;

@@ -26,6 +26,7 @@ import {
   computeShortestPath,
   computeSuggestedQuestions,
   computeSurprisingConnections,
+  findCitingPages,
   summarizeCommunities,
   synthesizeMemberOfEdges,
 } from "./analyze.js";
@@ -317,5 +318,59 @@ export async function getGraphPath(options: GraphPathOptions): Promise<GraphPath
     edges,
     totalWeight: found.totalWeight,
     truncated,
+  };
+}
+
+export interface GraphExplainEnvelope {
+  schemaVersion: 1;
+  action: "explain";
+  root: string;
+  target: string;
+  node: GraphNodeV1;
+  neighborhood: { nodes: GraphNodeV1[]; edges: GraphEdgeV1[]; truncated: boolean };
+  community?: { id: string; memberCount: number; topTerms: string[] };
+  communityStale: boolean;
+  citingPages: GraphNodeV1[];
+  diagnostics: GraphDiagnosticV1[];
+}
+
+export async function explainGraphNode(options: TargetGraphOptions): Promise<GraphExplainEnvelope> {
+  const context = await getGraphContext(options);
+  const needle = options.target.toLocaleLowerCase();
+  const node =
+    context.nodes.find((candidate) => candidate.id === options.target || candidate.path === options.target || candidate.name.toLocaleLowerCase() === needle) ??
+    context.nodes[0];
+  if (node === undefined) {
+    throw new OpenWikiError("NOT_FOUND", "Graph target was not found.");
+  }
+
+  const citingPages = findCitingPages(context.nodes, context.edges, node.id);
+
+  const analysis = await probeAnalysisStorage(options.root, options.homeDir);
+  let community: GraphExplainEnvelope["community"];
+  let communityStale = true;
+  if (analysis.initialized) {
+    const snapshot = await readCommunitiesSnapshot(analysis.storage);
+    const graphResolved = await resolveGraphStorage(options.root, options.homeDir);
+    const manifest = await readManifest(graphResolved.storage).catch(() => undefined);
+    communityStale = manifest === undefined || manifest.generation !== snapshot.generation;
+    const communityId = snapshot.membership[node.id];
+    const summary = communityId === undefined ? undefined : snapshot.communities.find((entry) => entry.id === communityId);
+    if (summary !== undefined) {
+      community = { id: summary.id, memberCount: summary.memberCount, topTerms: summary.topTerms };
+    }
+  }
+
+  return {
+    schemaVersion: 1,
+    action: "explain",
+    root: context.root,
+    target: options.target,
+    node,
+    neighborhood: { nodes: context.nodes, edges: context.edges, truncated: context.truncated },
+    ...(community === undefined ? {} : { community }),
+    communityStale,
+    citingPages,
+    diagnostics: context.diagnostics,
   };
 }
