@@ -1,0 +1,40 @@
+Applies to:
+  - vendor/ort/ort.node.min.mjs
+  - vendor/ort/ort-wasm-simd-threaded.mjs
+  - vendor/ort/ort-wasm-simd-threaded.wasm
+  - vendor/ort/node_modules/onnxruntime-common/** (vendored runtime shim)
+
+Upstream: https://github.com/microsoft/onnxruntime (npm packages
+onnxruntime-web@1.27.0 and onnxruntime-common@1.27.0)
+License identifier: MIT (verified via `npm view onnxruntime-web license`,
+`npm view onnxruntime-common license`, and the canonical LICENSE file at
+https://github.com/microsoft/onnxruntime/blob/main/LICENSE)
+
+NOTE: the orchestrator's task instructions assumed Apache-2.0 for
+onnxruntime. That is incorrect for this artifact - onnxruntime (and its
+onnxruntime-web / onnxruntime-common npm packages) is MIT-licensed. The MIT
+text below is reproduced verbatim from the upstream repository.
+
+----------------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
