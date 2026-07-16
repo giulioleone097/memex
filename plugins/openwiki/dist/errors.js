@@ -11,6 +11,10 @@ export const OPENWIKI_ERROR_CODES = [
     "MISSING_HOST_CAPABILITY",
     "GIT_FAILURE",
     "IO_FAILURE",
+    "MODEL_ASSET_MISSING",
+    "MODEL_ASSET_CORRUPT",
+    "EMBEDDING_FAILURE",
+    "INDEX_INCOMPATIBLE",
 ];
 export class OpenWikiError extends Error {
     code;
