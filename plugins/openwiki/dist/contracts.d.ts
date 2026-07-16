@@ -1,3 +1,4 @@
+import { type AgentConfidence } from "./graph-contracts.js";
 export declare const WIKI_MODES: readonly ["code", "personal"];
 export type WikiMode = (typeof WIKI_MODES)[number];
 export declare const SOURCE_KINDS: readonly ["git-repo", "gmail", "hackernews", "notion", "slack", "web-search", "x"];
@@ -49,5 +50,29 @@ export interface SourceEnvelopeV1 {
         metadata?: Record<string, SourceMetadataValue>;
     }>;
 }
+export declare const ENRICH_SCHEMA_TAG = "memex.enrich.v1";
+export declare const MAX_ENRICH_ENVELOPE_BYTES: number;
+export declare const MAX_ENRICH_NODES = 200;
+export declare const MAX_ENRICH_EDGES = 800;
+export type EnrichNodeKind = "concept" | "page";
+export type EnrichEdgeKind = "mentions" | "describes" | "grounds" | "related";
+export interface EnrichEnvelopeV1 {
+    schema: typeof ENRICH_SCHEMA_TAG;
+    sourcePath: string;
+    sourceContentHash: string;
+    nodes: ReadonlyArray<{
+        kind: EnrichNodeKind;
+        name: string;
+        path: string;
+        summary?: string;
+    }>;
+    edges: ReadonlyArray<{
+        kind: EnrichEdgeKind;
+        from: string;
+        to: string;
+        confidence: AgentConfidence;
+    }>;
+}
 export declare function parseWikiState(input: unknown): WikiStateV1;
 export declare function parseSourceEnvelope(input: unknown): SourceEnvelopeV1;
+export declare function parseEnrichEnvelope(input: unknown): EnrichEnvelopeV1;

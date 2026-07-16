@@ -1,4 +1,5 @@
 import { OpenWikiError, type OpenWikiErrorCode } from "./errors.js";
+import { type AgentConfidence } from "./graph-contracts.js";
 
 export const WIKI_MODES = ["code", "personal"] as const;
 export type WikiMode = (typeof WIKI_MODES)[number];
@@ -110,6 +111,30 @@ const SOURCE_ITEM_KEYS = new Set([
   "metadata",
 ]);
 
+export const ENRICH_SCHEMA_TAG = "memex.enrich.v1";
+export const MAX_ENRICH_ENVELOPE_BYTES = 256 * 1024;
+export const MAX_ENRICH_NODES = 200;
+export const MAX_ENRICH_EDGES = 800;
+
+export type EnrichNodeKind = "concept" | "page";
+export type EnrichEdgeKind = "mentions" | "describes" | "grounds" | "related";
+
+export interface EnrichEnvelopeV1 {
+  schema: typeof ENRICH_SCHEMA_TAG;
+  sourcePath: string;
+  sourceContentHash: string;
+  nodes: ReadonlyArray<{ kind: EnrichNodeKind; name: string; path: string; summary?: string }>;
+  edges: ReadonlyArray<{ kind: EnrichEdgeKind; from: string; to: string; confidence: AgentConfidence }>;
+}
+
+const ENRICH_ENVELOPE_KEYS = new Set(["schema", "sourcePath", "sourceContentHash", "nodes", "edges"]);
+const ENRICH_NODE_KEYS = new Set(["kind", "name", "path", "summary"]);
+const ENRICH_EDGE_KEYS = new Set(["kind", "from", "to", "confidence"]);
+const ENRICH_NODE_KIND_SET = new Set<string>(["concept", "page"]);
+const ENRICH_EDGE_KIND_SET = new Set<string>(["mentions", "describes", "grounds", "related"]);
+const AGENT_CONFIDENCE_SET = new Set<string>(["extracted", "inferred", "ambiguous"]);
+const HEX_SHA256_PATTERN = /^[a-f0-9]{64}$/u;
+
 export function parseWikiState(input: unknown): WikiStateV1 {
   const state = requireRecord(input, "INVALID_STATE", "Wiki state must be an object.");
   requireKnownKeys(state, WIKI_STATE_KEYS, "INVALID_STATE", "Wiki state");
@@ -188,7 +213,7 @@ export function parseWikiState(input: unknown): WikiStateV1 {
 }
 
 export function parseSourceEnvelope(input: unknown): SourceEnvelopeV1 {
-  enforceEnvelopeByteLimit(input);
+  enforceEnvelopeByteLimit(input, MAX_ENVELOPE_BYTES, "Source envelope");
 
   const envelope = requireRecord(
     input,
@@ -369,27 +394,96 @@ function parseOptionalMetadata(
   return Object.fromEntries(entries);
 }
 
-function enforceEnvelopeByteLimit(input: unknown): void {
+export function parseEnrichEnvelope(input: unknown): EnrichEnvelopeV1 {
+  enforceEnvelopeByteLimit(input, MAX_ENRICH_ENVELOPE_BYTES, "Enrich envelope");
+  const envelope = requireRecord(input, "INVALID_ARGUMENT", "Enrich envelope must be an object.");
+  requireKnownKeys(envelope, ENRICH_ENVELOPE_KEYS, "INVALID_ARGUMENT", "Enrich envelope");
+
+  if (envelope.schema !== ENRICH_SCHEMA_TAG) {
+    throw new OpenWikiError("INVALID_ARGUMENT", `Unsupported enrich envelope schema. Expected ${ENRICH_SCHEMA_TAG}.`);
+  }
+
+  const sourcePath = requireRelativePath(envelope.sourcePath, "Enrich envelope sourcePath");
+  const sourceContentHash = requireHash(envelope.sourceContentHash, "Enrich envelope sourceContentHash");
+
+  if (!Array.isArray(envelope.nodes)) {
+    throw new OpenWikiError("INVALID_ARGUMENT", "Enrich envelope nodes must be an array.");
+  }
+  if (envelope.nodes.length > MAX_ENRICH_NODES) {
+    throw new OpenWikiError("SOURCE_TOO_LARGE", `Enrich envelope exceeds the ${String(MAX_ENRICH_NODES)} node limit.`);
+  }
+  const nodes = envelope.nodes.map((node, index) => parseEnrichNode(node, index));
+
+  if (!Array.isArray(envelope.edges)) {
+    throw new OpenWikiError("INVALID_ARGUMENT", "Enrich envelope edges must be an array.");
+  }
+  if (envelope.edges.length > MAX_ENRICH_EDGES) {
+    throw new OpenWikiError("SOURCE_TOO_LARGE", `Enrich envelope exceeds the ${String(MAX_ENRICH_EDGES)} edge limit.`);
+  }
+  const edges = envelope.edges.map((edge, index) => parseEnrichEdge(edge, index));
+
+  return { schema: ENRICH_SCHEMA_TAG, sourcePath, sourceContentHash, nodes, edges };
+}
+
+function parseEnrichNode(input: unknown, index: number): EnrichEnvelopeV1["nodes"][number] {
+  const label = `Enrich envelope node ${String(index)}`;
+  const node = requireRecord(input, "INVALID_ARGUMENT", `${label} must be an object.`);
+  requireKnownKeys(node, ENRICH_NODE_KEYS, "INVALID_ARGUMENT", label);
+  if (typeof node.kind !== "string" || !ENRICH_NODE_KIND_SET.has(node.kind)) {
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} kind must be concept or page.`);
+  }
+  const name = requireNonEmptyString(node.name, "INVALID_ARGUMENT", `${label} name`);
+  const path = requireRelativePath(node.path, `${label} path`);
+  const summary = readOptionalBoundedString(node, "summary", `${label} summary`);
+  return { kind: node.kind as EnrichNodeKind, name, path, ...(summary === undefined ? {} : { summary }) };
+}
+
+function parseEnrichEdge(input: unknown, index: number): EnrichEnvelopeV1["edges"][number] {
+  const label = `Enrich envelope edge ${String(index)}`;
+  const edge = requireRecord(input, "INVALID_ARGUMENT", `${label} must be an object.`);
+  requireKnownKeys(edge, ENRICH_EDGE_KEYS, "INVALID_ARGUMENT", label);
+  if (typeof edge.kind !== "string" || !ENRICH_EDGE_KIND_SET.has(edge.kind)) {
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} kind must be mentions, describes, grounds, or related.`);
+  }
+  const from = requireNonEmptyString(edge.from, "INVALID_ARGUMENT", `${label} from`);
+  const to = requireNonEmptyString(edge.to, "INVALID_ARGUMENT", `${label} to`);
+  if (typeof edge.confidence !== "string" || !AGENT_CONFIDENCE_SET.has(edge.confidence)) {
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} confidence must be extracted, inferred, or ambiguous.`);
+  }
+  return { kind: edge.kind as EnrichEdgeKind, from, to, confidence: edge.confidence as AgentConfidence };
+}
+
+function requireRelativePath(value: unknown, label: string): string {
+  const text = requireNonEmptyString(value, "INVALID_ARGUMENT", label);
+  if (text.startsWith("/") || text.includes("\\") || text.split("/").some((part) => part === "" || part === "." || part === "..")) {
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} must be a repository-relative path.`);
+  }
+  return text;
+}
+
+function requireHash(value: unknown, label: string): string {
+  const text = requireNonEmptyString(value, "INVALID_ARGUMENT", label);
+  if (!HEX_SHA256_PATTERN.test(text)) {
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} must be a SHA-256 hash.`);
+  }
+  return text.toLowerCase();
+}
+
+function enforceEnvelopeByteLimit(input: unknown, maxBytes: number, label: string): void {
   let serializedValue: unknown;
   try {
     serializedValue = JSON.stringify(input);
   } catch {
-    throw new OpenWikiError(
-      "INVALID_ARGUMENT",
-      "Source envelope must be JSON serializable.",
-    );
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} must be JSON serializable.`);
   }
 
   if (typeof serializedValue !== "string") {
-    throw new OpenWikiError(
-      "INVALID_ARGUMENT",
-      "Source envelope must be JSON serializable.",
-    );
+    throw new OpenWikiError("INVALID_ARGUMENT", `${label} must be JSON serializable.`);
   }
-  if (utf8ByteLength(serializedValue) > MAX_ENVELOPE_BYTES) {
+  if (utf8ByteLength(serializedValue) > maxBytes) {
     throw new OpenWikiError(
       "SOURCE_TOO_LARGE",
-      `Source envelope exceeds the ${String(MAX_ENVELOPE_BYTES)} byte limit.`,
+      `${label} exceeds the ${String(maxBytes)} byte limit.`,
     );
   }
 }
