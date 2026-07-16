@@ -125,3 +125,21 @@ export declare function getArchitectureMap(options: GraphOperationBase): Promise
     diagnostics: GraphDiagnosticV1[];
 }>;
 export declare function assembleGraph(workspaceId: string, generatedAt: string, source: CodeGraphV1["source"], shards: readonly GraphShard[]): CodeGraphV1;
+export interface GraphReportOptions extends GraphOperationBase {
+    now?: string;
+}
+export interface GraphReportEnvelope {
+    schemaVersion: 1;
+    action: "report";
+    root: string;
+    page: "graph-report.md";
+    written: true;
+    communityCount: number;
+    godNodeCount: number;
+    surprisingConnectionCount: number;
+    ambiguousEdgeCount: number;
+    coverageRatio: number;
+    generation: string;
+    generatedAt: string;
+}
+export declare function renderGraphReport(options: GraphReportOptions): Promise<GraphReportEnvelope>;

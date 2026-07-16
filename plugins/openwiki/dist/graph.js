@@ -3,8 +3,16 @@ import { GRAPH_CONTRACTS_SCHEMA_VERSION, GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, 
 import { entityLimit, responseLimit } from "./graph-query.js";
 import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readEnrichmentShard, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
 import { scanSourceFile } from "./graph-scan.js";
+import { computeCommunities, computeCoverageStats, computeGodNodes, computeSuggestedQuestions, computeSurprisingConnections, summarizeCommunities, synthesizeMemberOfEdges, } from "./analyze.js";
+import { resolveAnalysisStorage, writeCommunitiesSnapshot } from "./analysis-store.js";
+import { renderGraphReportMarkdown } from "./report.js";
+import { resolveWikiLocation } from "./paths.js";
+import { writePage } from "./wiki.js";
 import { OpenWikiError } from "./errors.js";
 import { reindexCodeSymbols } from "./reindex.js";
+const GOD_NODE_LIMIT = 20;
+const SURPRISING_CONNECTION_LIMIT = 20;
+const AMBIGUOUS_EDGE_LIMIT = 50;
 const LAZY_TRAVERSAL_MAX_VISITED = 10_000;
 const LAZY_TRAVERSAL_DEADLINE_MS = 2_000;
 export async function buildGraph(options) {
@@ -249,3 +257,69 @@ function resolveImport(from, specifier, files) { const base = specifier.startsWi
 function changedBuildPaths(previous, graph) { if (previous === undefined)
     return graph.files.map((file) => file.path).sort((left, right) => left.localeCompare(right)); const previousFiles = new Map(previous.files.map((file) => [file.path, file.contentHash])); const currentFiles = new Map(graph.files.map((file) => [file.path, file.contentHash])); return [...new Set([...previousFiles.keys(), ...currentFiles.keys()].filter((filePath) => previousFiles.get(filePath) !== currentFiles.get(filePath)))].sort((left, right) => left.localeCompare(right)); }
 function boundedPaths(paths, limit) { const max = entityLimit(limit); return { values: [...paths].sort((left, right) => left.localeCompare(right)).slice(0, max), truncated: paths.length > max }; }
+export async function renderGraphReport(options) {
+    const resolved = await resolveGraphStorage(options.root, options.homeDir);
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- report recomputes structural analytics over the full unified graph, not a bounded query path.
+    const baseGraph = await readStoredGraph(resolved.storage);
+    const manifest = await readManifest(resolved.storage);
+    const shards = await Promise.all(manifest.shards.map((entry) => readGraphShard(resolved.storage, entry.shard)));
+    const communities = computeCommunities(baseGraph);
+    const memberOfEdges = synthesizeMemberOfEdges(baseGraph, communities);
+    const existingEdgeIds = new Set(baseGraph.edges.map((edge) => edge.id));
+    const mergedEdges = [...baseGraph.edges, ...memberOfEdges.filter((edge) => !existingEdgeIds.has(edge.id))];
+    const graphWithCommunities = canonicalizeGraph({ ...baseGraph, edges: mergedEdges });
+    await writeGraph(resolved.storage, graphWithCommunities, shards);
+    const updatedManifest = await readManifest(resolved.storage);
+    const nodesById = new Map(graphWithCommunities.nodes.map((node) => [node.id, node]));
+    const godNodes = computeGodNodes(graphWithCommunities, GOD_NODE_LIMIT);
+    const godNodeEntries = godNodes
+        .map((entry) => ({ node: nodesById.get(entry.nodeId), degree: entry.degree }))
+        .filter((entry) => entry.node !== undefined);
+    const communitySummaries = summarizeCommunities(graphWithCommunities, communities);
+    const membership = Object.fromEntries(communities);
+    const generatedAt = options.now ?? new Date().toISOString();
+    const analysisResolved = await resolveAnalysisStorage(options.root, options.homeDir);
+    await writeCommunitiesSnapshot(analysisResolved.storage, {
+        schemaVersion: 1,
+        generation: updatedManifest.generation,
+        generatedAt,
+        communities: communitySummaries,
+        membership,
+    });
+    const surprisingConnections = computeSurprisingConnections(graphWithCommunities, SURPRISING_CONNECTION_LIMIT)
+        .map((connection) => ({ from: nodesById.get(connection.from), to: nodesById.get(connection.to), kind: connection.kind, confidence: connection.confidence, priority: connection.priority }))
+        .filter((entry) => entry.from !== undefined && entry.to !== undefined);
+    const coverage = computeCoverageStats(graphWithCommunities);
+    const suggestedQuestions = computeSuggestedQuestions(godNodes, communitySummaries, graphWithCommunities);
+    const ambiguousEdges = graphWithCommunities.edges
+        .filter((edge) => edge.confidence === "ambiguous")
+        .slice(0, AMBIGUOUS_EDGE_LIMIT)
+        .map((edge) => ({ edge, from: nodesById.get(edge.from), to: nodesById.get(edge.to) }));
+    const markdown = renderGraphReportMarkdown({
+        root: resolved.repositoryRoot,
+        generation: updatedManifest.generation,
+        generatedAt,
+        godNodes: godNodeEntries,
+        communities: communitySummaries,
+        surprisingConnections,
+        suggestedQuestions,
+        coverage,
+        ambiguousEdges,
+    });
+    const location = await resolveWikiLocation({ mode: "code", root: options.root, ...(options.homeDir === undefined ? {} : { homeDir: options.homeDir }) });
+    await writePage(location, "graph-report.md", markdown);
+    return {
+        schemaVersion: 1,
+        action: "report",
+        root: resolved.repositoryRoot,
+        page: "graph-report.md",
+        written: true,
+        communityCount: communitySummaries.length,
+        godNodeCount: godNodeEntries.length,
+        surprisingConnectionCount: surprisingConnections.length,
+        ambiguousEdgeCount: ambiguousEdges.length,
+        coverageRatio: coverage.coverageRatio,
+        generation: updatedManifest.generation,
+        generatedAt,
+    };
+}
