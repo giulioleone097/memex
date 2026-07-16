@@ -14,6 +14,7 @@ import {
   openGraphIndex,
   readEnrichmentShard,
   readGraphShard,
+  readManifest,
   probeGraphStorage,
   resolveGraphStorage,
   withGraphWriteLock,
@@ -232,5 +233,37 @@ describe("graph store v2", () => {
     const allEdges = await index.allEdges();
     assert.equal(allNodes.some((node) => node.kind === "concept"), true);
     assert.equal(allEdges.some((edge) => edge.kind === "describes" && edge.confidence === "extracted"), true);
+  });
+
+  test("treats a manifest written before enrichment shards existed as having zero enrichment shards", async () => {
+    const root = await temporaryRoot("legacy-manifest");
+    const home = await temporaryRoot("home");
+    const resolved = await resolveGraphStorage(root, home);
+    await writeGraph(resolved.storage, graph("1"), []);
+
+    const legacy = JSON.parse(await readFile(resolved.storage.manifestPath, "utf8"));
+    assert.equal(Array.isArray(legacy.enrichmentShards), true);
+    delete legacy.enrichmentShards;
+    await writeFile(resolved.storage.manifestPath, `${JSON.stringify(legacy)}\n`, "utf8");
+
+    const manifest = await readManifest(resolved.storage);
+    assert.deepEqual(manifest.enrichmentShards, []);
+
+    // A legacy manifest still opens cleanly and serves its (code-only) nodes without crashing.
+    const index = await openGraphIndex(resolved.storage);
+    const allNodes = await index.allNodes();
+    assert.equal(allNodes.length, graph("1").nodes.length);
+
+    // And a subsequent write correctly starts persisting enrichment shards from a clean slate.
+    const shard = {
+      sourcePath: "architecture.md",
+      sourceContentHash: "a".repeat(64),
+      nodes: [{ id: createGraphNodeId("page", "architecture.md", "architecture.md"), kind: "page", path: "architecture.md", name: "architecture.md" }],
+      edges: [],
+      enrichedAt: "2026-07-14T00:00:00.000Z",
+    };
+    await writeGraph(resolved.storage, graph("1"), [], [shard]);
+    const manifestAfter = await readManifest(resolved.storage);
+    assert.equal(manifestAfter.enrichmentShards.length, 1);
   });
 });

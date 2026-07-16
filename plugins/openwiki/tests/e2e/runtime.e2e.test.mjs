@@ -954,6 +954,77 @@ export function catalogDependencyMap() {
     assertSemanticText(updatedQueryData, [/catalogDependencyMap/u, /src\/catalog\.mjs/u]);
     await assertGitNexusWasNotInvoked(harness);
   });
+
+  test("enrich grounds a wiki page in the graph with a real code-symbol mention, verified by check", async (t) => {
+    const harness = await createRepositoryHarness(t, { gitNexusTripwire: true });
+    await initializeWiki(harness);
+    const graphTarget = ["--mode", "code", "--root", harness.repositoryRoot];
+    await runCliSuccess(harness, ["graph", ...graphTarget, "--action", "build", "--force"]);
+
+    const symbolQuery = await runCliSuccess(harness, [
+      "graph",
+      ...graphTarget,
+      "--action",
+      "query",
+      "--query",
+      "listActiveProducts",
+      "--limit",
+      "5",
+    ]);
+    const symbolData = assertGraphResult(symbolQuery, "query", harness.repositoryRoot, 5);
+    const symbolNode = symbolData.nodes.find((node) => node.name === "listActiveProducts");
+    assert.ok(symbolNode, "expected the sample repository scanner to expose listActiveProducts");
+
+    const pagePath = join(harness.repositoryRoot, "openwiki", "architecture.md");
+    const pageContent = await readFile(pagePath, "utf8");
+    const pageHash = createHash("sha256").update(pageContent).digest("hex");
+    const enrichEnvelope = {
+      schema: "memex.enrich.v1",
+      sourcePath: "openwiki/architecture.md",
+      sourceContentHash: pageHash,
+      nodes: [{ kind: "page", name: "openwiki/architecture.md", path: "openwiki/architecture.md" }],
+      edges: [{ kind: "mentions", from: "page:openwiki/architecture.md:openwiki/architecture.md", to: symbolNode.id, confidence: "inferred" }],
+    };
+
+    const enrichResult = await runCliSuccess(
+      harness,
+      ["enrich", "--root", harness.repositoryRoot, "--stdin"],
+      { input: JSON.stringify(enrichEnvelope) },
+    );
+    assert.equal(enrichResult.json.data.applied, true);
+    assert.equal(enrichResult.json.data.nodesWritten, 2);
+
+    const secondEnrich = await runCliSuccess(
+      harness,
+      ["enrich", "--root", harness.repositoryRoot, "--stdin"],
+      { input: JSON.stringify(enrichEnvelope) },
+    );
+    assert.equal(secondEnrich.json.data.applied, false);
+
+    // graph query/context/impact resolve --target by fuzzy name/path search (rankedCandidates),
+    // never by raw hex node id -- so the lookup below targets the symbol's name, matching this
+    // file's other context/impact assertions, not the enrich edge's own hex-id reference form.
+    const context = await runCliSuccess(harness, [
+      "graph",
+      ...graphTarget,
+      "--action",
+      "context",
+      "--target",
+      "listActiveProducts",
+      "--limit",
+      "10",
+    ]);
+    const contextData = assertGraphResult(context, "context", harness.repositoryRoot, 10);
+    assert.equal(contextData.edges.some((edge) => edge.kind === "mentions" && edge.to === symbolNode.id), true);
+
+    const check = await runCliSuccess(harness, ["check", "--mode", "code", "--root", harness.repositoryRoot]);
+    assert.equal(
+      check.json.data.issues.some((issue) => issue.code === "MISSING_PAGE_NODE" && issue.page === "architecture.md"),
+      false,
+    );
+
+    await assertGitNexusWasNotInvoked(harness);
+  });
 });
 
 describe("OpenWiki process-boundary security regressions", () => {
