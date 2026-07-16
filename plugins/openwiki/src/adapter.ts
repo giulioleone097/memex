@@ -6,6 +6,8 @@ import { type WikiMode, type WikiCommand } from "./contracts.js";
 import { runDoctor } from "./doctor.js";
 import { OpenWikiError, type OpenWikiJsonFailure, type OpenWikiJsonResult } from "./errors.js";
 import { collectGitContext } from "./git.js";
+import { openGraphIndex, probeGraphStorage, resolveGraphStorage } from "./graph-store.js";
+import type { GraphIndexPort } from "./graph-index.js";
 import { resolveWikiLocation } from "./paths.js";
 import { listSchedules, removeSchedule, setSchedule } from "./schedules.js";
 import { ingestSource, listSources, purgeData } from "./sources.js";
@@ -138,7 +140,8 @@ async function dispatchUnsafe(request: DispatchRequest): Promise<unknown> {
     }
     case "check": {
       const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
-      return checkWiki(location);
+      const graphIndex = location.mode === "code" ? await tryOpenGraphIndexForCheck(location.workspaceRoot as string, hostHomeDir()) : undefined;
+      return checkWiki(location, { ...(graphIndex === undefined ? {} : { graph: graphIndex }) });
     }
     case "doctor": {
       const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
@@ -229,6 +232,13 @@ async function dispatchGraph(input: InputRecord): Promise<unknown> {
   }
   assertAbsent(input, ["force", "query", "target", "base", "direction", "depth"]);
   return publicGraphResult("map", root, await graph.getArchitectureMap({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
+}
+
+async function tryOpenGraphIndexForCheck(workspaceRoot: string, homeDir: string): Promise<GraphIndexPort | undefined> {
+  const probe = await probeGraphStorage(workspaceRoot, homeDir);
+  if (!probe.initialized) return undefined;
+  const resolved = await resolveGraphStorage(workspaceRoot, homeDir);
+  return openGraphIndex(resolved.storage);
 }
 
 function publicGraphResult(action: GraphAction, requestedRoot: string, value: unknown, limit: number | undefined): InputRecord {

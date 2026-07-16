@@ -166,7 +166,7 @@ export async function finalizeRun(options) {
         return { changed: true, state: next };
     });
 }
-export async function checkWiki(location) {
+export async function checkWiki(location, options = {}) {
     const issues = [];
     let state = null;
     try {
@@ -228,6 +228,46 @@ export async function checkWiki(location) {
                     code: "BROKEN_LINK",
                     message: "Wiki page contains a broken local link.",
                     page,
+                });
+            }
+        }
+    }
+    if (options.graph !== undefined) {
+        const graph = options.graph;
+        const [allNodes, allEdges] = await Promise.all([graph.allNodes(), graph.allEdges()]);
+        const nodeIds = new Set(allNodes.map((node) => node.id));
+        // Graph node paths are repository-relative (e.g. "openwiki/quickstart.md"), while `pages`
+        // (from listMarkdownPages) is relative to the wiki root itself (e.g. "quickstart.md").
+        // Bridge the two conventions using the same workspaceRoot/wikiRoot relationship
+        // resolveWikiLocation already establishes, instead of hardcoding the "openwiki" directory name.
+        const wikiRootPrefix = location.workspaceRoot === undefined
+            ? undefined
+            : path.relative(location.workspaceRoot, location.wikiRoot).split(path.sep).join("/");
+        for (const page of pages) {
+            const graphPagePath = wikiRootPrefix === undefined || wikiRootPrefix === "" ? page : `${wikiRootPrefix}/${page}`;
+            const pageNode = allNodes.find((node) => node.kind === "page" && node.path === graphPagePath);
+            if (pageNode === undefined) {
+                issues.push({
+                    code: "MISSING_PAGE_NODE",
+                    message: "Wiki page has no corresponding page graph node.",
+                    page,
+                });
+                continue;
+            }
+            const hasEvidence = allEdges.some((edge) => (edge.from === pageNode.id || edge.to === pageNode.id) && (edge.kind === "describes" || edge.kind === "mentions"));
+            if (!hasEvidence) {
+                issues.push({
+                    code: "MISSING_PAGE_EDGE",
+                    message: "Wiki page node has no describes or mentions edge.",
+                    page,
+                });
+            }
+        }
+        for (const edge of allEdges) {
+            if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) {
+                issues.push({
+                    code: "DANGLING_NODE_REF",
+                    message: `Graph edge ${edge.id} references a node that does not exist.`,
                 });
             }
         }

@@ -13,6 +13,7 @@ import path from "node:path";
 import { atomicWriteFile, withWikiLock } from "./atomic.js";
 import type { WikiCommand, WikiStateV1 } from "./contracts.js";
 import { OpenWikiError } from "./errors.js";
+import type { GraphIndexPort } from "./graph-index.js";
 import {
   resolveConfinedMarkdownPath,
   resolveWikiLocation,
@@ -78,7 +79,7 @@ export interface FinalizeRunResult {
 }
 
 export interface WikiCheckIssue {
-  code: "BROKEN_LINK" | "INVALID_STATE" | "MISSING_PAGE" | "STALE_STATE" | "SYMLINK";
+  code: "BROKEN_LINK" | "DANGLING_NODE_REF" | "INVALID_STATE" | "MISSING_PAGE" | "MISSING_PAGE_EDGE" | "MISSING_PAGE_NODE" | "STALE_STATE" | "SYMLINK";
   message: string;
   page?: string;
 }
@@ -86,6 +87,10 @@ export interface WikiCheckIssue {
 export interface WikiCheckResult {
   ok: boolean;
   issues: WikiCheckIssue[];
+}
+
+export interface WikiCheckOptions {
+  graph?: GraphIndexPort;
 }
 
 export async function initializeWiki(
@@ -278,6 +283,7 @@ export async function finalizeRun(
 
 export async function checkWiki(
   location: WikiLocation,
+  options: WikiCheckOptions = {},
 ): Promise<WikiCheckResult> {
   const issues: WikiCheckIssue[] = [];
   let state: WikiStateV1 | null = null;
@@ -339,6 +345,49 @@ export async function checkWiki(
           code: "BROKEN_LINK",
           message: "Wiki page contains a broken local link.",
           page,
+        });
+      }
+    }
+  }
+
+  if (options.graph !== undefined) {
+    const graph = options.graph;
+    const [allNodes, allEdges] = await Promise.all([graph.allNodes(), graph.allEdges()]);
+    const nodeIds = new Set(allNodes.map((node) => node.id));
+    // Graph node paths are repository-relative (e.g. "openwiki/quickstart.md"), while `pages`
+    // (from listMarkdownPages) is relative to the wiki root itself (e.g. "quickstart.md").
+    // Bridge the two conventions using the same workspaceRoot/wikiRoot relationship
+    // resolveWikiLocation already establishes, instead of hardcoding the "openwiki" directory name.
+    const wikiRootPrefix = location.workspaceRoot === undefined
+      ? undefined
+      : path.relative(location.workspaceRoot, location.wikiRoot).split(path.sep).join("/");
+    for (const page of pages) {
+      const graphPagePath = wikiRootPrefix === undefined || wikiRootPrefix === "" ? page : `${wikiRootPrefix}/${page}`;
+      const pageNode = allNodes.find((node) => node.kind === "page" && node.path === graphPagePath);
+      if (pageNode === undefined) {
+        issues.push({
+          code: "MISSING_PAGE_NODE",
+          message: "Wiki page has no corresponding page graph node.",
+          page,
+        });
+        continue;
+      }
+      const hasEvidence = allEdges.some(
+        (edge) => (edge.from === pageNode.id || edge.to === pageNode.id) && (edge.kind === "describes" || edge.kind === "mentions"),
+      );
+      if (!hasEvidence) {
+        issues.push({
+          code: "MISSING_PAGE_EDGE",
+          message: "Wiki page node has no describes or mentions edge.",
+          page,
+        });
+      }
+    }
+    for (const edge of allEdges) {
+      if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) {
+        issues.push({
+          code: "DANGLING_NODE_REF",
+          message: `Graph edge ${edge.id} references a node that does not exist.`,
         });
       }
     }
