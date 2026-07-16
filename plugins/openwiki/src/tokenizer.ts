@@ -66,8 +66,25 @@ function parseTokenizerConfig(value: unknown): TokenizerConfig {
 
 function encodeWithConfig(config: TokenizerConfig, text: string): Int32Array {
   const normalized = preTokenize(text, config.addPrefixSpace);
-  const pieces = unigramSegment(normalized, config.vocab, config.scores, config.unkId);
   const budget = Math.max(0, config.maxLength - 2);
+  // Bound the Viterbi DP's input, not just its output: unigramSegment is
+  // O(characters * MAX_PIECE_LENGTH), and without this bound it processes
+  // the *entire* input before truncation ever applies — for a pathological
+  // input (e.g. one long unbroken run of non-whitespace characters, which
+  // chunk.ts's own token-count heuristic can undercount as a single
+  // "token"), that made encode() cost effectively unbounded by the model's
+  // max_length (empirically ~9s for a 2MB adversarial payload). This bound
+  // is exact, not an approximation: the DP is strictly forward (a prefix's
+  // segmentation never depends on characters beyond it) and every piece is
+  // at most MAX_PIECE_LENGTH characters, so budget*MAX_PIECE_LENGTH
+  // characters is always enough to yield at least `budget` output pieces
+  // (worst case: every piece is maximal length) — truncating the DP's input
+  // to that many characters produces byte-identical output to running it on
+  // the full text and then slicing to `budget`.
+  const bounded = normalized.length > budget * MAX_PIECE_LENGTH
+    ? Array.from(normalized).slice(0, budget * MAX_PIECE_LENGTH).join("")
+    : normalized;
+  const pieces = unigramSegment(bounded, config.vocab, config.scores, config.unkId);
   const truncated = pieces.slice(0, budget);
   return Int32Array.from([config.bosId, ...truncated, config.eosId]);
 }
