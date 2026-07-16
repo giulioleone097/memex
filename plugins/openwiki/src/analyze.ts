@@ -1,4 +1,4 @@
-import type { CodeGraphV1, GraphConfidence } from "./graph-contracts.js";
+import { createGraphEdgeId, type CodeGraphV1, type GraphConfidence, type GraphEdgeKind, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
 import { OpenWikiError } from "./errors.js";
 
 const MAX_LABEL_PROPAGATION_ITERATIONS = 20;
@@ -169,4 +169,192 @@ export function computeShortestPath(graph: CodeGraphV1, from: string, to: string
   pathNodeIds.reverse();
   pathEdgeIds.reverse();
   return { nodeIds: pathNodeIds, edgeIds: pathEdgeIds, totalWeight: distances.get(to) ?? 0 };
+}
+
+export type GraphPlane = "code" | "concept" | "wiki" | "source";
+
+export function planeOf(node: GraphNodeV1): GraphPlane {
+  switch (node.kind) {
+    case "concept":
+      return "concept";
+    case "page":
+      return "wiki";
+    case "source":
+      return "source";
+    default:
+      return "code";
+  }
+}
+
+export interface SurprisingConnection {
+  edgeId: string;
+  from: string;
+  to: string;
+  kind: GraphEdgeKind;
+  confidence: GraphConfidence;
+  priority: "concept-code" | "cross-plane";
+}
+
+export function computeSurprisingConnections(graph: CodeGraphV1, limit: number): SurprisingConnection[] {
+  if (!Number.isSafeInteger(limit) || limit < 1) {
+    throw new OpenWikiError("INVALID_ARGUMENT", "Surprising-connection limit must be a positive integer.");
+  }
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const candidates: SurprisingConnection[] = [];
+  for (const edge of graph.edges) {
+    if (edge.kind === "member-of" || edge.kind === "contains") {
+      continue;
+    }
+    const from = nodesById.get(edge.from);
+    const to = nodesById.get(edge.to);
+    if (from === undefined || to === undefined) {
+      continue;
+    }
+    const fromPlane = planeOf(from);
+    const toPlane = planeOf(to);
+    if (fromPlane === toPlane) {
+      continue;
+    }
+    const conceptCode = (fromPlane === "concept" && toPlane === "code") || (fromPlane === "code" && toPlane === "concept");
+    candidates.push({
+      edgeId: edge.id,
+      from: edge.from,
+      to: edge.to,
+      kind: edge.kind,
+      confidence: edge.confidence,
+      priority: conceptCode ? "concept-code" : "cross-plane",
+    });
+  }
+  return candidates
+    .sort((left, right) => {
+      if (left.priority !== right.priority) {
+        return left.priority === "concept-code" ? -1 : 1;
+      }
+      return confidenceWeight(right.confidence) - confidenceWeight(left.confidence) || left.edgeId.localeCompare(right.edgeId);
+    })
+    .slice(0, limit);
+}
+
+export interface CoverageStats {
+  totalCodeNodes: number;
+  describedCodeNodes: number;
+  coverageRatio: number;
+}
+
+export function computeCoverageStats(graph: CodeGraphV1): CoverageStats {
+  const codeNodes = graph.nodes.filter((node) => node.kind === "file" || node.kind === "symbol");
+  const described = new Set<string>();
+  for (const edge of graph.edges) {
+    if (edge.kind === "describes" || edge.kind === "mentions") {
+      described.add(edge.to);
+    }
+  }
+  const totalCodeNodes = codeNodes.length;
+  const describedCodeNodes = codeNodes.filter((node) => described.has(node.id)).length;
+  return { totalCodeNodes, describedCodeNodes, coverageRatio: totalCodeNodes === 0 ? 0 : describedCodeNodes / totalCodeNodes };
+}
+
+export interface CommunityQuestionInput {
+  id: string;
+  memberCount: number;
+  topTerms: readonly string[];
+}
+
+export function computeSuggestedQuestions(
+  godNodes: ReadonlyArray<{ nodeId: string; degree: number }>,
+  communities: ReadonlyArray<CommunityQuestionInput>,
+  graph: CodeGraphV1,
+): string[] {
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const questions: string[] = [];
+  for (const godNode of godNodes.slice(0, 3)) {
+    const node = nodesById.get(godNode.nodeId);
+    if (node === undefined) {
+      continue;
+    }
+    questions.push(`What depends on ${node.name} (${node.path}), and what would break if it changed?`);
+  }
+  for (const community of communities.slice(0, 3)) {
+    if (community.memberCount <= 1) {
+      continue;
+    }
+    const terms = community.topTerms.length > 0 ? community.topTerms.join(", ") : "no shared terms";
+    questions.push(`What is the shared purpose of the ${String(community.memberCount)} nodes in community "${community.id}" (top terms: ${terms})?`);
+  }
+  return questions;
+}
+
+export function synthesizeMemberOfEdges(graph: CodeGraphV1, communities: ReadonlyMap<string, string>): GraphEdgeV1[] {
+  const edges: GraphEdgeV1[] = [];
+  for (const node of graph.nodes) {
+    const communityId = communities.get(node.id);
+    if (communityId === undefined) {
+      continue;
+    }
+    edges.push({
+      id: createGraphEdgeId("member-of", node.id, communityId, "exact"),
+      kind: "member-of",
+      from: node.id,
+      to: communityId,
+      confidence: "exact",
+    });
+  }
+  return edges.sort((left, right) => left.id.localeCompare(right.id));
+}
+
+// Field shape kept in sync by hand with CommunitySummaryV1 in analysis-store.ts (Task 4) — analyze.ts must not
+// import from the persistence layer, so the two interfaces are declared independently; if one gains/loses a
+// field, update the other to match.
+export interface CommunitySummary {
+  id: string;
+  memberCount: number;
+  topTerms: string[];
+  members: string[];
+  membersTruncated: boolean;
+}
+
+const ANALYSIS_MAX_MEMBERS_PER_COMMUNITY = 200;
+const ANALYSIS_MAX_TOP_TERMS = 5;
+const TERM_PATTERN = /[\p{L}\p{N}_$]+/gu;
+
+export function summarizeCommunities(graph: CodeGraphV1, communities: ReadonlyMap<string, string>): CommunitySummary[] {
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const grouped = new Map<string, string[]>();
+  for (const [nodeId, communityId] of communities) {
+    const members = grouped.get(communityId) ?? [];
+    members.push(nodeId);
+    grouped.set(communityId, members);
+  }
+  const summaries: CommunitySummary[] = [];
+  for (const [communityId, memberIds] of grouped) {
+    const sortedMembers = [...memberIds].sort((left, right) => left.localeCompare(right));
+    const termCounts = new Map<string, number>();
+    for (const memberId of sortedMembers) {
+      const node = nodesById.get(memberId);
+      if (node === undefined) {
+        continue;
+      }
+      for (const term of `${node.name} ${node.path}`.toLowerCase().match(TERM_PATTERN) ?? []) {
+        termCounts.set(term, (termCounts.get(term) ?? 0) + 1);
+      }
+    }
+    const topTerms = [...termCounts.entries()]
+      .sort(([leftTerm, leftCount], [rightTerm, rightCount]) => rightCount - leftCount || leftTerm.localeCompare(rightTerm))
+      .slice(0, ANALYSIS_MAX_TOP_TERMS)
+      .map(([term]) => term);
+    summaries.push({
+      id: communityId,
+      memberCount: sortedMembers.length,
+      topTerms,
+      members: sortedMembers.slice(0, ANALYSIS_MAX_MEMBERS_PER_COMMUNITY),
+      membersTruncated: sortedMembers.length > ANALYSIS_MAX_MEMBERS_PER_COMMUNITY,
+    });
+  }
+  return summaries.sort((left, right) => right.memberCount - left.memberCount || left.id.localeCompare(right.id));
+}
+
+export function findCitingPages(nodes: readonly GraphNodeV1[], edges: readonly GraphEdgeV1[], targetId: string): GraphNodeV1[] {
+  return nodes
+    .filter((candidate) => candidate.kind === "page" && edges.some((edge) => (edge.kind === "describes" || edge.kind === "mentions") && edge.from === candidate.id && edge.to === targetId))
+    .sort((left, right) => left.id.localeCompare(right.id));
 }
