@@ -93,4 +93,54 @@ describe("git-wiki", () => {
       return true;
     });
   });
+
+  test("git-wiki: succeeds with an explicit no-commits marker on an unborn-HEAD repository (DF-H1)", async () => {
+    const repository = await makeTemporaryRoot("git-unborn");
+    await runGit(repository, ["init", "--initial-branch=main"]);
+    await runGit(repository, ["config", "user.email", "openwiki@example.test"]);
+    await runGit(repository, ["config", "user.name", "OpenWiki Test"]);
+    await mkdir(path.join(repository, "src"));
+    await writeFile(path.join(repository, "src", "app.ts"), "export const version = 1;\n");
+    await runGit(repository, ["add", "src/app.ts"]);
+    await writeFile(path.join(repository, "loose.txt"), "untracked\n");
+
+    // No commit has been made: `git rev-parse HEAD` errors with an unborn-branch
+    // failure. `context` must still succeed with machine-readable evidence of
+    // the no-commits state instead of throwing GIT_FAILURE.
+    const context = await collectGitContext(repository);
+    assert.equal(context.hasCommits, false);
+    assert.equal(Object.hasOwn(context, "head"), false);
+    assert.equal(typeof context.noCommitsReason, "string");
+    assert.match(context.noCommitsReason, /no commits/iu);
+    assert.equal(context.branch, "main");
+    assert.match(context.status, /src\/app\.ts/u);
+    assert.match(context.status, /loose\.txt/u);
+    // workingTreeChanges is diffed against the empty tree (no HEAD exists yet),
+    // so it reports the staged file exactly like a real `diff --name-status HEAD`
+    // would for a repository with commits (untracked, unstaged files never show
+    // up in a diff — only in `status` — which mirrors existing behavior).
+    assert.match(context.workingTreeChanges, /src\/app\.ts/u);
+    assert.equal(context.workingTreeChanges.includes("loose.txt"), false);
+    assert.deepEqual(context.changedPaths, []);
+    assert.equal(context.recentCommits, "");
+    assert.equal(context.commitsSincePreviousHead, "");
+
+    // Once a commit exists, the normal (has-commits) evidence path resumes.
+    const head = await commitAll(repository, "feat: initial commit");
+    const afterCommit = await collectGitContext(repository);
+    assert.equal(afterCommit.hasCommits, true);
+    assert.equal(afterCommit.head, head);
+    assert.equal(Object.hasOwn(afterCommit, "noCommitsReason"), false);
+  });
+
+  test("git-wiki: rejects a genuinely broken Git repository even with an unborn-HEAD-shaped root (DF-H1 boundary)", async () => {
+    const notARepository = await makeTemporaryRoot("git-not-a-repo");
+    await writeFile(path.join(notARepository, "file.txt"), "content\n");
+
+    await assert.rejects(collectGitContext(notARepository), (error) => {
+      assert.ok(error instanceof OpenWikiError);
+      assert.equal(error.code, "GIT_FAILURE");
+      return true;
+    });
+  });
 });

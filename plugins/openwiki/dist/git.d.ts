@@ -3,7 +3,12 @@ export declare const GIT_OUTPUT_LIMIT_BYTES: number;
 export interface GitContext {
     root: string;
     branch: string;
-    head: string;
+    /** Absent when the repository has no commits yet (see `hasCommits`). */
+    head?: string;
+    /** Machine-readable evidence of whether HEAD resolves to a commit. */
+    hasCommits: boolean;
+    /** Present only when `hasCommits` is false; explains why `head` is absent. */
+    noCommitsReason?: string;
     status: string;
     recentCommits: string;
     workingTreeChanges: string;
