@@ -29,7 +29,7 @@ const TOOL_NAMES = [
   "init", "status", "context", "search", "read", "write", "ingest",
   "finalize", "check", "doctor", "schedule", "purge", "graph",
 ];
-const GRAPH_ACTIONS = ["build", "status", "query", "context", "impact", "changes", "map"];
+const GRAPH_ACTIONS = ["build", "status", "query", "context", "impact", "changes", "map", "path", "explain", "communities", "report"];
 
 function emptyClientState() {
   return {
