@@ -973,6 +973,132 @@ export function catalogDependencyMap() {
     await assertGitNexusWasNotInvoked(harness);
   });
 
+  test("slice 2c: report/communities/path/explain are deterministic across two runs and mirrored over MCP", async (t) => {
+    const harness = await createRepositoryHarness(t);
+    await initializeWiki(harness);
+    const graphTarget = ["--mode", "code", "--root", harness.repositoryRoot];
+
+    await runCliSuccess(harness, ["graph", ...graphTarget, "--action", "build", "--force"]);
+
+    const reportFirst = await runCliSuccess(harness, ["graph", ...graphTarget, "--action", "report"]);
+    const reportData = assertGraphResult(reportFirst, "report", harness.repositoryRoot);
+    assert.equal(reportData.page, "graph-report.md");
+    assert.equal(reportData.written, true);
+    assert.ok(reportData.communityCount >= 1);
+    assert.match(reportData.generation, /^g-[a-f0-9]{64}$/u);
+
+    const reportPageRaw = await readFile(join(harness.repositoryRoot, "openwiki", "graph-report.md"), "utf8");
+    for (const heading of [
+      "# Graph Report",
+      "## God nodes",
+      "## Communities",
+      "## Surprising connections",
+      "## Suggested questions",
+      "## Coverage",
+      "## Ambiguous edges pending review",
+    ]) {
+      assert.ok(reportPageRaw.includes(heading), `graph-report.md is missing "${heading}"`);
+    }
+    assertSemanticText(reportPageRaw, [/listActiveProducts|findProductBySku|summarizeCatalog/u]);
+
+    const communitiesFirst = await runCliSuccess(harness, ["graph", ...graphTarget, "--action", "communities", "--limit", "10"]);
+    const communitiesSecond = await runCliSuccess(harness, ["graph", ...graphTarget, "--action", "communities", "--limit", "10"]);
+    assert.deepEqual(communitiesFirst.json.data, communitiesSecond.json.data);
+    assert.equal(communitiesFirst.json.data.stale, false);
+
+    const explainFirst = await runCliSuccess(harness, [
+      "graph",
+      ...graphTarget,
+      "--action",
+      "explain",
+      "--target",
+      "listActiveProducts",
+      "--limit",
+      "10",
+    ]);
+    const explainSecond = await runCliSuccess(harness, [
+      "graph",
+      ...graphTarget,
+      "--action",
+      "explain",
+      "--target",
+      "listActiveProducts",
+      "--limit",
+      "10",
+    ]);
+    assert.deepEqual(explainFirst.json.data, explainSecond.json.data);
+    assert.equal(explainFirst.json.data.node.name, "listActiveProducts");
+    assert.equal(explainFirst.json.data.communityStale, false);
+
+    const pathFirst = await runCliSuccess(harness, [
+      "graph",
+      ...graphTarget,
+      "--action",
+      "path",
+      "--from",
+      "listActiveProducts",
+      "--to",
+      "summarizeCatalog",
+    ]);
+    const pathSecond = await runCliSuccess(harness, [
+      "graph",
+      ...graphTarget,
+      "--action",
+      "path",
+      "--from",
+      "listActiveProducts",
+      "--to",
+      "summarizeCatalog",
+    ]);
+    assert.deepEqual(pathFirst.json.data, pathSecond.json.data);
+    assert.equal(pathFirst.json.data.found, true);
+    assert.ok(pathFirst.json.data.nodes.some((candidate) => candidate.name === "listActiveProducts"));
+    assert.ok(pathFirst.json.data.nodes.some((candidate) => candidate.name === "summarizeCatalog"));
+
+    await runCliError(
+      harness,
+      ["graph", ...graphTarget, "--action", "path", "--from", "listActiveProducts", "--to", "doesNotExist"],
+      "NOT_FOUND",
+    );
+
+    assert.ok(existsSync(MCP_PATH), `Missing compiled MCP adapter: ${MCP_PATH}.`);
+    const mcpRequests = [
+      { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "slice-2c-e2e", version: "1.0.0" } } },
+      { jsonrpc: "2.0", method: "notifications/initialized", params: {} },
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "graph", arguments: { root: harness.repositoryRoot, action: "report" } } },
+      { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "graph", arguments: { root: harness.repositoryRoot, action: "communities", limit: 10 } } },
+      { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "graph", arguments: { root: harness.repositoryRoot, action: "explain", target: "listActiveProducts", limit: 10 } } },
+      { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "graph", arguments: { root: harness.repositoryRoot, action: "path", from: "listActiveProducts", to: "summarizeCatalog" } } },
+    ];
+    const mcpResult = await runProcess(process.execPath, [MCP_PATH], {
+      cwd: harness.repositoryRoot,
+      env: harness.env,
+      input: `${mcpRequests.map((request) => JSON.stringify(request)).join("\n")}\n`,
+    });
+    assert.equal(mcpResult.code, 0, mcpResult.stderr || mcpResult.stdout);
+    assert.equal(mcpResult.stderr, "");
+    const mcpResponses = mcpResult.stdout
+      .trim()
+      .split(/\r?\n/u)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const byId = new Map(mcpResponses.map((response) => [response.id, response]));
+    const parseEnvelope = (id) => JSON.parse(byId.get(id).result.content[0].text);
+    assert.equal(parseEnvelope(2).data.action, "report");
+    // The MCP batch's own "report" call (id 2) legitimately refreshes communities.json's
+    // generatedAt even though the graph is unchanged (same documented, already-tested
+    // idempotent-generation behavior Task 6/7 rely on) — so the "communities" read that
+    // follows it (id 3) is compared against communitiesFirst on every field except the
+    // wall-clock generatedAt, which is asserted to be a real timestamp instead.
+    const { generatedAt: communitiesViaMcpGeneratedAt, ...communitiesViaMcpRest } = parseEnvelope(3).data;
+    const { generatedAt: communitiesViaCliGeneratedAt, ...communitiesViaCliRest } = communitiesFirst.json.data;
+    assert.deepEqual(communitiesViaMcpRest, communitiesViaCliRest);
+    assert.equal(Number.isNaN(Date.parse(communitiesViaMcpGeneratedAt)), false);
+    assert.equal(Number.isNaN(Date.parse(communitiesViaCliGeneratedAt)), false);
+    assert.deepEqual(parseEnvelope(4).data, explainFirst.json.data);
+    assert.deepEqual(parseEnvelope(5).data, pathFirst.json.data);
+  });
+
   test("enrich grounds a wiki page in the graph with a real code-symbol mention, verified by check", async (t) => {
     const harness = await createRepositoryHarness(t, { gitNexusTripwire: true });
     await initializeWiki(harness);
