@@ -4,7 +4,7 @@ import { lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { atomicWriteFile, withFileWriteLock } from "./atomic.js";
-import { canonicalizeGraph, graphHash, parseCodeGraph, parseEnrichmentShard, GRAPH_SCANNER_VERSION, type CodeGraphV1, type EnrichmentShardV1 } from "./graph-contracts.js";
+import { canonicalizeGraph, graphHash, parseCodeGraph, parseEnrichmentShard, GRAPH_SCANNER_VERSION, type CodeGraphV1, type EnrichmentShardV1, type GraphDiagnosticV1 } from "./graph-contracts.js";
 import { OpenWikiError } from "./errors.js";
 import {
   GRAPH_STORE_SCHEMA_VERSION,
@@ -65,7 +65,9 @@ export async function probeGraphStorage(root: string, homeDir?: string): Promise
   return { initialized, storage, workspaceId: location.workspaceId, repositoryRoot: location.workspaceRoot as string };
 }
 
-export async function enumerateRepositoryMetadata(root: string, limits: { maxFiles: number; maxFileBytes: number; maxRepositoryBytes: number }): Promise<RepositoryFileMetadata[]> {
+export interface RepositoryEnumeration { files: RepositoryFileMetadata[]; diagnostics: GraphDiagnosticV1[]; }
+
+export async function enumerateRepositoryMetadata(root: string, limits: { maxFiles: number; maxFileBytes: number; maxRepositoryBytes: number }): Promise<RepositoryEnumeration> {
   const listed = await runGit(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"]);
   const [indexed, status] = await Promise.all([runGit(root, ["ls-files", "-s", "-z", "--cached"]), runGit(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])]);
   const blobIds = parseGitIndexBlobIds(indexed);
@@ -74,6 +76,7 @@ export async function enumerateRepositoryMetadata(root: string, limits: { maxFil
   if (paths.length > limits.maxFiles) throw new OpenWikiError("SOURCE_TOO_LARGE", "Repository exceeds the graph file limit.");
   let total = 0;
   const results: RepositoryFileMetadata[] = [];
+  const diagnostics: GraphDiagnosticV1[] = [];
   for (const relative of paths) {
     if (excluded(relative)) continue;
     const absolute = path.resolve(root, relative);
@@ -81,7 +84,21 @@ export async function enumerateRepositoryMetadata(root: string, limits: { maxFil
     let details;
     try { details = await lstat(absolute); } catch (error) { if (isNotFound(error)) continue; throw error; }
     if (details.isSymbolicLink()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph scanner refuses symbolic-link repository files.");
-    if (!details.isFile()) continue;
+    if (!details.isFile()) {
+      // Git reports a nested repository (its own `.git`, not a registered submodule)
+      // as a single opaque directory boundary during ls-files/status enumeration
+      // instead of descending into it. Recursively indexing it is out of scope (it
+      // is a separate workspace), but silently dropping it would leave a real gap
+      // in the graph with no signal, so record an explicit diagnostic instead.
+      if (details.isDirectory() && (await isEmbeddedGitRepository(absolute))) {
+        diagnostics.push({
+          path: normalize(relative).replace(/\/$/u, ""),
+          code: "EMBEDDED_GIT_REPOSITORY_SKIPPED",
+          message: "Directory is itself a Git repository (embedded-git-repo) and was not indexed. Nested repositories are separate workspaces and are not recursively scanned.",
+        });
+      }
+      continue;
+    }
     if (details.size > limits.maxFileBytes) throw new OpenWikiError("SOURCE_TOO_LARGE", "A repository file exceeds the graph file size limit.");
     total += details.size;
     if (total > limits.maxRepositoryBytes) throw new OpenWikiError("SOURCE_TOO_LARGE", "Repository exceeds the graph byte limit.");
@@ -89,7 +106,17 @@ export async function enumerateRepositoryMetadata(root: string, limits: { maxFil
     const blob = blobIds.get(normalized);
     results.push({ path: normalized, size: details.size, language: detectLanguage(relative), ...(blob !== undefined && !dirty.has(normalized) ? { sourceId: `git:${blob}` } : {}) });
   }
-  return results;
+  return { files: results, diagnostics };
+}
+
+async function isEmbeddedGitRepository(directory: string): Promise<boolean> {
+  try {
+    await lstat(path.join(directory, ".git"));
+    return true;
+  } catch (error) {
+    if (isNotFound(error)) return false;
+    throw error;
+  }
 }
 
 export async function readRepositoryFile(root: string, file: RepositoryFileMetadata): Promise<{ path: string; content: string; size: number; contentHash: string; language: string; sourceId: string }> {
@@ -117,7 +144,7 @@ export async function resolveRepositorySourceIds(root: string, files: readonly R
 }
 
 export async function enumerateRepositoryFiles(root: string, limits: { maxFiles: number; maxFileBytes: number; maxRepositoryBytes: number }): Promise<Array<{ path: string; content: string; size: number; contentHash: string; language: string }>> {
-  const files = await enumerateRepositoryMetadata(root, limits);
+  const { files } = await enumerateRepositoryMetadata(root, limits);
   const results: Array<{ path: string; content: string; size: number; contentHash: string; language: string }> = [];
   for (const file of files) {
     try { const loaded = await readRepositoryFile(root, file); results.push(loaded); } catch (error) { if (error instanceof OpenWikiError && error.code === "UNSUPPORTED_SOURCE") continue; throw error; }

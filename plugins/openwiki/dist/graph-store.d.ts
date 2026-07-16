@@ -1,4 +1,4 @@
-import { type CodeGraphV1, type EnrichmentShardV1 } from "./graph-contracts.js";
+import { type CodeGraphV1, type EnrichmentShardV1, type GraphDiagnosticV1 } from "./graph-contracts.js";
 import { GRAPH_STORE_SCHEMA_VERSION, type GraphIndexManifest, type GraphIndexPort } from "./graph-index.js";
 import { type SourceScan } from "./graph-scan.js";
 export interface GraphShard {
@@ -68,11 +68,15 @@ export declare function resolveGraphStorage(root: string, homeDir?: string): Pro
     repositoryRoot: string;
 }>;
 export declare function probeGraphStorage(root: string, homeDir?: string): Promise<GraphStorageProbe>;
+export interface RepositoryEnumeration {
+    files: RepositoryFileMetadata[];
+    diagnostics: GraphDiagnosticV1[];
+}
 export declare function enumerateRepositoryMetadata(root: string, limits: {
     maxFiles: number;
     maxFileBytes: number;
     maxRepositoryBytes: number;
-}): Promise<RepositoryFileMetadata[]>;
+}): Promise<RepositoryEnumeration>;
 export declare function readRepositoryFile(root: string, file: RepositoryFileMetadata): Promise<{
     path: string;
     content: string;

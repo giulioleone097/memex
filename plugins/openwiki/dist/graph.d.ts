@@ -67,6 +67,7 @@ export interface BuildGraphResult {
     nodeCount: number;
     edgeCount: number;
     diagnosticCount: number;
+    diagnostics: GraphDiagnosticV1[];
     generatedAt: string;
 }
 export interface GraphStatusResult {
@@ -84,6 +85,7 @@ export interface GraphStatusResult {
         edges: number;
         diagnostics: number;
     };
+    diagnostics?: GraphDiagnosticV1[];
     generatedAt?: string;
 }
 export declare function buildGraph(options: BuildGraphOptions): Promise<BuildGraphResult>;
@@ -125,7 +127,7 @@ export declare function getArchitectureMap(options: GraphOperationBase): Promise
     };
     diagnostics: GraphDiagnosticV1[];
 }>;
-export declare function assembleGraph(workspaceId: string, generatedAt: string, source: CodeGraphV1["source"], shards: readonly GraphShard[]): CodeGraphV1;
+export declare function assembleGraph(workspaceId: string, generatedAt: string, source: CodeGraphV1["source"], shards: readonly GraphShard[], boundaryDiagnostics?: readonly GraphDiagnosticV1[]): CodeGraphV1;
 export interface GraphReportOptions extends GraphOperationBase {
     now?: string;
 }

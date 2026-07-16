@@ -366,9 +366,9 @@ function publicGraphResult(action: GraphAction, requestedRoot: string, value: un
 function graphPublicFields(action: GraphAction): readonly string[] {
   switch (action) {
     case "build":
-      return ["schemaVersion", "action", "root", "fresh", "buildMode", "fullRebuild", "head", "previousHead", "dirtyFingerprint", "changedPaths", "truncated", "scannedFileCount", "removedFileCount", "fileCount", "nodeCount", "edgeCount", "diagnosticCount", "generatedAt"];
+      return ["schemaVersion", "action", "root", "fresh", "buildMode", "fullRebuild", "head", "previousHead", "dirtyFingerprint", "changedPaths", "truncated", "scannedFileCount", "removedFileCount", "fileCount", "nodeCount", "edgeCount", "diagnosticCount", "diagnostics", "generatedAt"];
     case "status":
-      return ["schemaVersion", "action", "root", "available", "fresh", "reason", "indexedHead", "currentHead", "counts", "generatedAt"];
+      return ["schemaVersion", "action", "root", "available", "fresh", "reason", "indexedHead", "currentHead", "counts", "diagnostics", "generatedAt"];
     case "query":
       return ["schemaVersion", "action", "root", "nodes", "edges", "truncated", "diagnostics", "query"];
     case "context":

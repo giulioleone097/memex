@@ -23,7 +23,8 @@ export async function buildGraph(options) {
     const manifest = await readManifest(resolved.storage).catch(() => undefined);
     const previousManifest = options.force ? undefined : manifest;
     const enrichmentShards = await Promise.all((manifest?.enrichmentShards ?? []).map((entry) => readEnrichmentShard(resolved.storage, entry.shard)));
-    const metadata = await enumerateRepositoryMetadata(resolved.repositoryRoot, limits);
+    const enumerated = await enumerateRepositoryMetadata(resolved.repositoryRoot, limits);
+    const metadata = enumerated.files;
     const previousBySource = new Map(previousManifest?.shards.map((entry) => [`${entry.path}\u0000${entry.sourceId}`, entry]) ?? []);
     const shards = [];
     const sourceState = [];
@@ -70,13 +71,14 @@ export async function buildGraph(options) {
     const git = await currentGitFingerprint(resolved.repositoryRoot);
     const fingerprint = { ...git, dirtyFingerprint: repositoryMetadataFingerprint(sourceState) };
     const generatedAt = options.now ?? new Date().toISOString();
-    const codeGraph = assembleGraph(resolved.workspaceId, generatedAt, { ...fingerprint, scannerVersion: GRAPH_SCANNER_VERSION }, shards);
+    const codeGraph = assembleGraph(resolved.workspaceId, generatedAt, { ...fingerprint, scannerVersion: GRAPH_SCANNER_VERSION }, shards, enumerated.diagnostics);
     const graph = mergeEnrichment(codeGraph, enrichmentShards);
     await writeGraph(resolved.storage, graph, shards, enrichmentShards);
     await reindexCodeSymbols(resolved.repositoryRoot, await openGraphIndex(resolved.storage), options.homeDir);
     const changed = changedBuildPaths(previous, graph);
     const paths = boundedPaths(changed, options.limit);
-    return { schemaVersion: 1, action: "build", root: resolved.repositoryRoot, fresh: true, buildMode: previous === undefined ? "full" : "incremental", fullRebuild: Boolean(options.force) || previous === undefined, ...(fingerprint.gitHead === undefined ? {} : { head: fingerprint.gitHead }), ...(previous?.source.gitHead === undefined ? {} : { previousHead: previous.source.gitHead }), dirtyFingerprint: fingerprint.dirtyFingerprint, changedPaths: paths.values, truncated: paths.truncated, scannedFileCount: metadata.length - reused, removedFileCount: Math.max(0, (previous?.files.length ?? 0) - metadata.length), fileCount: graph.files.length, nodeCount: graph.nodes.length, edgeCount: graph.edges.length, diagnosticCount: graph.diagnostics.length, generatedAt };
+    const value = { schemaVersion: 1, action: "build", root: resolved.repositoryRoot, fresh: true, buildMode: previous === undefined ? "full" : "incremental", fullRebuild: Boolean(options.force) || previous === undefined, ...(fingerprint.gitHead === undefined ? {} : { head: fingerprint.gitHead }), ...(previous?.source.gitHead === undefined ? {} : { previousHead: previous.source.gitHead }), dirtyFingerprint: fingerprint.dirtyFingerprint, changedPaths: paths.values, truncated: paths.truncated, scannedFileCount: metadata.length - reused, removedFileCount: Math.max(0, (previous?.files.length ?? 0) - metadata.length), fileCount: graph.files.length, nodeCount: graph.nodes.length, edgeCount: graph.edges.length, diagnosticCount: graph.diagnostics.length, diagnostics: graph.diagnostics, generatedAt };
+    return boundedEnvelope(value, options.responseByteLimit);
 }
 export async function getGraphStatus(options) {
     const probed = await probeGraphStorage(options.root, options.homeDir);
@@ -89,11 +91,13 @@ export async function getGraphStatus(options) {
     catch {
         return { schemaVersion: 1, action: "status", root: probed.repositoryRoot, available: false, fresh: false, reason: "No recoverable OpenWiki graph manifest exists." };
     }
-    const [evidence, metadata] = await Promise.all([changedRepositoryEvidence(probed.repositoryRoot), enumerateRepositoryMetadata(probed.repositoryRoot, GRAPH_DEFAULTS)]);
+    const [evidence, enumerated, index] = await Promise.all([changedRepositoryEvidence(probed.repositoryRoot), enumerateRepositoryMetadata(probed.repositoryRoot, GRAPH_DEFAULTS), openGraphIndex(probed.storage)]);
+    const metadata = enumerated.files;
     const indexedPaths = new Set(manifest.shards.map((shard) => shard.path));
     const sourceState = await resolveRepositorySourceIds(probed.repositoryRoot, metadata.filter((file) => file.sourceId === undefined || indexedPaths.has(file.path)));
     const fresh = evidence.head === manifest.source.gitHead && repositoryMetadataFingerprint(sourceState) === manifest.source.dirtyFingerprint;
-    return { schemaVersion: 1, action: "status", root: probed.repositoryRoot, available: true, fresh, ...(fresh ? {} : { reason: evidence.changeState === "working-tree" ? "Repository content changed since the last graph build." : "Repository HEAD changed since the last graph build." }), ...(manifest.source.gitHead === undefined ? {} : { indexedHead: manifest.source.gitHead }), ...(evidence.head === undefined ? {} : { currentHead: evidence.head }), counts: manifest.counts, generatedAt: manifest.generatedAt };
+    const diagnostics = (await index.architectureSummary()).diagnostics;
+    return { schemaVersion: 1, action: "status", root: probed.repositoryRoot, available: true, fresh, ...(fresh ? {} : { reason: evidence.changeState === "working-tree" ? "Repository content changed since the last graph build." : "Repository HEAD changed since the last graph build." }), ...(manifest.source.gitHead === undefined ? {} : { indexedHead: manifest.source.gitHead }), ...(evidence.head === undefined ? {} : { currentHead: evidence.head }), counts: manifest.counts, diagnostics, generatedAt: manifest.generatedAt };
 }
 export async function queryGraphOperation(options) { const loaded = await loadIndex(options); const result = await lazyCandidates(loaded.index, options.query, options.limit, options.responseByteLimit, loaded.diagnostics); return boundedEnvelope(envelope("query", loaded.root, loaded.diagnostics, result, { query: options.query }), options.responseByteLimit); }
 export { queryGraphOperation as queryGraph };
@@ -180,10 +184,10 @@ function isTruncationCollections(value) { if (value === null || typeof value !==
     return false; const entries = Object.entries(value); return entries.length === 6 && entries.every(([key, item]) => ["modules", "entrypoints", "hubs", "cycles", "flows", "diagnostics"].includes(key) && typeof item === "boolean"); }
 function markCollectionTruncated(collections, key) { if (key === "modules" || key === "entrypoints" || key === "hubs" || key === "cycles" || key === "flows" || key === "diagnostics")
     collections[key] = true; }
-export function assembleGraph(workspaceId, generatedAt, source, shards) {
+export function assembleGraph(workspaceId, generatedAt, source, shards, boundaryDiagnostics = []) {
     const nodes = [];
     const edges = [];
-    const diagnostics = [];
+    const diagnostics = [...boundaryDiagnostics];
     const repository = node("repository", ".", "repository");
     nodes.push(repository);
     const directories = new Map();

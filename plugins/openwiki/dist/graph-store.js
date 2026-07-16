@@ -37,6 +37,7 @@ export async function enumerateRepositoryMetadata(root, limits) {
         throw new OpenWikiError("SOURCE_TOO_LARGE", "Repository exceeds the graph file limit.");
     let total = 0;
     const results = [];
+    const diagnostics = [];
     for (const relative of paths) {
         if (excluded(relative))
             continue;
@@ -53,8 +54,21 @@ export async function enumerateRepositoryMetadata(root, limits) {
         }
         if (details.isSymbolicLink())
             throw new OpenWikiError("SYMLINK_ESCAPE", "Graph scanner refuses symbolic-link repository files.");
-        if (!details.isFile())
+        if (!details.isFile()) {
+            // Git reports a nested repository (its own `.git`, not a registered submodule)
+            // as a single opaque directory boundary during ls-files/status enumeration
+            // instead of descending into it. Recursively indexing it is out of scope (it
+            // is a separate workspace), but silently dropping it would leave a real gap
+            // in the graph with no signal, so record an explicit diagnostic instead.
+            if (details.isDirectory() && (await isEmbeddedGitRepository(absolute))) {
+                diagnostics.push({
+                    path: normalize(relative).replace(/\/$/u, ""),
+                    code: "EMBEDDED_GIT_REPOSITORY_SKIPPED",
+                    message: "Directory is itself a Git repository (embedded-git-repo) and was not indexed. Nested repositories are separate workspaces and are not recursively scanned.",
+                });
+            }
             continue;
+        }
         if (details.size > limits.maxFileBytes)
             throw new OpenWikiError("SOURCE_TOO_LARGE", "A repository file exceeds the graph file size limit.");
         total += details.size;
@@ -64,7 +78,18 @@ export async function enumerateRepositoryMetadata(root, limits) {
         const blob = blobIds.get(normalized);
         results.push({ path: normalized, size: details.size, language: detectLanguage(relative), ...(blob !== undefined && !dirty.has(normalized) ? { sourceId: `git:${blob}` } : {}) });
     }
-    return results;
+    return { files: results, diagnostics };
+}
+async function isEmbeddedGitRepository(directory) {
+    try {
+        await lstat(path.join(directory, ".git"));
+        return true;
+    }
+    catch (error) {
+        if (isNotFound(error))
+            return false;
+        throw error;
+    }
 }
 export async function readRepositoryFile(root, file) {
     if (!safeRelativePath(file.path))
@@ -100,7 +125,7 @@ export async function resolveRepositorySourceIds(root, files) {
     return resolved;
 }
 export async function enumerateRepositoryFiles(root, limits) {
-    const files = await enumerateRepositoryMetadata(root, limits);
+    const { files } = await enumerateRepositoryMetadata(root, limits);
     const results = [];
     for (const file of files) {
         try {

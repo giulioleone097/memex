@@ -88,7 +88,7 @@ async function initGitRepo(root) {
 async function writeFixtureGraph(root, home, { badFingerprint = false } = {}) {
   const resolved = await resolveGraphStorage(root, home);
   const git = await currentGitFingerprint(root);
-  const metadata = await enumerateRepositoryMetadata(root, GRAPH_DEFAULTS);
+  const { files: metadata } = await enumerateRepositoryMetadata(root, GRAPH_DEFAULTS);
   const sourceState = await resolveRepositorySourceIds(root, metadata);
   const dirtyFingerprint = badFingerprint ? "deliberately-mismatched-fingerprint" : repositoryMetadataFingerprint(sourceState);
 

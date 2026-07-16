@@ -47,6 +47,20 @@ async function repository() {
   return root;
 }
 
+async function repositoryWithEmbeddedGitRepo() {
+  const root = await repository();
+  const nestedRelative = "packages/embedded-repo";
+  const nestedAbsolute = path.join(root, ...nestedRelative.split("/"));
+  await mkdir(nestedAbsolute, { recursive: true });
+  await git(nestedAbsolute, ["init", "--initial-branch=main"]);
+  await git(nestedAbsolute, ["config", "user.email", "openwiki@example.test"]);
+  await git(nestedAbsolute, ["config", "user.name", "OpenWiki Test"]);
+  await writeFile(path.join(nestedAbsolute, "nested.ts"), "export const nested = 1;\n");
+  await git(nestedAbsolute, ["add", "--all"]);
+  await git(nestedAbsolute, ["commit", "-m", "nested embedded repository"]);
+  return { root, nestedRelative };
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -138,5 +152,33 @@ describe("graph repository", () => {
       assert.equal(error.code, "SOURCE_TOO_LARGE");
       return true;
     });
+  });
+
+  test("graph: surfaces an embedded git repository as an explicit scan diagnostic instead of silently skipping it", async () => {
+    const { root, nestedRelative } = await repositoryWithEmbeddedGitRepo();
+    const homeDir = await temporaryRoot("home");
+
+    const built = await buildGraph({ root, homeDir });
+    assert.ok(Array.isArray(built.diagnostics), "build result must expose the full diagnostics array, not only a count");
+    const boundary = built.diagnostics.find((diagnostic) => diagnostic.code === "EMBEDDED_GIT_REPOSITORY_SKIPPED");
+    assert.ok(boundary, "expected an EMBEDDED_GIT_REPOSITORY_SKIPPED diagnostic for the nested repository boundary");
+    assert.equal(boundary.path, nestedRelative);
+    assert.match(boundary.message, /embedded-git-repo/);
+    assert.equal(built.diagnosticCount >= built.diagnostics.length, true);
+
+    const storage = await resolveGraphStorage(root, homeDir);
+    const persisted = await readStoredGraph(storage.storage);
+    assert.equal(persisted.files.some((file) => file.path === nestedRelative || file.path.startsWith(`${nestedRelative}/`)), false);
+    assert.equal(
+      persisted.diagnostics.some((diagnostic) => diagnostic.code === "EMBEDDED_GIT_REPOSITORY_SKIPPED" && diagnostic.path === nestedRelative),
+      true,
+    );
+
+    const status = await getGraphStatus({ root, homeDir });
+    assert.ok(Array.isArray(status.diagnostics), "status result must expose the full diagnostics array, not only a count");
+    assert.equal(
+      status.diagnostics.some((diagnostic) => diagnostic.code === "EMBEDDED_GIT_REPOSITORY_SKIPPED" && diagnostic.path === nestedRelative),
+      true,
+    );
   });
 });
