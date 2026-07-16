@@ -164,11 +164,12 @@ export async function openGraphIndexGeneration(generationRoot, expectedGeneratio
         async architectureSummary() {
             return parseArchitectureSummary(await read(manifest.architecture));
         },
-        async allNodes() {
+        async allNodes(kind) {
             const nodes = [];
             for (const bucket of manifest.nodeBuckets) {
                 for (const node of parseNodeBucket(await read(`nodes/${bucket}.json`)).values())
-                    nodes.push(node);
+                    if (kind === undefined || node.kind === kind)
+                        nodes.push(node);
             }
             return nodes.sort((left, right) => left.id.localeCompare(right.id));
         },

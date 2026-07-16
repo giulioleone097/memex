@@ -9,6 +9,7 @@ import {
   type CodeGraphV1,
   type GraphDiagnosticV1,
   type GraphEdgeV1,
+  type GraphNodeKind,
   type GraphNodeV1,
 } from "./graph-contracts.js";
 import { OpenWikiError } from "./errors.js";
@@ -54,7 +55,7 @@ export interface GraphIndexPort {
   outbound(id: string, limit: number): Promise<GraphAdjacency>;
   changedPathSeeds(paths: readonly string[], limit: number): Promise<string[]>;
   architectureSummary(): Promise<Readonly<GraphArchitectureSummary>>;
-  allNodes(): Promise<GraphNodeV1[]>;
+  allNodes(kind?: GraphNodeKind): Promise<GraphNodeV1[]>;
   allEdges(): Promise<GraphEdgeV1[]>;
   metrics(): GraphIndexMetrics;
   status(): GraphIndexStatus;
@@ -243,10 +244,10 @@ export async function openGraphIndexGeneration(
     async architectureSummary() {
       return parseArchitectureSummary(await read(manifest.architecture));
     },
-    async allNodes() {
+    async allNodes(kind) {
       const nodes: GraphNodeV1[] = [];
       for (const bucket of manifest.nodeBuckets) {
-        for (const node of parseNodeBucket(await read(`nodes/${bucket}.json`)).values()) nodes.push(node);
+        for (const node of parseNodeBucket(await read(`nodes/${bucket}.json`)).values()) if (kind === undefined || node.kind === kind) nodes.push(node);
       }
       return nodes.sort((left, right) => left.id.localeCompare(right.id));
     },

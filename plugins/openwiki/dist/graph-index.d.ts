@@ -1,4 +1,4 @@
-import { type CodeGraphV1, type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
+import { type CodeGraphV1, type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeKind, type GraphNodeV1 } from "./graph-contracts.js";
 export declare const GRAPH_STORE_SCHEMA_VERSION: 2;
 export interface GraphIndexManifest {
     schemaVersion: typeof GRAPH_STORE_SCHEMA_VERSION;
@@ -35,7 +35,7 @@ export interface GraphIndexPort {
     outbound(id: string, limit: number): Promise<GraphAdjacency>;
     changedPathSeeds(paths: readonly string[], limit: number): Promise<string[]>;
     architectureSummary(): Promise<Readonly<GraphArchitectureSummary>>;
-    allNodes(): Promise<GraphNodeV1[]>;
+    allNodes(kind?: GraphNodeKind): Promise<GraphNodeV1[]>;
     allEdges(): Promise<GraphEdgeV1[]>;
     metrics(): GraphIndexMetrics;
     status(): GraphIndexStatus;

@@ -85,6 +85,20 @@ describe("graph store v2", () => {
     assert.equal(index.metrics().filesRead <= 1 + manifest.index.nodeBuckets.length + manifest.index.outboundBuckets.length + manifest.index.inboundBuckets.length + manifest.index.symbolBuckets.length, true);
   });
 
+  test("allNodes returns every node of the requested kind across all buckets, sorted by id", async () => {
+    const root = await temporaryRoot("all-nodes");
+    const home = await temporaryRoot("home");
+    const resolved = await resolveGraphStorage(root, home);
+    const source = graph("1");
+    await writeGraph(resolved.storage, source, []);
+    const index = await openGraphIndex(resolved.storage);
+    const symbols = await index.allNodes("symbol");
+    const expectedIds = source.nodes.filter((node) => node.kind === "symbol").map((node) => node.id).sort((left, right) => left.localeCompare(right));
+    assert.deepEqual(symbols.map((node) => node.id), expectedIds);
+    assert.equal((await index.allNodes("repository")).length, 1);
+    assert.equal((await index.allNodes()).length, source.nodes.length);
+  });
+
   test("falls back only to a valid previous generation and reports recovery", async () => {
     const root = await temporaryRoot("recovery");
     const home = await temporaryRoot("home");
