@@ -94,7 +94,7 @@ async function toRequest(operation: OpenWikiOperation, flags: ParsedFlags, stdin
     delete inputValue["content-file"];
     delete inputValue.stdin;
     inputValue.content = content;
-  } else if (operation === "ingest") {
+  } else if (operation === "ingest" || operation === "enrich") {
     const raw = await readIngestTransport(flags, stdinText);
     delete inputValue["envelope-file"];
     delete inputValue.stdin;
@@ -241,7 +241,7 @@ async function runProcessCli(argv: readonly string[]): Promise<number> {
   try {
     const shouldReadStdin = argv.includes("--stdin");
     const stdinText = shouldReadStdin
-      ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES, argv[0] === "ingest")
+      ? await readInputStream(argv[0] === "write" ? undefined : MAX_ENVELOPE_BYTES, argv[0] === "ingest" || argv[0] === "enrich")
       : "";
     return await main(argv, stdinText);
   } catch (error) {

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { before, describe, test } from "node:test";
@@ -25,6 +26,7 @@ const TOOL_NAMES = [
   "read",
   "write",
   "ingest",
+  "enrich",
   "finalize",
   "check",
   "doctor",
@@ -40,6 +42,7 @@ const STABLE_ANNOTATIONS = {
   search: [true, false, false, false],
   read: [true, false, false, false],
   write: [false, true, true, false],
+  enrich: [false, true, true, false],
   finalize: [false, true, true, false],
   check: [true, false, false, false],
   graph: [false, true, true, false],
@@ -272,7 +275,7 @@ describe("MCP stdio adapter", () => {
     }
   });
 
-  test("MCP tools/list exposes exactly thirteen closed schemas and native graph action branches", async (t) => {
+  test("MCP tools/list exposes exactly fourteen closed schemas and native graph action branches", async (t) => {
     const sandbox = makeTemporaryRoot(t, "mcp inventory");
     const home = join(sandbox, "home");
     mkdirSync(home);
@@ -327,6 +330,44 @@ describe("MCP stdio adapter", () => {
     const failure = parseToolEnvelope(missing, true);
     assert.equal(failure.ok, false);
     assert.equal(failure.error.code, "NOT_FOUND");
+    assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP enrich tool grounds a page node and is idempotent on an unchanged hash", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp enrich");
+    const home = join(sandbox, "home");
+    mkdirSync(home);
+    const root = join(sandbox, "repo");
+    initializeGitRepository(root, {
+      "src/worker.ts": "export function run() { return 1; }\n",
+      "openwiki/architecture.md": "# Architecture\n\nThe worker performs background runs.\n",
+    });
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    await makeReady(session);
+
+    await request(session, 1, "tools/call", { name: "graph", arguments: { mode: "code", root, action: "build", force: true } });
+    const queryResponse = await request(session, 2, "tools/call", { name: "graph", arguments: { mode: "code", root, action: "query", query: "run", limit: 5 } });
+    const queryData = parseToolEnvelope(queryResponse, false);
+    const symbolNode = queryData.data.nodes.find((node) => node.name === "run");
+    assert.ok(symbolNode);
+
+    const pageHash = createHash("sha256").update("# Architecture\n\nThe worker performs background runs.\n").digest("hex");
+    const envelopeArguments = {
+      root,
+      envelope: {
+        schema: "memex.enrich.v1",
+        sourcePath: "openwiki/architecture.md",
+        sourceContentHash: pageHash,
+        nodes: [{ kind: "page", name: "openwiki/architecture.md", path: "openwiki/architecture.md" }],
+        edges: [{ kind: "mentions", from: "page:openwiki/architecture.md:openwiki/architecture.md", to: symbolNode.id, confidence: "inferred" }],
+      },
+    };
+    const firstEnrich = parseToolEnvelope(await request(session, 3, "tools/call", { name: "enrich", arguments: envelopeArguments }), false);
+    assert.equal(firstEnrich.data.applied, true);
+
+    const secondEnrich = parseToolEnvelope(await request(session, 4, "tools/call", { name: "enrich", arguments: envelopeArguments }), false);
+    assert.equal(secondEnrich.data.applied, false);
+
     assert.equal((await session.finish()).code, 0);
   });
 

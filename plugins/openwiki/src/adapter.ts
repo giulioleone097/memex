@@ -27,6 +27,7 @@ export const OPENWIKI_OPERATIONS = [
   "read",
   "write",
   "ingest",
+  "enrich",
   "finalize",
   "check",
   "doctor",
@@ -115,6 +116,13 @@ async function dispatchUnsafe(request: DispatchRequest): Promise<unknown> {
     case "ingest": {
       const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "envelope"]));
       return ingestSource({ location, envelope: requireValue(input, "envelope") });
+    }
+    case "enrich": {
+      assertKeys(input, ["root", "envelope"]);
+      const root = readRequiredString(input, "root");
+      const envelope = requireValue(input, "envelope");
+      const enrich = await loadEnrich();
+      return enrich.enrichGraph({ root, homeDir: hostHomeDir(), envelope });
     }
     case "finalize": {
       const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "command", "runId", "startedAt", "completedAt", "summary", "lastGitHead"]));
@@ -281,6 +289,16 @@ async function loadGraph(): Promise<GraphOperations> {
     analyzeGraphChanges: readAsyncFunction(module, "analyzeGraphChanges"),
     getArchitectureMap: readAsyncFunction(module, "getArchitectureMap"),
   };
+}
+
+interface EnrichOperations {
+  enrichGraph(options: InputRecord): Promise<unknown>;
+}
+
+async function loadEnrich(): Promise<EnrichOperations> {
+  const moduleValue: unknown = await import(new URL("./enrich.js", import.meta.url).href);
+  const module = readRecord(moduleValue, "Native enrich module is invalid.");
+  return { enrichGraph: readAsyncFunction(module, "enrichGraph") };
 }
 
 function readAsyncFunction(record: InputRecord, key: string): (options: InputRecord) => Promise<unknown> {

@@ -30,6 +30,7 @@ const tools: readonly ToolDefinition[] = [
   tool("read", "Read one grounded wiki page.", commonMode({ root, page: { type: "string", minLength: 1 } }, ["page"]), [true, false, false, false]),
   tool("write", "Write one confined wiki page.", commonMode({ root, page: { type: "string", minLength: 1 }, content: { type: "string" } }, ["page", "content"]), [false, true, true, false]),
   tool("ingest", "Store one validated source envelope.", commonMode({ root, envelope: { type: "object", additionalProperties: true } }, ["envelope"]), [false, true, true, false]),
+  tool("enrich", "Store one validated concept/page enrichment envelope, grounded in graph evidence.", object({ root, envelope: { type: "object", additionalProperties: true } }, ["root", "envelope"]), [false, true, true, false]),
   tool("finalize", "Finalize a wiki update run.", commonMode({ root, command: { type: "string", enum: ["init", "update", "ingest"] }, runId: { type: "string", minLength: 1 }, startedAt: { type: "string", minLength: 1 }, completedAt: { type: "string", minLength: 1 }, summary: { type: "string", minLength: 1 }, lastGitHead: { type: "string", minLength: 1 } }, ["command", "runId", "startedAt", "summary"]), [false, true, true, false]),
   tool("check", "Check wiki integrity.", commonMode({ root }, []), [true, false, false, false]),
   tool("doctor", "Run local runtime diagnostics.", commonMode({ root }, []), [true, false, false, false]),
