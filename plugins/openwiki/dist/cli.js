@@ -33,6 +33,8 @@ const VALUE_FLAGS = new Set([
     "base",
     "direction",
     "depth",
+    "from",
+    "to",
 ]);
 const BOOLEAN_FLAGS = new Set(["stdin", "force", "json", "pretty", "enabled", "disabled"]);
 export async function main(argv, stdinText) {

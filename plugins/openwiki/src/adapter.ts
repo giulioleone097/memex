@@ -49,7 +49,7 @@ export const OPENWIKI_OPERATIONS = [
 
 export type OpenWikiOperation = (typeof OPENWIKI_OPERATIONS)[number];
 type InputRecord = Record<string, unknown>;
-type GraphAction = "build" | "status" | "query" | "context" | "impact" | "changes" | "map";
+type GraphAction = "build" | "status" | "query" | "context" | "impact" | "changes" | "map" | "path" | "explain" | "communities" | "report";
 
 const GRAPH_ACTIONS: readonly GraphAction[] = [
   "build",
@@ -59,6 +59,10 @@ const GRAPH_ACTIONS: readonly GraphAction[] = [
   "impact",
   "changes",
   "map",
+  "path",
+  "explain",
+  "communities",
+  "report",
 ];
 const MODES: readonly WikiMode[] = ["code", "personal"];
 const WIKI_COMMANDS: readonly WikiCommand[] = ["init", "update", "ingest"];
@@ -271,7 +275,7 @@ async function dispatchSchedule(input: InputRecord): Promise<unknown> {
 }
 
 async function dispatchGraph(input: InputRecord): Promise<unknown> {
-  assertKeys(input, ["mode", "root", "action", "force", "query", "target", "base", "direction", "depth", "limit"]);
+  assertKeys(input, ["mode", "root", "action", "force", "query", "target", "base", "direction", "depth", "limit", "from", "to"]);
   if (has(input, "mode")) readEnum(input, "mode", ["code"] as const);
   const root = readRequiredString(input, "root");
   const action = readEnum(input, "action", GRAPH_ACTIONS);
@@ -282,6 +286,8 @@ async function dispatchGraph(input: InputRecord): Promise<unknown> {
   const base = readOptionalString(input, "base");
   const direction = has(input, "direction") ? readEnum(input, "direction", ["inbound", "outbound", "both"] as const) : undefined;
   const depth = readOptionalBoundedInteger(input, "depth", 1, 5);
+  const from = readOptionalString(input, "from");
+  const to = readOptionalString(input, "to");
   const graph = await loadGraph();
 
   if (action === "build") {
@@ -311,7 +317,25 @@ async function dispatchGraph(input: InputRecord): Promise<unknown> {
     assertAbsent(input, ["force", "query", "target", "direction", "depth"]);
     return publicGraphResult("changes", root, await graph.analyzeGraphChanges({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(base === undefined ? {} : { base }), ...(limit === undefined ? {} : { limit }) }), limit);
   }
-  assertAbsent(input, ["force", "query", "target", "base", "direction", "depth"]);
+  if (action === "path") {
+    assertAbsent(input, ["force", "query", "target", "base", "direction", "depth"]);
+    if (from === undefined || to === undefined) throw invalid("Graph path requires from and to.");
+    return publicGraphResult("path", root, await graph.getGraphPath({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, from, to, ...(limit === undefined ? {} : { limit }) }), limit);
+  }
+  if (action === "explain") {
+    assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to"]);
+    if (target === undefined) throw invalid("Graph explain requires target.");
+    return publicGraphResult("explain", root, await graph.explainGraphNode({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(limit === undefined ? {} : { limit }) }), limit);
+  }
+  if (action === "communities") {
+    assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to"]);
+    return publicGraphResult("communities", root, await graph.listGraphCommunities({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
+  }
+  if (action === "report") {
+    assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to", "limit"]);
+    return publicGraphResult("report", root, await graph.renderGraphReport({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT }), limit);
+  }
+  assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to"]);
   return publicGraphResult("map", root, await graph.getArchitectureMap({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
 }
 
@@ -355,6 +379,14 @@ function graphPublicFields(action: GraphAction): readonly string[] {
       return ["schemaVersion", "action", "root", "nodes", "edges", "truncated", "diagnostics", "changedPaths", "changeState", "head", "base"];
     case "map":
       return ["schemaVersion", "action", "root", "modules", "hubs", "cycles", "flows", "truncated", "diagnostics"];
+    case "path":
+      return ["schemaVersion", "action", "root", "from", "to", "found", "nodes", "edges", "totalWeight", "truncated"];
+    case "explain":
+      return ["schemaVersion", "action", "root", "target", "node", "neighborhood", "community", "communityStale", "citingPages", "diagnostics"];
+    case "communities":
+      return ["schemaVersion", "action", "root", "communities", "stale", "generation", "generatedAt", "truncated"];
+    case "report":
+      return ["schemaVersion", "action", "root", "page", "written", "communityCount", "godNodeCount", "surprisingConnectionCount", "ambiguousEdgeCount", "coverageRatio", "generation", "generatedAt"];
   }
 }
 
@@ -366,6 +398,10 @@ interface GraphOperations {
   analyzeGraphImpact(options: InputRecord): Promise<unknown>;
   analyzeGraphChanges(options: InputRecord): Promise<unknown>;
   getArchitectureMap(options: InputRecord): Promise<unknown>;
+  getGraphPath(options: InputRecord): Promise<unknown>;
+  explainGraphNode(options: InputRecord): Promise<unknown>;
+  listGraphCommunities(options: InputRecord): Promise<unknown>;
+  renderGraphReport(options: InputRecord): Promise<unknown>;
 }
 
 async function loadGraph(): Promise<GraphOperations> {
@@ -379,6 +415,10 @@ async function loadGraph(): Promise<GraphOperations> {
     analyzeGraphImpact: readAsyncFunction(module, "analyzeGraphImpact"),
     analyzeGraphChanges: readAsyncFunction(module, "analyzeGraphChanges"),
     getArchitectureMap: readAsyncFunction(module, "getArchitectureMap"),
+    getGraphPath: readAsyncFunction(module, "getGraphPath"),
+    explainGraphNode: readAsyncFunction(module, "explainGraphNode"),
+    listGraphCommunities: readAsyncFunction(module, "listGraphCommunities"),
+    renderGraphReport: readAsyncFunction(module, "renderGraphReport"),
   };
 }
 

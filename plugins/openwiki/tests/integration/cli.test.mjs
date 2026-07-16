@@ -469,6 +469,12 @@ describe("CLI adapter", () => {
       ["depth above range", [...base, "--action", "impact", "--target", "add", "--depth", "6"]],
       ["limit below range", [...base, "--action", "map", "--limit", "0"]],
       ["limit above range", [...base, "--action", "map", "--limit", "101"]],
+      ["path requires from and to", [...base, "--action", "path"]],
+      ["path requires to", [...base, "--action", "path", "--from", "hub"]],
+      ["explain requires target", [...base, "--action", "explain"]],
+      ["report rejects target", [...base, "--action", "report", "--target", "hub"]],
+      ["report rejects limit", [...base, "--action", "report", "--limit", "5"]],
+      ["communities rejects limit-incompatible force", [...base, "--action", "communities", "--force"]],
     ];
 
     for (const [label, args] of invalidCases) {
@@ -476,7 +482,7 @@ describe("CLI adapter", () => {
     }
   });
 
-  test("CLI graph passes seven native actions and bounded inputs to stable DTOs", (t) => {
+  test("CLI graph passes eleven native actions and bounded inputs to stable DTOs", (t) => {
     const sandbox = makeTemporaryRoot(t, "cli native graph");
     const home = join(sandbox, "home");
     const repository = join(sandbox, "repository with spaces");
@@ -561,6 +567,29 @@ describe("CLI adapter", () => {
     }
     assert.equal(map.limit, 5);
     assert.equal(typeof map.truncated, "boolean");
+
+    const report = assertSuccess(runCli([...graph, "report"], { home }));
+    assertGraphCommon(report, "report", repository);
+    assert.equal(report.page, "graph-report.md");
+    assert.equal(report.written, true);
+    assert.ok(Number.isInteger(report.communityCount));
+    assert.match(report.generation, /^g-[a-f0-9]{64}$/u);
+
+    const communities = assertSuccess(runCli([...graph, "communities", "--limit", "5"], { home }));
+    assertGraphCommon(communities, "communities", repository);
+    assert.equal(typeof communities.stale, "boolean");
+    assert.ok(Array.isArray(communities.communities));
+
+    const explain = assertSuccess(runCli([...graph, "explain", "--target", "add", "--limit", "5"], { home }));
+    assertGraphCommon(explain, "explain", repository);
+    assert.equal(explain.node.name, "add");
+    assert.ok(Array.isArray(explain.neighborhood.nodes));
+    assert.equal(typeof explain.communityStale, "boolean");
+
+    const pathResult = assertSuccess(runCli([...graph, "path", "--from", "add", "--to", "double"], { home }));
+    assertGraphCommon(pathResult, "path", repository);
+    assert.equal(typeof pathResult.found, "boolean");
+    assert.ok(Array.isArray(pathResult.nodes));
 
     assert.equal(runGit(repository, ["rev-parse", "HEAD"]).trim(), baseHead);
   });
