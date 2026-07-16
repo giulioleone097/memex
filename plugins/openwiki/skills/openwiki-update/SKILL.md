@@ -21,7 +21,7 @@ Detect changes first. Write only affected pages and record a run only after succ
 
 ## Procedure
 
-1. Run `status` using the same mode/root. In code mode, delegate graph freshness and changed-path mapping to `openwiki-graph`'s `changes` action; that skill owns graph status, authorized refresh, limits, and confidence reporting. In personal mode, skip graph work.
+1. Run `status` using the same mode/root. In code mode, delegate graph freshness and changed-path mapping to `openwiki-graph`'s `changes` action; that skill owns graph status, authorized refresh, limits, and confidence reporting. After an authorized graph build (and, when the concept/wiki plane exists, `enrich`), run `openwiki-graph`'s `report` action so `graph-report.md` reflects the current unified graph; treat its output as one of the changed pages for this run. In personal mode, skip graph and report work.
 2. Run `context` using the same mode/root.
 3. If context reports no changed evidence, run `check`, return a no-op result, and do not call `write`, `enrich`, or `finalize`.
 4. Map changed evidence to affected pages; read those pages before generating replacements.

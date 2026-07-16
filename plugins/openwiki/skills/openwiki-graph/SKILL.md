@@ -53,8 +53,18 @@ Use the OpenWiki-native graph for compact repository understanding. This workflo
    ```
 
    `query` requires `--query`. `context` and `impact` require `--target`. `changes` optionally accepts `--base`; without it, use the working-tree delta. `impact` direction defaults only when the CLI contract says so; otherwise pass it explicitly. Keep `--limit` bounded; default to the runtime's compact default when omitted.
-5. Prefer `map`, `query`, `context`, `impact`, or `changes` evidence before broad source reads. Read only the specific files and line ranges returned by the graph when compact evidence leaves a material gap. Never claim that an omitted or excluded file was absent from the repository.
-6. Report graph coverage and uncertainty with the result. Preserve diagnostics, unresolved-edge counts, confidence labels, and truncation metadata. Exact means a deterministic repository-relative match; resolved means a language/package or unique qualified-symbol resolution; heuristic means an explicitly marked fallback match. Do not upgrade confidence in prose.
+5. After a successful build, `enrich` (owned by the concept/wiki-plane skill), or an earlier `report`, the following actions are also available:
+
+   ```text
+   <cli> graph --mode code --root <root> --action report --json
+   <cli> graph --mode code --root <root> --action communities --limit <1..100> --json
+   <cli> graph --mode code --root <root> --action explain --target "<file-or-symbol>" --limit <1..100> --json
+   <cli> graph --mode code --root <root> --action path --from "<node>" --to "<node>" --json
+   ```
+
+   `report` is the only one of these four that writes: it recomputes deterministic label-propagation communities and god-node degree over the currently persisted graph, persists `member-of` edges plus a `communities.json` snapshot in the private store, and writes the `graph-report.md` wiki page. Run it once after `build` (and, when the concept/wiki plane exists, after `enrich`) whenever the report or community data must reflect the latest graph. `communities`, `explain`, and `path` are read-only and report a `stale`/`communityStale` flag when the last `report` run predates the current graph generation; never treat a stale community as current without disclosing it. `path` requires an exact `--from`/`--to` match (id, path, name, or qualified name); `explain` resolves its `--target` the same lenient way `context` does.
+6. Prefer `map`, `query`, `context`, `impact`, or `changes` evidence before broad source reads. Read only the specific files and line ranges returned by the graph when compact evidence leaves a material gap. Never claim that an omitted or excluded file was absent from the repository.
+7. Report graph coverage and uncertainty with the result. Preserve diagnostics, unresolved-edge counts, confidence labels, and truncation metadata. Exact means a deterministic repository-relative match; resolved means a language/package or unique qualified-symbol resolution; heuristic means an explicitly marked fallback match. Do not upgrade confidence in prose.
 
 For MCP, use the same action sequence through the configured server: send JSON-RPC `initialize`, send `notifications/initialized`, call `tools/list`, then call `tools/call` for the graph operation advertised by that list with the same `mode`, `root`, `action`, and action-specific arguments. Read `status` first, authorize `build` only when missing/stale, then call the requested bounded action. The design names the protocol and mirrored operation schemas but does not prescribe a tool name; use only the name returned by `tools/list`, never a guessed provider-specific name. Preserve the same safe JSON result and typed error contract.
 
@@ -75,7 +85,7 @@ For MCP, use the same action sequence through the configured server: send JSON-R
 
 ## Mutation boundary
 
-Graph build and refresh read repository files but never execute, import, compile, or evaluate repository code. They write only private, atomic OpenWiki graph data under `~/.openwiki/data/<workspace-id>/graph/`; they never write source files, wiki files, instruction files, dependency files, or provider credentials. The graph stores metadata, hashes, nodes, edges, and diagnostics, never source-file bodies. Query, context, impact, changes, map, and status are read-only. Source refactoring and rename remain outside this workflow.
+Graph build and refresh read repository files but never execute, import, compile, or evaluate repository code. Build writes only private, atomic OpenWiki graph data under `~/.openwiki/data/<workspace-id>/graph/`; report additionally writes the private `~/.openwiki/data/<workspace-id>/analysis/communities.json` snapshot and the `graph-report.md` wiki page under the workspace's confined wiki root — no other action writes anywhere. None of these ever write source files, instruction files, dependency files, or provider credentials. The graph stores metadata, hashes, nodes, edges, and diagnostics, never source-file bodies. Query, context, impact, changes, map, status, communities, explain, and path are read-only. Source refactoring and rename remain outside this workflow.
 
 ## Completion proof
 
