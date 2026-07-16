@@ -23,6 +23,7 @@ const TOOL_NAMES = [
   "status",
   "context",
   "search",
+  "ask",
   "read",
   "write",
   "ingest",
@@ -40,6 +41,7 @@ const STABLE_ANNOTATIONS = {
   status: [true, false, false, false],
   context: [true, false, false, false],
   search: [true, false, false, false],
+  ask: [true, false, false, false],
   read: [true, false, false, false],
   write: [false, true, true, false],
   enrich: [false, true, true, false],
@@ -275,7 +277,7 @@ describe("MCP stdio adapter", () => {
     }
   });
 
-  test("MCP tools/list exposes exactly fourteen closed schemas and native graph action branches", async (t) => {
+  test("MCP tools/list exposes exactly fifteen closed schemas and native graph action branches", async (t) => {
     const sandbox = makeTemporaryRoot(t, "mcp inventory");
     const home = join(sandbox, "home");
     mkdirSync(home);

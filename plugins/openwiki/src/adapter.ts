@@ -4,20 +4,28 @@ import path from "node:path";
 
 import { type WikiMode, type WikiCommand } from "./contracts.js";
 import { runDoctor } from "./doctor.js";
+import { defaultVendorRoot, loadEmbedder, loadVendorManifest } from "./embedder.js";
 import { OpenWikiError, type OpenWikiJsonFailure, type OpenWikiJsonResult } from "./errors.js";
 import { collectGitContext } from "./git.js";
+import { getGraphStatus } from "./graph.js";
 import { openGraphIndex, probeGraphStorage, resolveGraphStorage } from "./graph-store.js";
 import type { GraphIndexPort } from "./graph-index.js";
-import { resolveWikiLocation } from "./paths.js";
+import { openLexicalIndex } from "./lexical-index.js";
+import { resolveWikiLocation, type WikiLocation } from "./paths.js";
+import {
+  ask as retrieveAsk,
+  search as retrieveSearch,
+  type RetrievalPorts,
+} from "./retrieve.js";
 import { listSchedules, removeSchedule, setSchedule } from "./schedules.js";
 import { ingestSource, listSources, purgeData } from "./sources.js";
 import { readState } from "./state.js";
+import { openVectorStore } from "./vector-store.js";
 import {
   checkWiki,
   finalizeRun,
   initializeWiki,
   readPage,
-  searchWiki,
   writePage,
 } from "./wiki.js";
 
@@ -26,6 +34,7 @@ export const OPENWIKI_OPERATIONS = [
   "status",
   "context",
   "search",
+  "ask",
   "read",
   "write",
   "ingest",
@@ -54,6 +63,44 @@ const GRAPH_ACTIONS: readonly GraphAction[] = [
 const MODES: readonly WikiMode[] = ["code", "personal"];
 const WIKI_COMMANDS: readonly WikiCommand[] = ["init", "update", "ingest"];
 const GRAPH_RESPONSE_BYTE_LIMIT = 48 * 1024;
+
+const RETRIEVAL_SIGNALS = ["lexical", "vector", "graph"] as const;
+type RetrievalSignal = (typeof RETRIEVAL_SIGNALS)[number];
+
+function isRetrievalSignal(value: unknown): value is RetrievalSignal {
+  return typeof value === "string" && RETRIEVAL_SIGNALS.includes(value as RetrievalSignal);
+}
+
+function readOptionalSignals(input: InputRecord): RetrievalSignal[] | undefined {
+  if (!has(input, "signals")) return undefined;
+  const value = input.signals;
+  if (!Array.isArray(value) || value.length === 0 || !value.every(isRetrievalSignal)) {
+    throw invalid("Argument signals must be a non-empty array of lexical, vector, graph.");
+  }
+  return [...value];
+}
+
+async function openLexicalAndVector(location: WikiLocation, wantsVector: boolean): Promise<Pick<RetrievalPorts, "lexicalIndex" | "vectorStore" | "embedder">> {
+  const lexicalIndex = await openLexicalIndex(path.join(location.dataRoot, "lexical"));
+  if (!wantsVector) return { lexicalIndex };
+  const vendorRoot = defaultVendorRoot();
+  const embedder = await loadEmbedder(vendorRoot);
+  const manifest = await loadVendorManifest(vendorRoot);
+  const modelRevision = manifest.assets.find((asset) => asset.path.startsWith(`model/${embedder.modelId}/`))?.revision ?? "unknown";
+  const vectorStore = await openVectorStore(path.join(location.dataRoot, "vectors"), { modelId: embedder.modelId, modelRevision, dims: embedder.dims });
+  return { lexicalIndex, embedder, vectorStore };
+}
+
+// `search`'s graph signal is one of three optional inputs — absent when not
+// yet built, degrading the implicit default rather than erroring.
+async function openGraphIndexIfAvailable(location: WikiLocation): Promise<GraphIndexPort | undefined> {
+  if (location.mode !== "code" || location.workspaceRoot === undefined) return undefined;
+  const homeDir = hostHomeDir();
+  const status = await getGraphStatus({ root: location.workspaceRoot, homeDir });
+  if (!status.available) return undefined;
+  const resolved = await resolveGraphStorage(location.workspaceRoot, homeDir);
+  return openGraphIndex(resolved.storage);
+}
 
 export interface DispatchRequest {
   operation: OpenWikiOperation;
@@ -102,8 +149,42 @@ async function dispatchUnsafe(request: DispatchRequest): Promise<unknown> {
       return collectGitContext(readRequiredString(input, "root"), readOptionalString(input, "previousHead"));
     }
     case "search": {
-      const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "query", "limit"]));
-      return searchWiki(location, readRequiredString(input, "query"), readOptionalBoundedInteger(input, "limit", 1, 100));
+      const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "query", "limit", "signals"]));
+      const requested = readOptionalSignals(input);
+      const explicit = requested !== undefined;
+      const wantsVector = explicit ? requested.includes("vector") : true;
+      const wantsGraph = explicit ? requested.includes("graph") : true;
+      const lexicalAndVector = await openLexicalAndVector(location, wantsVector);
+      const graphIndex = wantsGraph ? await openGraphIndexIfAvailable(location) : undefined;
+      if (explicit && requested.includes("graph") && graphIndex === undefined) {
+        throw new OpenWikiError("NOT_INITIALIZED", "Graph retrieval requires a built graph index; run graph build first.");
+      }
+      const signals: RetrievalSignal[] = explicit ? requested : ["lexical", "vector", ...(graphIndex === undefined ? [] : (["graph"] as const))];
+      const ports: RetrievalPorts = { ...lexicalAndVector, ...(graphIndex === undefined ? {} : { graphIndex }) };
+      return retrieveSearch({ text: readRequiredString(input, "query"), limit: readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20, signals }, ports);
+    }
+    case "ask": {
+      const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "query", "limit", "signals"]));
+      if (location.mode !== "code" || location.workspaceRoot === undefined) {
+        throw invalid("Ask requires code mode until personal-mode graph support lands (2a).");
+      }
+      const requested = readOptionalSignals(input);
+      const wantsVector = requested === undefined ? true : requested.includes("vector");
+      const homeDir = hostHomeDir();
+      const [lexicalAndVector, status] = await Promise.all([
+        openLexicalAndVector(location, wantsVector),
+        getGraphStatus({ root: location.workspaceRoot, homeDir }),
+      ]);
+      if (!status.available) throw new OpenWikiError("NOT_INITIALIZED", "Ask requires a built graph index; run graph build first.");
+      const resolved = await resolveGraphStorage(location.workspaceRoot, homeDir);
+      const graphIndex = await openGraphIndex(resolved.storage);
+      return retrieveAsk(
+        readRequiredString(input, "query"),
+        readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20,
+        { ...lexicalAndVector, graphIndex },
+        { stale: !status.fresh },
+        requested,
+      );
     }
     case "read": {
       const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "page"]));

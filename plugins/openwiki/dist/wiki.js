@@ -103,44 +103,6 @@ export async function writePage(location, page, content) {
     });
     await reindexWikiPage(location, page, content);
 }
-export async function searchWiki(location, query, limit = 20) {
-    const terms = normalizeTerms(query);
-    if (terms.length === 0) {
-        throw new OpenWikiError("INVALID_ARGUMENT", "Search query must contain searchable terms.");
-    }
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-        throw new OpenWikiError("INVALID_ARGUMENT", "Search limit must be between 1 and 100.");
-    }
-    const pages = await listMarkdownPages(location);
-    const results = [];
-    for (const page of pages) {
-        const content = (await readPage(location, page)).content;
-        const lines = content.split(/\r?\n/u);
-        for (let index = 0; index < lines.length; index += 1) {
-            const excerpt = lines[index]?.trim() ?? "";
-            if (excerpt.length === 0) {
-                continue;
-            }
-            const normalizedLine = excerpt.toLocaleLowerCase("en-US");
-            const matches = terms.filter((term) => normalizedLine.includes(term));
-            if (matches.length === 0) {
-                continue;
-            }
-            const occurrences = matches.reduce((count, term) => count + countOccurrences(normalizedLine, term), 0);
-            results.push({
-                page,
-                line: index + 1,
-                excerpt,
-                score: matches.length / terms.length + occurrences / 1000,
-            });
-        }
-    }
-    return results
-        .sort((left, right) => right.score - left.score ||
-        left.page.localeCompare(right.page) ||
-        left.line - right.line)
-        .slice(0, limit);
-}
 export async function finalizeRun(options) {
     return withWikiLock(options.location.wikiRoot, async () => {
         const current = await readState(options.location);
@@ -371,23 +333,6 @@ async function readFileNoFollow(filePath, missingCode, missingMessage) {
     finally {
         await handle?.close().catch(() => undefined);
     }
-}
-function normalizeTerms(query) {
-    if (typeof query !== "string") {
-        return [];
-    }
-    return [
-        ...new Set(query
-            .toLocaleLowerCase("en-US")
-            .match(/[\p{L}\p{N}_-]+/gu) ?? []),
-    ];
-}
-function countOccurrences(value, term) {
-    let count = 0;
-    for (let index = value.indexOf(term); index >= 0; index = value.indexOf(term, index + term.length)) {
-        count += 1;
-    }
-    return count;
 }
 function findMarkdownLinks(content) {
     return [...content.matchAll(/\[[^\]]*\]\(([^)]+)\)/gu)]

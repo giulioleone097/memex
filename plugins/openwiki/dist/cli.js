@@ -14,6 +14,7 @@ const VALUE_FLAGS = new Set([
     "envelope-file",
     "query",
     "limit",
+    "signals",
     "command",
     "run-id",
     "started-at",
@@ -83,6 +84,12 @@ async function toRequest(operation, flags, stdinText) {
         const value = inputValue[key];
         if (typeof value === "string")
             inputValue[key] = Number(value);
+    }
+    if (typeof inputValue.signals === "string") {
+        inputValue.signals = inputValue.signals
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0);
     }
     if (operation === "write") {
         const content = await readOneTransport(flags, "content", "content-file", stdinText);

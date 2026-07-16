@@ -26,7 +26,6 @@ import {
   finalizeRun,
   initializeWiki,
   readPage,
-  searchWiki,
   writePage,
 } from "../../dist/wiki.js";
 
@@ -219,12 +218,6 @@ describe("storage", () => {
     assert.equal(page.page, "notes/release.md");
     assert.equal(page.lineCount, 3);
     assert.equal(page.content.includes("Rollback procedure"), true);
-
-    const matches = await searchWiki(initialized.location, "deployment rollback");
-    assert.equal(matches[0]?.page, "notes/release.md");
-    assert.equal(matches[0]?.line, 2);
-    assert.ok((matches[0]?.score ?? 0) > 0);
-    assert.match(matches[0]?.excerpt ?? "", /Deployment/u);
 
     await finalizeRun({
       location: initialized.location,

@@ -10,12 +10,14 @@ export const MAX_MCP_FRAME_BYTES = MAX_ENVELOPE_BYTES + MCP_ENVELOPE_WRAPPER_BYT
 const root = { type: "string", minLength: 1 };
 const mode = { type: "string", enum: ["code", "personal"] };
 const limit = { type: "integer", minimum: 1, maximum: 100 };
+const signals = { type: "array", items: { type: "string", enum: ["lexical", "vector", "graph"] }, minItems: 1 };
 const commonMode = (properties, required) => ({ type: "object", additionalProperties: false, properties: { mode, ...properties }, required: ["mode", ...required] });
 const tools = [
     tool("init", "Initialize an OpenWiki workspace.", commonMode({ root }, []), [false, false, true, false]),
     tool("status", "Read OpenWiki state and source summaries.", commonMode({ root }, []), [true, false, false, false]),
     tool("context", "Collect bounded Git repository context.", object({ root, previousHead: { type: "string", minLength: 1 } }, ["root"]), [true, false, false, false]),
-    tool("search", "Search grounded wiki pages.", commonMode({ root, query: { type: "string", minLength: 1 }, limit }, ["query"]), [true, false, false, false]),
+    tool("search", "Search grounded wiki pages and code with hybrid lexical, vector, and graph retrieval.", commonMode({ root, query: { type: "string", minLength: 1 }, limit, signals }, ["query"]), [true, false, false, false]),
+    tool("ask", "Ask a question and receive a cited, bounded evidence bundle over hybrid retrieval and graph expansion.", commonMode({ root, query: { type: "string", minLength: 1 }, limit, signals }, ["query"]), [true, false, false, false]),
     tool("read", "Read one grounded wiki page.", commonMode({ root, page: { type: "string", minLength: 1 } }, ["page"]), [true, false, false, false]),
     tool("write", "Write one confined wiki page.", commonMode({ root, page: { type: "string", minLength: 1 }, content: { type: "string" } }, ["page", "content"]), [false, true, true, false]),
     tool("ingest", "Store one validated source envelope.", commonMode({ root, envelope: { type: "object", additionalProperties: true } }, ["envelope"]), [false, true, true, false]),

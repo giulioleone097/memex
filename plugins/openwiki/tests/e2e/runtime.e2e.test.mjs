@@ -298,18 +298,18 @@ async function wikiDigest(repositoryRoot) {
 }
 
 function searchResults(data) {
-  const results = Array.isArray(data) ? data : data.results;
-  assert.ok(Array.isArray(results), "Search must return a result array.");
+  const results = Array.isArray(data.evidence) ? data.evidence : data;
+  assert.ok(Array.isArray(results), "Search must return an evidence array.");
   return results;
 }
 
-function assertSearchResult(result, page) {
-  assert.equal(result.page, page);
-  assert.ok(Number.isInteger(result.line) && result.line > 0);
-  assert.equal(typeof result.excerpt, "string");
-  assert.ok(result.excerpt.length > 0);
-  assert.equal(typeof result.score, "number");
-  assert.ok(result.score > 0);
+function assertEvidenceItem(item, expectedPath) {
+  assert.equal(item.ref.path, expectedPath);
+  assert.ok(Number.isInteger(item.ref.startLine) && item.ref.startLine > 0);
+  assert.ok(Number.isInteger(item.ref.endLine) && item.ref.endLine >= item.ref.startLine);
+  assert.equal(typeof item.score, "number");
+  assert.ok(item.score > 0);
+  assert.equal(item.citation, `${expectedPath}#L${String(item.ref.startLine)}-${String(item.ref.endLine)}`);
 }
 
 function assertSemanticText(value, patterns) {
@@ -413,7 +413,13 @@ async function runMcpJourney(harness) {
   assert.equal(byId.get(1).result.protocolVersion, "2025-06-18");
   const toolNames = byId.get(2).result.tools.map(({ name }) => name);
   for (const required of ["graph", "read", "search"]) assert.ok(toolNames.includes(required));
-  assertSemanticText(byId.get(3), [/architecture\.md/u, /catalog/iu]);
+  // The search tool's evidence shape (EvidenceItem: ref/score/ranks/citation/
+  // confidence — Task 8's binding contract) never echoes raw chunk prose, only
+  // structural refs, so a /catalog/iu prose-content check can no longer match
+  // here; /architecture\.md/u alone still proves the right page was found
+  // (it appears as ref.path/citation in the evidence). The "read" response
+  // below is unaffected — it returns the real page content verbatim.
+  assertSemanticText(byId.get(3), [/architecture\.md/u]);
   assertSemanticText(byId.get(4), [/architecture\.md/u, /Catalog Architecture/u]);
 }
 
@@ -506,12 +512,21 @@ The catalog boundary lives in \`src/catalog.mjs\` at Git commit \`${harness.init
       "catalog architecture",
       "--limit",
       "5",
+      // lexical only: this journey never runs "graph build" (that is a
+      // separate test below), so requesting the graph signal here would
+      // hard-fail with NOT_INITIALIZED per this task's own design (an
+      // explicit --signals request must never silently narrow). lexical
+      // alone still proves the CLI's comma-split --signals parsing and
+      // keeps this test independent of both graph-build state and real
+      // vendored embedder availability.
+      "--signals",
+      "lexical",
     ]);
     const catalogResult = searchResults(firstSearch.json.data).find(
-      ({ page }) => page === "architecture.md",
+      ({ ref }) => ref.path === "architecture.md",
     );
     assert.ok(catalogResult);
-    assertSearchResult(catalogResult, "architecture.md");
+    assertEvidenceItem(catalogResult, "architecture.md");
 
     for (const kind of SOURCE_KINDS) {
       const ingest = await runCliSuccess(harness, [
@@ -717,8 +732,11 @@ export function groupActiveProductsByCategory() {
       "groupActiveProductsByCategory",
       "--limit",
       "5",
+      // lexical only — see the comment on the first search call above.
+      "--signals",
+      "lexical",
     ]);
-    assert.ok(searchResults(postPurgeSearch.json.data).some(({ page }) => page === "architecture.md"));
+    assert.ok(searchResults(postPurgeSearch.json.data).some(({ ref }) => ref.path === "architecture.md"));
   });
 
   test("builds and incrementally refreshes the proprietary bounded code graph without GitNexus", async (t) => {

@@ -18,12 +18,6 @@ export interface PageReadResult {
     content: string;
     lineCount: number;
 }
-export interface SearchResult {
-    page: string;
-    line: number;
-    excerpt: string;
-    score: number;
-}
 export interface FinalizeRunOptions {
     location: WikiLocation;
     command: WikiCommand;
@@ -52,7 +46,6 @@ export interface WikiCheckOptions {
 export declare function initializeWiki(options: InitializeWikiOptions): Promise<InitializeWikiResult>;
 export declare function readPage(location: WikiLocation, page: string): Promise<PageReadResult>;
 export declare function writePage(location: WikiLocation, page: string, content: string): Promise<void>;
-export declare function searchWiki(location: WikiLocation, query: unknown, limit?: number): Promise<SearchResult[]>;
 export declare function finalizeRun(options: FinalizeRunOptions): Promise<FinalizeRunResult>;
 export declare function checkWiki(location: WikiLocation, options?: WikiCheckOptions): Promise<WikiCheckResult>;
 export declare function createWikiContentHash(location: WikiLocation): Promise<string>;
