@@ -1,9 +1,9 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { lstat, mkdir, open, readFile, readdir, rm, unlink } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 
-import { atomicWriteFile } from "./atomic.js";
+import { atomicWriteFile, withFileWriteLock } from "./atomic.js";
 import { canonicalizeGraph, graphHash, parseCodeGraph, parseEnrichmentShard, GRAPH_SCANNER_VERSION, type CodeGraphV1, type EnrichmentShardV1 } from "./graph-contracts.js";
 import { OpenWikiError } from "./errors.js";
 import {
@@ -169,32 +169,7 @@ export async function writeGraph(storage: GraphStorage, graph: CodeGraphV1, shar
 }
 
 export async function withGraphWriteLock<T>(storage: GraphStorage, operation: () => Promise<T>): Promise<T> {
-  await mkdir(storage.root, { recursive: true, mode: 0o700 });
-  await assertRegularDirectory(storage.root);
-  const token = randomUUID();
-  const serialized = `${JSON.stringify({ schemaVersion: 1, pid: process.pid, createdAt: new Date().toISOString(), token })}\n`;
-  const deadline = Date.now() + GRAPH_WRITE_LOCK_WAIT_MS;
-  let handle: Awaited<ReturnType<typeof open>> | undefined;
-  while (handle === undefined) {
-    try {
-      handle = await open(storage.writeLockPath, "wx", 0o600);
-      await handle.writeFile(serialized, "utf8");
-      await handle.sync();
-    } catch (error) {
-      await handle?.close().catch(() => undefined);
-      handle = undefined;
-      if (!isAlreadyExists(error)) throw new OpenWikiError("IO_FAILURE", "Unable to acquire the graph writer lock.");
-      if (await recoverStaleGraphLock(storage.writeLockPath)) continue;
-      if (Date.now() >= deadline) throw new OpenWikiError("LOCKED", "OpenWiki graph writer is busy.");
-      await wait(10);
-    }
-  }
-  try {
-    return await operation();
-  } finally {
-    await handle.close().catch(() => undefined);
-    await releaseGraphLock(storage.writeLockPath, serialized);
-  }
+  return withFileWriteLock(storage.writeLockPath, operation, { waitMs: GRAPH_WRITE_LOCK_WAIT_MS, staleMs: GRAPH_STALE_LOCK_MS });
 }
 
 export async function currentGitFingerprint(root: string): Promise<{ gitHead?: string }> {
@@ -368,48 +343,6 @@ async function garbageCollect(storage: GraphStorage, previous: GraphManifest | u
   for (const entry of await readdir(storage.enrichmentRoot).catch(() => [])) if (!enrichmentShards.has(entry)) await rm(confinedStoredName(storage.enrichmentRoot, entry), { force: true });
 }
 
-async function recoverStaleGraphLock(lockPath: string): Promise<boolean> {
-  let serialized: string;
-  try {
-    const details = await lstat(lockPath);
-    if (details.isSymbolicLink() || !details.isFile()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph writer lock must be a regular file.");
-    serialized = await readFile(lockPath, "utf8");
-  } catch (error) {
-    if (error instanceof OpenWikiError) throw error;
-    return false;
-  }
-  const lock = parseLock(serialized);
-  if (lock === undefined || Date.now() - lock.createdAt < GRAPH_STALE_LOCK_MS || processAlive(lock.pid)) return false;
-  try {
-    if (await readFile(lockPath, "utf8") !== serialized) return false;
-    await unlink(lockPath);
-    return true;
-  } catch { return false; }
-}
-
-async function releaseGraphLock(lockPath: string, serialized: string): Promise<void> {
-  try {
-    if (await readFile(lockPath, "utf8") !== serialized) throw new OpenWikiError("LOCKED", "Graph writer lock ownership changed before release.");
-    await unlink(lockPath);
-  } catch (error) {
-    if (error instanceof OpenWikiError) throw error;
-    throw new OpenWikiError("IO_FAILURE", "Unable to release the graph writer lock.");
-  }
-}
-
-function parseLock(serialized: string): { pid: number; createdAt: number } | undefined {
-  try {
-    const value = JSON.parse(serialized) as unknown;
-    if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.pid !== "number" || !Number.isSafeInteger(value.pid) || value.pid < 1 || typeof value.createdAt !== "string" || typeof value.token !== "string") return undefined;
-    const createdAt = Date.parse(value.createdAt);
-    return Number.isFinite(createdAt) ? { pid: value.pid, createdAt } : undefined;
-  } catch { return undefined; }
-}
-
-function processAlive(pid: number): boolean {
-  try { process.kill(pid, 0); return true; } catch (error) { return !(error instanceof Error && "code" in error && error.code === "ESRCH"); }
-}
-
 function createStorage(root: string): GraphStorage {
   return { root, manifestPath: path.join(root, "manifest.json"), previousManifestPath: path.join(root, "manifest.previous.json"), writeLockPath: path.join(root, "writer.lock"), generationRoot: path.join(root, "generations"), shardRoot: path.join(root, "shards"), enrichmentRoot: path.join(root, "enrichment"), snapshotRoot: path.join(root, "snapshots") };
 }
@@ -468,8 +401,6 @@ function nonNegativeInteger(value: unknown): value is number { return typeof val
 function isRelationKind(value: unknown): value is "calls" | "inherits" | "implements" | "references" { return value === "calls" || value === "inherits" || value === "implements" || value === "references"; }
 function isRecord(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function isNotFound(error: unknown): boolean { return error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "ENOTDIR"); }
-function isAlreadyExists(error: unknown): boolean { return error instanceof Error && "code" in error && error.code === "EEXIST"; }
-function wait(milliseconds: number): Promise<void> { return new Promise((resolve) => setTimeout(resolve, milliseconds)); }
 function assertInside(root: string, candidate: string): void { const relative = path.relative(root, candidate); if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))) return; throw new OpenWikiError("PATH_OUTSIDE_ROOT", "Graph file path escapes the repository root."); }
 async function assertRegularDirectory(directory: string): Promise<void> { const details = await lstat(directory); if (details.isSymbolicLink() || !details.isDirectory()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph storage directory must not be a symbolic link."); }
 async function isRegularFile(file: string): Promise<boolean> { try { const details = await lstat(file); if (details.isSymbolicLink()) throw new OpenWikiError("SYMLINK_ESCAPE", "Graph manifest must not be a symbolic link."); return details.isFile(); } catch (error) { if (error instanceof OpenWikiError) throw error; if (isNotFound(error)) return false; throw new OpenWikiError("IO_FAILURE", "Unable to probe graph storage."); } }
