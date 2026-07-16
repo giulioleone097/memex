@@ -491,7 +491,20 @@ function confinedPath(root, relative) {
 function safeGeneration(value) {
     return typeof value === "string" && /^g-[a-f0-9]{64}$/u.test(value);
 }
-function emptyRecord() { return {}; }
+// Object.create(null), not {}: the symbol/path token dictionaries built in
+// writeGraphIndexGeneration are keyed by arbitrary real-world strings (words
+// extracted from symbol names, scopes, and file paths) — not always hashes —
+// and a plain {} inherits Object.prototype members ("constructor", "toString",
+// "valueOf", ...). A real class constructor method literally tokenizes to
+// "constructor", so `candidates["constructor"] ?? []` resolved to the
+// inherited Object constructor function (truthy, not undefined) instead of
+// the intended fallback array, crashing on `.push()`. A null-prototype object
+// has no inherited members, so every lookup for a key not yet explicitly set
+// is genuinely undefined, regardless of what that key's text is. Serializes
+// identically to plain-object JSON (JSON.stringify/Object.entries only ever
+// consider own enumerable properties), so the on-disk bucket file format is
+// unchanged.
+function emptyRecord() { return Object.create(null); }
 function positiveInteger(value) { return typeof value === "number" && Number.isSafeInteger(value) && value >= 1; }
 function nonNegativeInteger(value) { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0; }
 function isRecord(value) {
