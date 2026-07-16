@@ -4,6 +4,7 @@ import { access, lstat, open, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { defaultVendorRoot, verifyAllVendorAssets } from "./embedder.js";
 import { OpenWikiError } from "./errors.js";
 import { containsSensitive } from "./redact.js";
 import { listSources, MAX_SOURCE_RETENTION_RUNS } from "./sources.js";
@@ -18,6 +19,7 @@ export const DOCTOR_CHECK_IDS = [
     "locks",
     "retention",
     "secret-leakage",
+    "vendor-assets",
 ];
 const execFileAsync = promisify(execFile);
 const DEFAULT_PLUGIN_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -40,6 +42,7 @@ export async function runDoctor(options) {
             checkLocks(options.location),
             checkRetention(options.location),
             checkSecretLeakage(options.location),
+            checkVendorAssets(options.vendorRoot ?? defaultVendorRoot()),
         ])),
     ];
     return {
@@ -194,6 +197,24 @@ async function checkSecretLeakage(location) {
     }
     catch {
         return fail("secret-leakage", "Private data could not be scanned safely.");
+    }
+}
+// Reports "fail", not "warning": after the write-path soft-degrade fix
+// (reindex.ts), missing/corrupt vendor assets no longer break ordinary
+// write/graph build, but semantic (vector) retrieval is entirely
+// unavailable in this state — search/ask hard-fail the moment the vector
+// signal is requested (explicitly or by implicit default), and every
+// subsequent write proceeds with embedding silently-but-non-silently
+// skipped (ReindexResult.embeddingsAvailable / VectorStore.status()). That
+// is real, actionable severity a mere warning would understate.
+async function checkVendorAssets(vendorRoot) {
+    try {
+        await verifyAllVendorAssets(vendorRoot);
+        return pass("vendor-assets", "Vendored embedding model assets are present and verified.");
+    }
+    catch (error) {
+        const reason = error instanceof OpenWikiError ? error.message : "Vendor asset verification failed unexpectedly.";
+        return fail("vendor-assets", `${reason} Vector search/ask will be unavailable and write/graph build will proceed with embedding skipped until the vendored model assets are restored.`);
     }
 }
 async function collectFilesNoFollow(target, files) {

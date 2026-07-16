@@ -1,5 +1,5 @@
 import type { WikiLocation } from "./paths.js";
-export declare const DOCTOR_CHECK_IDS: readonly ["node", "permissions", "git", "manifests", "config", "state", "locks", "retention", "secret-leakage"];
+export declare const DOCTOR_CHECK_IDS: readonly ["node", "permissions", "git", "manifests", "config", "state", "locks", "retention", "secret-leakage", "vendor-assets"];
 export type DoctorCheckId = (typeof DOCTOR_CHECK_IDS)[number];
 export type DoctorCheckStatus = "pass" | "warning" | "fail";
 export interface DoctorCheck {
@@ -10,6 +10,7 @@ export interface DoctorCheck {
 export interface RunDoctorOptions {
     location: WikiLocation;
     pluginRoot?: string;
+    vendorRoot?: string;
 }
 export interface DoctorResult {
     ok: boolean;
