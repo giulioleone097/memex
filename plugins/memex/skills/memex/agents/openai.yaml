@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memex"
+  short_description: "Route safe Memex workflows across both hosts"
+  default_prompt: "Use $memex to choose the safe Memex workflow for this request."

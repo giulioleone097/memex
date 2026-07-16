@@ -1,14 +1,14 @@
 {
-  "name": "openwiki-local",
+  "name": "memex-local",
   "interface": {
-    "displayName": "OpenWiki Local"
+    "displayName": "Memex Local"
   },
   "plugins": [
     {
-      "name": "openwiki",
+      "name": "memex",
       "source": {
         "source": "local",
-        "path": "./plugins/openwiki"
+        "path": "./plugins/memex"
       },
       "policy": {
         "installation": "AVAILABLE",

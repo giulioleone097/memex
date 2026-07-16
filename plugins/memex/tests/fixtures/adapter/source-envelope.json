@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "adapter-fixture",
+  "kind": "web-search",
+  "fetchedAt": "2026-07-11T10:15:30.000Z",
+  "provenance": {
+    "host": "cli",
+    "query": "Memex adapter fixture"
+  },
+  "items": [
+    {
+      "externalId": "adapter-item-1",
+      "title": "Native adapter evidence",
+      "text": "Memex keeps adapter execution local, deterministic, and bounded.",
+      "url": "https://example.test/memex-adapter"
+    }
+  ]
+}

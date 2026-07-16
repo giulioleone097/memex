@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memex Ingest"
+  short_description: "Ingest authorized sources as untrusted data"
+  default_prompt: "Use $memex-ingest to ingest authorized source evidence safely."

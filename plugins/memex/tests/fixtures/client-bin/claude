@@ -1,0 +1,153 @@
+#!/usr/bin/env node
+import { spawn } from "node:child_process";
+import {
+  appendFileSync,
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
+
+const client = "claude";
+const argv = process.argv.slice(2);
+const operation = argv[1] === "marketplace" ? argv.slice(0, 3).join(" ") : argv.slice(0, 2).join(" ");
+const logPath = process.env.MEMEX_TEST_LOG;
+const statePath = process.env.MEMEX_TEST_STATE;
+
+if (!logPath || !statePath) {
+  process.stderr.write("Fixture requires MEMEX_TEST_LOG and MEMEX_TEST_STATE.\n");
+  process.exit(64);
+}
+
+appendFileSync(logPath, `${JSON.stringify({ client, argv })}\n`);
+const state = JSON.parse(readFileSync(statePath, "utf8"));
+const clientState = state[client];
+
+function save() {
+  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function output(value) {
+  process.stdout.write(`${JSON.stringify(value)}\n`);
+}
+
+function runtimeRoot() {
+  return join(
+    process.env.CLAUDE_CONFIG_DIR,
+    "plugins/cache/memex-local/memex/0.1.0",
+  );
+}
+
+function materializeRuntime() {
+  const artifacts = [
+    "bin/memex",
+    "dist/cli.js",
+    "dist/hook.js",
+    ".claude-plugin/plugin.json",
+    ".claude-plugin/mcp.json",
+    "hooks/hooks.json",
+    "skills/memex/SKILL.md",
+  ];
+  if (process.env.MEMEX_TEST_MISSING_ARTIFACTS !== "1") artifacts.push("dist/mcp.js");
+  for (const file of artifacts) {
+    const path = join(runtimeRoot(), file);
+    mkdirSync(dirname(path), { recursive: true });
+    if (
+      file === "dist/mcp.js" &&
+      process.env.MEMEX_TEST_SYMLINK_ARTIFACTS === "1"
+    ) {
+      const outside = join(process.env.CLAUDE_CONFIG_DIR, "outside-mcp.js");
+      writeFileSync(outside, "fixture\n");
+      symlinkSync(outside, path);
+      continue;
+    }
+    writeFileSync(path, "fixture\n");
+    if (file === "bin/memex") chmodSync(path, 0o755);
+  }
+}
+
+function advanceReadiness() {
+  if (clientState.installed.length === 0) return;
+  clientState.readinessPolls = (clientState.readinessPolls ?? 0) + 1;
+  const after = Number.parseInt(process.env.MEMEX_TEST_READY_AFTER_LISTS ?? "1", 10);
+  if (
+    process.env.MEMEX_TEST_NEVER_READY !== "1" &&
+    clientState.readinessPolls >= after &&
+    !existsSync(join(runtimeRoot(), "bin/memex"))
+  ) {
+    materializeRuntime();
+  }
+  save();
+}
+
+if (process.env.MEMEX_TEST_ORPHAN_ON === operation) {
+  const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 60_000)"], {
+    stdio: "inherit",
+  });
+  writeFileSync(process.env.MEMEX_TEST_CHILD_PID, `${orphan.pid}\n`);
+  process.stderr.write("Fixture intentionally exits with an orphaned descendant.\n");
+  process.exit(70);
+}
+
+if (process.env.MEMEX_TEST_OVERSIZED_OUTPUT_ON === operation) {
+  const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 60_000)"], {
+    stdio: "inherit",
+  });
+  writeFileSync(process.env.MEMEX_TEST_CHILD_PID, `${orphan.pid}\n`);
+  process.stdout.write("x".repeat(1024 * 1024 + 1));
+  process.exit(0);
+}
+
+if (process.env.MEMEX_TEST_TIMEOUT_ON === operation) {
+  const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 60_000)"], {
+    stdio: "inherit",
+  });
+  writeFileSync(process.env.MEMEX_TEST_CHILD_PID, `${orphan.pid}\n`);
+  setInterval(() => {}, 60_000);
+}
+
+if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "list") {
+  output(clientState.marketplaces);
+} else if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "add") {
+  const source = argv[3];
+  clientState.marketplaces.push({
+    name: "memex-local",
+    source: "directory",
+    path: source,
+    installLocation: source,
+  });
+  save();
+  output({ ok: true });
+} else if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "remove") {
+  clientState.marketplaces = clientState.marketplaces.filter(({ name }) => name !== argv[3]);
+  save();
+  output({ ok: true });
+} else if (argv[0] === "plugin" && argv[1] === "list") {
+  advanceReadiness();
+  output(clientState.installed);
+} else if (argv[0] === "plugin" && argv[1] === "install") {
+  clientState.installed.push({
+    id: argv[2],
+    name: "memex",
+    marketplace: "memex-local",
+    version: "0.1.0",
+    installPath:
+      process.env.MEMEX_TEST_MALFORMED_INSTALL_ROOT === "1"
+        ? "relative/cache"
+        : runtimeRoot(),
+    enabled: true,
+  });
+  save();
+  output({ ok: true });
+} else if (argv[0] === "plugin" && argv[1] === "uninstall") {
+  clientState.installed = clientState.installed.filter(({ id }) => id !== argv[2]);
+  delete clientState.readinessPolls;
+  save();
+  output({ ok: true });
+} else {
+  process.stderr.write(`Unsupported Claude fixture argv: ${JSON.stringify(argv)}\n`);
+  process.exit(64);
+}

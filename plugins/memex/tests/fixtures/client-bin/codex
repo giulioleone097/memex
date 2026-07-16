@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+import {
+  appendFileSync,
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
+
+const client = "codex";
+const argv = process.argv.slice(2);
+const logPath = process.env.MEMEX_TEST_LOG;
+const statePath = process.env.MEMEX_TEST_STATE;
+
+if (!logPath || !statePath) {
+  process.stderr.write("Fixture requires MEMEX_TEST_LOG and MEMEX_TEST_STATE.\n");
+  process.exit(64);
+}
+
+appendFileSync(logPath, `${JSON.stringify({ client, argv })}\n`);
+const state = JSON.parse(readFileSync(statePath, "utf8"));
+const clientState = state[client];
+
+function save() {
+  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function output(value) {
+  process.stdout.write(`${JSON.stringify(value)}\n`);
+}
+
+function materializeRuntime() {
+  const root = join(
+    process.env.CODEX_HOME,
+    "plugins/cache/memex-local/memex/0.1.0",
+  );
+  for (const file of [
+    "bin/memex",
+    "dist/cli.js",
+    "dist/mcp.js",
+    ".codex-plugin/plugin.json",
+    ".mcp.json",
+    "skills/memex/SKILL.md",
+  ]) {
+    const path = join(root, file);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, "fixture\n");
+    if (file === "bin/memex") chmodSync(path, 0o755);
+  }
+}
+
+function advanceReadiness() {
+  if (clientState.installed.length === 0) return;
+  clientState.readinessPolls = (clientState.readinessPolls ?? 0) + 1;
+  const after = Number.parseInt(process.env.MEMEX_TEST_READY_AFTER_LISTS ?? "1", 10);
+  if (
+    process.env.MEMEX_TEST_NEVER_READY !== "1" &&
+    clientState.readinessPolls >= after &&
+    !existsSync(join(process.env.CODEX_HOME, "plugins/cache/memex-local/memex/0.1.0/bin/memex"))
+  ) {
+    materializeRuntime();
+  }
+  save();
+}
+
+if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "list") {
+  output({ marketplaces: clientState.marketplaces });
+} else if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "add") {
+  const source = argv[3];
+  clientState.marketplaces.push({
+    name: "memex-local",
+    root: source,
+    marketplaceSource: { sourceType: "local", source },
+  });
+  save();
+  output({ ok: true });
+} else if (argv[0] === "plugin" && argv[1] === "marketplace" && argv[2] === "remove") {
+  clientState.marketplaces = clientState.marketplaces.filter(({ name }) => name !== argv[3]);
+  save();
+  output({ ok: true });
+} else if (argv[0] === "plugin" && argv[1] === "list") {
+  advanceReadiness();
+  output({ installed: clientState.installed });
+} else if (argv[0] === "plugin" && argv[1] === "add") {
+  clientState.installed.push({
+    pluginId: argv[2],
+    name: "memex",
+    marketplaceName: "memex-local",
+    version: process.env.MEMEX_TEST_MALFORMED_INSTALL_ROOT === "1" ? "" : "0.1.0",
+    installed: true,
+  });
+  save();
+  output({ ok: true });
+} else if (argv[0] === "plugin" && argv[1] === "remove") {
+  clientState.installed = clientState.installed.filter(
+    ({ pluginId }) => pluginId !== argv[2],
+  );
+  delete clientState.readinessPolls;
+  save();
+  output({ ok: true });
+} else {
+  process.stderr.write(`Unsupported Codex fixture argv: ${JSON.stringify(argv)}\n`);
+  process.exit(64);
+}

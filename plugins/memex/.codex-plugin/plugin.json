@@ -1,0 +1,35 @@
+{
+  "name": "memex",
+  "version": "0.2.0",
+  "description": "Build and maintain a self-sufficient agentic wiki with a unified code, concept, and wiki graph plus local embeddings, from Codex or Claude Code through a shared deterministic runtime.",
+  "author": {
+    "name": "Giulio Leone"
+  },
+  "license": "MIT",
+  "keywords": [
+    "memex",
+    "wiki",
+    "documentation",
+    "knowledge-base",
+    "agents"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Memex",
+    "shortDescription": "Build and maintain one agent-readable local wiki",
+    "longDescription": "Initialize, update, query, ingest, diagnose, schedule, and purge a source-backed wiki with a unified code, concept, and wiki graph, local embeddings, and a dependency-free local runtime shared by Codex and Claude Code.",
+    "developerName": "Giulio Leone",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Initialize a Memex for this repository",
+      "Update this Memex from current repository evidence",
+      "Answer this question from grounded Memex pages"
+    ]
+  }
+}

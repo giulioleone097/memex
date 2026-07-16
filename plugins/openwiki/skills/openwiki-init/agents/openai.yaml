@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenWiki Init"
-  short_description: "Initialize code or personal wikis safely"
-  default_prompt: "Use $openwiki-init to initialize a source-backed wiki safely."

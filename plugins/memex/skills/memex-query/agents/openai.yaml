@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memex Query"
+  short_description: "Answer from grounded Memex page evidence"
+  default_prompt: "Use $memex-query to answer this question from grounded wiki evidence."

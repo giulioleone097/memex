@@ -1,11 +1,11 @@
 .worktrees/
 **/node_modules/
 # Exception: vendored, dependency-free runtime shim required by
-# plugins/openwiki/vendor/ort/ort.node.min.mjs's bare "onnxruntime-common"
-# import (see plugins/openwiki/vendor/MANIFEST.json). This is a checked-in
+# plugins/memex/vendor/ort/ort.node.min.mjs's bare "onnxruntime-common"
+# import (see plugins/memex/vendor/MANIFEST.json). This is a checked-in
 # vendored asset, not an installed dependency.
-!plugins/openwiki/vendor/ort/node_modules/
-!plugins/openwiki/vendor/ort/node_modules/**
+!plugins/memex/vendor/ort/node_modules/
+!plugins/memex/vendor/ort/node_modules/**
 **/coverage/
 .DS_Store
 **/.DS_Store

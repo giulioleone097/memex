@@ -1,15 +1,15 @@
 {
-  "name": "openwiki-local",
-  "description": "Local marketplace for the self-contained OpenWiki plugin.",
+  "name": "memex-local",
+  "description": "Local marketplace for the self-contained Memex plugin.",
   "owner": {
     "name": "Giulio Leone"
   },
   "plugins": [
     {
-      "name": "openwiki",
-      "source": "./plugins/openwiki",
-      "description": "Maintain one interoperable local wiki from Codex and Claude Code.",
-      "version": "0.1.0",
+      "name": "memex",
+      "source": "./plugins/memex",
+      "description": "Maintain a self-sufficient agentic wiki with a unified code, concept, and wiki graph plus local embeddings, from Codex and Claude Code.",
+      "version": "0.2.0",
       "author": {
         "name": "Giulio Leone"
       },

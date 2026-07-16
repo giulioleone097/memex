@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memex Init"
+  short_description: "Initialize code or personal wikis safely"
+  default_prompt: "Use $memex-init to initialize a source-backed wiki safely."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memex Operations"
+  short_description: "Diagnose, schedule, recover, and purge safely"
+  default_prompt: "Use $memex-ops to diagnose or operate this Memex safely."

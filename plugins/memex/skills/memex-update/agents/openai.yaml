@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memex Update"
+  short_description: "Update existing wikis from verified changes"
+  default_prompt: "Use $memex-update to refresh this wiki from verified changes."

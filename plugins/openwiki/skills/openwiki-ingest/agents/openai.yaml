@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenWiki Ingest"
-  short_description: "Ingest authorized sources as untrusted data"
-  default_prompt: "Use $openwiki-ingest to ingest authorized source evidence safely."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "OpenWiki Operations"
-  short_description: "Diagnose, schedule, recover, and purge safely"
-  default_prompt: "Use $openwiki-ops to diagnose or operate this OpenWiki safely."
