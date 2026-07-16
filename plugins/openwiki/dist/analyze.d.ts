@@ -1,4 +1,5 @@
 import { type CodeGraphV1, type GraphConfidence, type GraphEdgeKind, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
+export declare function isSemanticEdgeKind(kind: GraphEdgeKind): boolean;
 export declare function confidenceWeight(confidence: GraphConfidence): number;
 export declare function computeCommunities(graph: CodeGraphV1): Map<string, string>;
 export interface GraphPathResult {

@@ -38,6 +38,21 @@ async function repository() {
   return root;
 }
 
+async function twoClusterRepository() {
+  const root = await temporaryRoot("repository");
+  await git(root, ["init", "--initial-branch=main"]);
+  await git(root, ["config", "user.email", "openwiki@example.test"]);
+  await git(root, ["config", "user.name", "OpenWiki Test"]);
+  await mkdir(path.join(root, "src"));
+  await writeFile(path.join(root, "src", "a1.ts"), "export function a1() { return a2(); }\n");
+  await writeFile(path.join(root, "src", "a2.ts"), "export function a2() { return 1; }\n");
+  await writeFile(path.join(root, "src", "b1.ts"), "export function b1() { return b2(); }\n");
+  await writeFile(path.join(root, "src", "b2.ts"), "export function b2() { return 2; }\n");
+  await git(root, ["add", "--all"]);
+  await git(root, ["commit", "-m", "two disjoint semantic clusters"]);
+  return root;
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -137,5 +152,28 @@ describe("graph analytics: communities action", () => {
     const communities = await listGraphCommunities({ root, homeDir });
     assert.deepEqual(communities.communities, []);
     assert.equal(communities.stale, true);
+  });
+
+  test("graph: communities separates two disjoint semantic clusters into at least two distinct communities on a real build", async () => {
+    const root = await twoClusterRepository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+    await renderGraphReport({ root, homeDir });
+
+    const communities = await listGraphCommunities({ root, homeDir });
+    assert.ok(
+      communities.communities.length >= 2,
+      `expected at least two distinct communities for two unrelated call-clusters sharing only a directory, got ${String(communities.communities.length)}`,
+    );
+
+    // The two clusters must not have been merged into a single community purely because
+    // their files share a "src" directory (structural containment must not drive community
+    // membership after the semantic-edge-only fix).
+    const clusterA = communities.communities.find((community) => community.topTerms.some((term) => term === "a1" || term === "a2"));
+    const clusterB = communities.communities.find((community) => community.topTerms.some((term) => term === "b1" || term === "b2"));
+    assert.ok(clusterA !== undefined, "expected a community whose top terms mention a1/a2");
+    assert.ok(clusterB !== undefined, "expected a community whose top terms mention b1/b2");
+    assert.notEqual(clusterA.id, clusterB.id);
   });
 });

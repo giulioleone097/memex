@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 
 import { computeCommunities, confidenceWeight } from "../../dist/analyze.js";
 import { computeGodNodes, computeShortestPath } from "../../dist/analyze.js";
+import { isSemanticEdgeKind } from "../../dist/analyze.js";
 import {
   computeCoverageStats,
   computeSuggestedQuestions,
@@ -87,6 +88,37 @@ describe("analyze: community detection", () => {
     assert.deepEqual([...first.entries()].sort(), [...second.entries()].sort());
     assert.equal([...first.values()].includes("z"), false);
   });
+
+  test("analyze: isSemanticEdgeKind excludes structural scaffolding kinds and member-of, includes real relationships", () => {
+    assert.equal(isSemanticEdgeKind("contains"), false);
+    assert.equal(isSemanticEdgeKind("declares"), false);
+    assert.equal(isSemanticEdgeKind("exports"), false);
+    assert.equal(isSemanticEdgeKind("member-of"), false);
+    assert.equal(isSemanticEdgeKind("calls"), true);
+    assert.equal(isSemanticEdgeKind("imports"), true);
+    assert.equal(isSemanticEdgeKind("inherits"), true);
+    assert.equal(isSemanticEdgeKind("implements"), true);
+    assert.equal(isSemanticEdgeKind("references"), true);
+    assert.equal(isSemanticEdgeKind("mentions"), true);
+    assert.equal(isSemanticEdgeKind("describes"), true);
+    assert.equal(isSemanticEdgeKind("grounds"), true);
+    assert.equal(isSemanticEdgeKind("related"), true);
+  });
+
+  test("analyze: community detection ignores structural contains/declares/exports edges — two modules sharing only a directory do not become one community", () => {
+    const nodes = [typedNode("moduleA", "module"), typedNode("moduleB", "module"), typedNode("dir", "directory")];
+    const edges = [
+      edge("e-contains-a", "contains", "dir", "moduleA", "exact"),
+      edge("e-contains-b", "contains", "dir", "moduleB", "exact"),
+      edge("e-declares-a", "declares", "moduleA", "moduleA", "exact"),
+      edge("e-exports-b", "exports", "dir", "moduleB", "exact"),
+    ];
+    const result = computeCommunities(graph(nodes, edges));
+    assert.notEqual(result.get("moduleA"), result.get("moduleB"));
+    assert.equal(result.get("moduleA"), "moduleA");
+    assert.equal(result.get("moduleB"), "moduleB");
+    assert.equal(result.get("dir"), "dir");
+  });
 });
 
 describe("analyze: god nodes and shortest path", () => {
@@ -126,6 +158,15 @@ describe("analyze: god nodes and shortest path", () => {
   test("analyze: shortest path from a node to itself is trivial", () => {
     const result = computeShortestPath(graph([node("a")], []), "a", "a");
     assert.deepEqual(result, { nodeIds: ["a"], edgeIds: [], totalWeight: 0 });
+  });
+
+  test("analyze: shortest path does not traverse structural contains/declares/exports edges — two files sharing only a directory are not \"connected\"", () => {
+    const nodes = [typedNode("moduleA", "module"), typedNode("moduleB", "module"), typedNode("dir", "directory")];
+    const edges = [
+      edge("e-contains-a", "contains", "dir", "moduleA", "exact"),
+      edge("e-contains-b", "contains", "dir", "moduleB", "exact"),
+    ];
+    assert.equal(computeShortestPath(graph(nodes, edges), "moduleA", "moduleB"), undefined);
   });
 });
 

@@ -3,6 +3,29 @@ import { OpenWikiError } from "./errors.js";
 
 const MAX_LABEL_PROPAGATION_ITERATIONS = 20;
 
+// Structural scaffolding edges (repository/directory/file/module containment, and a module
+// declaring or re-exporting its own symbols) connect every node in a single-repository graph
+// to a common ancestor. Traversing them for `path`/`communities` would make any two same-repo
+// nodes trivially "connected" regardless of any real relationship between them. Both
+// computeShortestPath and computeCommunities traverse only the semantic edge subgraph below,
+// so "connected"/"same community" means "related", not "shares a directory tree". `member-of`
+// is deliberately excluded too: it is computeCommunities's own output, never a traversal input.
+const SEMANTIC_EDGE_KINDS = new Set<GraphEdgeKind>([
+  "calls",
+  "imports",
+  "inherits",
+  "implements",
+  "references",
+  "mentions",
+  "describes",
+  "grounds",
+  "related",
+]);
+
+export function isSemanticEdgeKind(kind: GraphEdgeKind): boolean {
+  return SEMANTIC_EDGE_KINDS.has(kind);
+}
+
 export function confidenceWeight(confidence: GraphConfidence): number {
   switch (confidence) {
     case "exact":
@@ -31,7 +54,7 @@ export function computeCommunities(graph: CodeGraphV1): Map<string, string> {
     neighbors.set(nodeId, entries);
   };
   for (const edge of graph.edges) {
-    if (edge.kind === "member-of") {
+    if (!isSemanticEdgeKind(edge.kind)) {
       continue;
     }
     const weight = confidenceWeight(edge.confidence);
@@ -112,6 +135,9 @@ export function computeShortestPath(graph: CodeGraphV1, from: string, to: string
     adjacency.set(nodeId, entries);
   };
   for (const edge of graph.edges) {
+    if (!isSemanticEdgeKind(edge.kind)) {
+      continue;
+    }
     const cost = 1 / confidenceWeight(edge.confidence);
     addEdge(edge.from, edge.to, edge.id, cost);
     addEdge(edge.to, edge.from, edge.id, cost);
