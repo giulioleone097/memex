@@ -416,7 +416,18 @@ function parseShardDiagnostic(value) {
         throw new MemexError("INVALID_STATE", "Graph shard diagnostic is invalid.");
     return { path: value.path, code: value.code, message: value.message };
 }
-function excluded(relative) { const parts = relative.split("/"); const name = parts.at(-1) ?? ""; return parts.some((part) => [".git", ".memex", "memex", "node_modules", "vendor", "dist", "build", "coverage"].includes(part)) || /(?:^|[._-])(generated|min)\./iu.test(name) || /\.map$/iu.test(name); }
+// Directories excluded no matter where they occur in the tree: build tooling
+// and dependency artifacts that are never source, at any depth.
+const ANYWHERE_EXCLUDED_DIRS = [".git", "node_modules", "vendor", "dist", "build", "coverage"];
+// The wiki's own generated content directories. Both are, by construction
+// (see paths.ts resolveWikiLocation), always a direct child of the scanned
+// workspace root ("<root>/memex" for code mode; ".memex" is only ever created
+// under the host home directory and never inside a scanned repository).
+// Matching them anywhere in the tree — rather than only at the root — would
+// silently blackhole an unrelated nested directory that happens to share the
+// name, such as this very project's own plugin at "plugins/memex".
+const ROOT_ONLY_EXCLUDED_DIRS = [".memex", "memex"];
+function excluded(relative) { const parts = relative.split("/"); const name = parts.at(-1) ?? ""; return parts.some((part) => ANYWHERE_EXCLUDED_DIRS.includes(part)) || ROOT_ONLY_EXCLUDED_DIRS.includes(parts[0] ?? "") || /(?:^|[._-])(generated|min)\./iu.test(name) || /\.map$/iu.test(name); }
 function normalize(relative) { return relative.split(path.sep).join("/"); }
 function parseGitIndexBlobIds(output) { const result = new Map(); for (const entry of output.split("\0")) {
     const tab = entry.indexOf("\t");

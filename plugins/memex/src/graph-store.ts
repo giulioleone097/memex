@@ -415,7 +415,18 @@ function parseShardDiagnostic(value: unknown): SourceScan["diagnostics"][number]
   return { path: value.path, code: value.code, message: value.message };
 }
 
-function excluded(relative: string): boolean { const parts = relative.split("/"); const name = parts.at(-1) ?? ""; return parts.some((part) => [".git", ".memex", "memex", "node_modules", "vendor", "dist", "build", "coverage"].includes(part)) || /(?:^|[._-])(generated|min)\./iu.test(name) || /\.map$/iu.test(name); }
+// Directories excluded no matter where they occur in the tree: build tooling
+// and dependency artifacts that are never source, at any depth.
+const ANYWHERE_EXCLUDED_DIRS = [".git", "node_modules", "vendor", "dist", "build", "coverage"];
+// The wiki's own generated content directories. Both are, by construction
+// (see paths.ts resolveWikiLocation), always a direct child of the scanned
+// workspace root ("<root>/memex" for code mode; ".memex" is only ever created
+// under the host home directory and never inside a scanned repository).
+// Matching them anywhere in the tree — rather than only at the root — would
+// silently blackhole an unrelated nested directory that happens to share the
+// name, such as this very project's own plugin at "plugins/memex".
+const ROOT_ONLY_EXCLUDED_DIRS = [".memex", "memex"];
+function excluded(relative: string): boolean { const parts = relative.split("/"); const name = parts.at(-1) ?? ""; return parts.some((part) => ANYWHERE_EXCLUDED_DIRS.includes(part)) || ROOT_ONLY_EXCLUDED_DIRS.includes(parts[0] ?? "") || /(?:^|[._-])(generated|min)\./iu.test(name) || /\.map$/iu.test(name); }
 function normalize(relative: string): string { return relative.split(path.sep).join("/"); }
 function parseGitIndexBlobIds(output: string): Map<string, string> { const result = new Map<string, string>(); for (const entry of output.split("\0")) { const tab = entry.indexOf("\t"); if (tab < 0) continue; const header = entry.slice(0, tab).split(" "); const blob = header[1]; const stage = header[2]; const filePath = entry.slice(tab + 1); if (blob !== undefined && stage === "0" && /^[a-f0-9]{40,64}$/iu.test(blob) && safeRelativePath(filePath)) result.set(normalize(filePath), blob); } return result; }
 function parsePorcelainPaths(status: string): string[] { const entries = status.split("\0"); const paths = new Set<string>(); for (let index = 0; index < entries.length; index += 1) { const entry = entries[index] as string; if (entry.length < 4) continue; const code = entry.slice(0, 2); paths.add(normalize(entry.slice(3))); if (code.includes("R") || code.includes("C")) { const original = entries[index + 1]; if (original) { paths.add(normalize(original)); index += 1; } } } return [...paths].sort((a, b) => a.localeCompare(b)); }

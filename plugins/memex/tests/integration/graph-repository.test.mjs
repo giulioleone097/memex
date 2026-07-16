@@ -181,4 +181,44 @@ describe("graph repository", () => {
       true,
     );
   });
+
+  test("graph: excludes only the top-level wiki content directory named memex, not a nested source directory sharing that name", async () => {
+    // Real dogfooding regression: this project's own plugin lives at `plugins/memex/`.
+    // The scanner must exclude the wiki's own generated output at `<root>/memex`
+    // (a direct child of the scanned root) without blackholing an unrelated,
+    // nested directory that happens to share the literal name "memex" deeper in
+    // the tree, such as the plugin's own source.
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await mkdir(path.join(root, "plugins", "memex", "src"), { recursive: true });
+    await writeFile(
+      path.join(root, "plugins", "memex", "src", "index.ts"),
+      "export function nestedMemexSource() { return 1; }\n",
+    );
+    await mkdir(path.join(root, "memex"), { recursive: true });
+    await writeFile(path.join(root, "memex", "quickstart.md"), "# Quickstart\n");
+    await git(root, ["add", "--all"]);
+    await git(root, ["commit", "-m", "nested memex-named source alongside top-level wiki content"]);
+
+    const built = await buildGraph({ root, homeDir });
+    const storage = await resolveGraphStorage(root, homeDir);
+    const persisted = await readStoredGraph(storage.storage);
+
+    assert.equal(
+      persisted.files.some((file) => file.path === "plugins/memex/src/index.ts"),
+      true,
+      "a nested directory literally named memex must still be scanned",
+    );
+    assert.equal(
+      persisted.nodes.some((node) => node.name === "nestedMemexSource"),
+      true,
+      "symbols inside a nested memex-named directory must be indexed",
+    );
+    assert.equal(
+      persisted.files.some((file) => file.path.startsWith("memex/")),
+      false,
+      "the top-level wiki content directory itself must remain excluded",
+    );
+    assert.equal(built.fileCount > 0, true);
+  });
 });
