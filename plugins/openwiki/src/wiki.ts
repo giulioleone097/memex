@@ -14,6 +14,7 @@ import { atomicWriteFile, withWikiLock } from "./atomic.js";
 import type { WikiCommand, WikiStateV1 } from "./contracts.js";
 import { OpenWikiError } from "./errors.js";
 import type { GraphIndexPort } from "./graph-index.js";
+import { reindexWikiPage } from "./reindex.js";
 import {
   resolveConfinedMarkdownPath,
   resolveWikiLocation,
@@ -196,6 +197,7 @@ export async function writePage(
     const filePath = await resolveConfinedMarkdownPath(location, page);
     await atomicWriteFile(filePath, content);
   });
+  await reindexWikiPage(location, page, content);
 }
 
 export async function searchWiki(

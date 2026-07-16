@@ -19,6 +19,7 @@ import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMe
 import type { GraphIndexPort } from "./graph-index.js";
 import { scanSourceFile } from "./graph-scan.js";
 import { OpenWikiError } from "./errors.js";
+import { reindexCodeSymbols } from "./reindex.js";
 
 const LAZY_TRAVERSAL_MAX_VISITED = 10_000;
 const LAZY_TRAVERSAL_DEADLINE_MS = 2_000;
@@ -70,7 +71,7 @@ export async function buildGraph(options: BuildGraphOptions): Promise<BuildGraph
   }
   const git = await currentGitFingerprint(resolved.repositoryRoot);
   const fingerprint = { ...git, dirtyFingerprint: repositoryMetadataFingerprint(sourceState) };
-  const generatedAt = options.now ?? new Date().toISOString(); const codeGraph = assembleGraph(resolved.workspaceId, generatedAt, { ...fingerprint, scannerVersion: GRAPH_SCANNER_VERSION }, shards); const graph = mergeEnrichment(codeGraph, enrichmentShards); await writeGraph(resolved.storage, graph, shards, enrichmentShards); const changed = changedBuildPaths(previous, graph); const paths = boundedPaths(changed, options.limit); return { schemaVersion: 1, action: "build", root: resolved.repositoryRoot, fresh: true, buildMode: previous === undefined ? "full" : "incremental", fullRebuild: Boolean(options.force) || previous === undefined, ...(fingerprint.gitHead === undefined ? {} : { head: fingerprint.gitHead }), ...(previous?.source.gitHead === undefined ? {} : { previousHead: previous.source.gitHead }), dirtyFingerprint: fingerprint.dirtyFingerprint, changedPaths: paths.values, truncated: paths.truncated, scannedFileCount: metadata.length - reused, removedFileCount: Math.max(0, (previous?.files.length ?? 0) - metadata.length), fileCount: graph.files.length, nodeCount: graph.nodes.length, edgeCount: graph.edges.length, diagnosticCount: graph.diagnostics.length, generatedAt };
+  const generatedAt = options.now ?? new Date().toISOString(); const codeGraph = assembleGraph(resolved.workspaceId, generatedAt, { ...fingerprint, scannerVersion: GRAPH_SCANNER_VERSION }, shards); const graph = mergeEnrichment(codeGraph, enrichmentShards); await writeGraph(resolved.storage, graph, shards, enrichmentShards); await reindexCodeSymbols(resolved.repositoryRoot, await openGraphIndex(resolved.storage), options.homeDir); const changed = changedBuildPaths(previous, graph); const paths = boundedPaths(changed, options.limit); return { schemaVersion: 1, action: "build", root: resolved.repositoryRoot, fresh: true, buildMode: previous === undefined ? "full" : "incremental", fullRebuild: Boolean(options.force) || previous === undefined, ...(fingerprint.gitHead === undefined ? {} : { head: fingerprint.gitHead }), ...(previous?.source.gitHead === undefined ? {} : { previousHead: previous.source.gitHead }), dirtyFingerprint: fingerprint.dirtyFingerprint, changedPaths: paths.values, truncated: paths.truncated, scannedFileCount: metadata.length - reused, removedFileCount: Math.max(0, (previous?.files.length ?? 0) - metadata.length), fileCount: graph.files.length, nodeCount: graph.nodes.length, edgeCount: graph.edges.length, diagnosticCount: graph.diagnostics.length, generatedAt };
 }
 
 export async function getGraphStatus(options: GraphOperationBase): Promise<GraphStatusResult> {

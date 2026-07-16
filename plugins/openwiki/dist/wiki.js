@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { atomicWriteFile, withWikiLock } from "./atomic.js";
 import { OpenWikiError } from "./errors.js";
+import { reindexWikiPage } from "./reindex.js";
 import { resolveConfinedMarkdownPath, resolveWikiLocation, } from "./paths.js";
 import { readState, tryReadState, writeState } from "./state.js";
 export const REQUIRED_WIKI_PAGES = [
@@ -100,6 +101,7 @@ export async function writePage(location, page, content) {
         const filePath = await resolveConfinedMarkdownPath(location, page);
         await atomicWriteFile(filePath, content);
     });
+    await reindexWikiPage(location, page, content);
 }
 export async function searchWiki(location, query, limit = 20) {
     const terms = normalizeTerms(query);
