@@ -282,3 +282,109 @@ test file's module doc comment.
   `git diff`, empty).
 - Phase 1 rename (`plugins/openwiki` → `plugins/memex`) not performed —
   explicitly out of scope per the orchestrator's instructions.
+
+## Chunking completion (follow-up session, 2026-07-16)
+
+A prior session was mid-split on `model.onnx` (118,346,824 B) when killed,
+because GitHub hard-rejects any pushed blob ≥100 MB and Git LFS was rejected
+as a fix (it would add an external tool dependency for every cloner, in
+tension with the "Node ≥20 and Git only" runtime goal). This session assessed
+the on-disk state, found the split and all consuming code already complete
+and correct, independently re-verified every checksum, and closed out the
+remaining verification and commit.
+
+### On-disk state found
+
+- `model.onnx.part0` (94,371,840 B / 90.00 MiB) and `model.onnx.part1`
+  (23,974,984 B / 22.86 MiB) already present; the monolithic `model.onnx`
+  already removed (`git status` showed `D`).
+- `vendor/MANIFEST.json`, `tests/unit/vendor.test.mjs`, and
+  `tests/integration/embedder-smoke.test.mjs` were already modified in the
+  working tree with the full chunked-storage contract implemented: a
+  `parts` array + `assembled_sha256` replacing the old whole-file `sha256`
+  field, `PART_LIMIT_BYTES` (95 MB) / `SINGLE_FILE_LIMIT_BYTES` (100 MB) /
+  `VENDOR_BUDGET_BYTES` (160 MB) assertions in the unit test, a
+  node_modules-shim-only check, and an in-memory concatenate-verify-load
+  path in the smoke test that never reassembles the model on disk.
+- No further code changes were required. This session's work was
+  independent verification, running the full suite, and committing.
+
+### Independent verification (this session)
+
+- `sha256sum` computed directly on each part (not through `cat`, which this
+  environment's shell intercepts and refuses on binary streams):
+  - `model.onnx.part0` → `1d29e10d5a7af8c22c78e26a121cd45d5f232700b2bf067d7f808e0043cc6d6d`
+  - `model.onnx.part1` → `fce4a73a71ef450cb1eef7af8830aa90b91541ccf318a4451b72e18d2e54e3e2`
+  - Both match `MANIFEST.json` exactly.
+- Assembled hash, computed by reading both parts with Node's `fs`/`crypto`
+  directly (concatenating in memory, no shell `cat`):
+  `dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88` — this
+  matches both `MANIFEST.json`'s `assembled_sha256` **and** the original
+  monolithic `model.onnx`'s sha256 recorded in the prior commit (`d90961c`),
+  proving the split is byte-exact and lossless.
+- Sizes: part0 90.00 MiB and part1 22.86 MiB are both strictly under the
+  95 MB part limit and GitHub's 100 MB hard limit; total vendored bytes
+  unchanged at 149,020,859 (149.02 MB), under the 160 MB budget.
+
+### Environment note: severe iCloud-synced I/O contention this session
+
+This worktree's `vendor/` binaries and, later, `node_modules` were iCloud
+placeholder files (0 local disk blocks despite correct logical size),
+forcing cloud re-downloads on first read. Under concurrent load from other
+active work in sibling worktrees under the same iCloud-synced `Documents`
+folder, this made `npm run build` take ~10 minutes and a plain
+`node node_modules/eslint/bin/eslint.js .` take over 35 minutes on a first
+attempt (confirmed via `iostat`, sustained 30–200 MB/s of unrelated disk
+traffic throughout). A serial `require()`-driven read of one specific
+1.5 KB rule file was independently reproduced hanging past 90 s in
+isolation via a plain `sha256sum` (no Node involved), proving the stall was
+filesystem/iCloud-level, not an eslint or code defect. Forcing bulk
+materialization of `node_modules` with a parallelized
+`find … -print0 | xargs -0 -P 8 wc -c` (real reads, not `cat`, which this
+environment intercepts and refuses on non-UTF-8 streams) resolved it: two
+independent, cache-warm `npm run build` / direct-eslint / `npm test` passes
+afterward completed in seconds each. This is an environment/infrastructure
+condition, not a defect in the vendored assets, the chunking implementation,
+or the test suite.
+
+### Verification run (this session, cache-warm, second consecutive clean pass)
+
+```
+npm run build      -> clean (tsc, no errors)
+npm run typecheck  -> clean (tsc --noEmit, no errors)
+node node_modules/eslint/bin/eslint.js .  -> clean (empty output, exit 0;
+                                              equivalent to `npm run lint`,
+                                              which this environment's local
+                                              `npm run <script>` wrapper
+                                              intercepts and hangs on for
+                                              unrelated reasons — see above)
+npm test           -> 147 tests, 144 pass, 0 fail, 3 skipped (pre-existing,
+                       OPENWIKI_RUN_CLIENT_SMOKE-gated live-client tests),
+                       19 suites
+```
+
+All 12 `vendor.test.mjs` assertions pass, including the chunked-specific
+ones (parts stored, no monolith on disk, per-part and assembled sha256
+verified, 95 MB/100 MB/160 MB budgets enforced, node_modules shim
+contains only `onnxruntime-common`). The
+`embedder-smoke.test.mjs` test passes, running real WASM inference against
+the model assembled in memory from its two parts and verified against
+`assembled_sha256` before being handed to `InferenceSession.create` —
+proving the chunked loading contract end to end.
+
+Two consecutive full clean runs (build + typecheck + lint + test) were
+obtained back-to-back once the environment's I/O contention settled.
+
+### Commit
+
+Committed on `worktree-agent-ab41604a4363e639e` as
+`fix: chunk vendored model under GitHub per-file limit`, containing:
+`model.onnx.part0`, `model.onnx.part1` (new), `model.onnx` (deleted),
+`vendor/MANIFEST.json`, `tests/unit/vendor.test.mjs`,
+`tests/integration/embedder-smoke.test.mjs` (all modified), plus this
+report update.
+
+Merge to `main` is intentionally **not** performed by this session — the
+dispatching instructions scoped this task to committing on the worktree
+branch; merge/push is left to the orchestrator per the broader task's
+scope.

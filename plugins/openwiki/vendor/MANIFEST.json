@@ -1,11 +1,23 @@
 {
-  "generatedAt": "2026-07-14T07:45:51.781Z",
+  "generatedAt": "2026-07-14T22:53:23.344Z",
   "totalBytes": 149020859,
   "assets": [
     {
       "path": "model/multilingual-e5-small-int8/model.onnx",
-      "sha256": "dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88",
+      "assembled_sha256": "dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88",
       "bytes": 118346824,
+      "parts": [
+        {
+          "path": "model/multilingual-e5-small-int8/model.onnx.part0",
+          "sha256": "1d29e10d5a7af8c22c78e26a121cd45d5f232700b2bf067d7f808e0043cc6d6d",
+          "bytes": 94371840
+        },
+        {
+          "path": "model/multilingual-e5-small-int8/model.onnx.part1",
+          "sha256": "fce4a73a71ef450cb1eef7af8830aa90b91541ccf318a4451b72e18d2e54e3e2",
+          "bytes": 23974984
+        }
+      ],
       "license": "MIT",
       "upstream": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/onnx/model_qint8_avx512_vnni.onnx",
       "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3"

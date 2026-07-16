@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -10,6 +11,16 @@ import path from "node:path";
 // run real inference in plain Node >= 20, with zero npm install - every
 // import below resolves to a file committed under vendor/, never to a
 // package.json dependency.
+//
+// CHUNKED MODEL LOADING CONTRACT (orchestrator decision, 2026-07-14):
+// model.onnx is stored as sequential raw byte parts (model.onnx.part0,
+// model.onnx.part1, ...) because the whole file exceeds GitHub's hard
+// per-file push limit and Git LFS was rejected. This test exercises the
+// exact loading contract every future consumer MUST follow: read the parts
+// in the order listed in MANIFEST.json, concatenate them into a single
+// in-memory Uint8Array, verify the manifest's assembled_sha256 over that
+// buffer, and pass the buffer to InferenceSession.create. The monolithic
+// model.onnx never exists on disk and must never be reassembled on disk.
 //
 // The tokenizer implemented here is a deliberately minimal inline Unigram
 // (SentencePiece) encoder built directly from tokenizer.json: Metaspace
@@ -28,13 +39,49 @@ const ortDir = path.join(vendorRoot, "ort");
 const modelDir = path.join(vendorRoot, "model/multilingual-e5-small-int8");
 
 const ortEntryPath = path.join(ortDir, "ort.node.min.mjs");
-const modelPath = path.join(modelDir, "model.onnx");
 const tokenizerPath = path.join(modelDir, "tokenizer.json");
+const manifestPath = path.join(vendorRoot, "MANIFEST.json");
+const MODEL_LOGICAL_PATH = "model/multilingual-e5-small-int8/model.onnx";
 
-const assetsPresent = existsSync(ortEntryPath) && existsSync(modelPath) && existsSync(tokenizerPath);
+/** Finds the chunked model entry and confirms all of its parts are on disk. */
+function locateChunkedModel() {
+  if (!existsSync(manifestPath)) return null;
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const asset = manifest.assets.find((entry) => entry.path === MODEL_LOGICAL_PATH);
+  if (!asset || !Array.isArray(asset.parts) || asset.parts.length === 0) return null;
+  const allPartsPresent = asset.parts.every((part) => existsSync(path.join(vendorRoot, part.path)));
+  return allPartsPresent ? asset : null;
+}
+
+/**
+ * The canonical chunked-model loader contract: read parts in manifest
+ * order, concatenate into one in-memory Uint8Array, verify the assembled
+ * sha256, and return the buffer. Never touches the disk with the
+ * reassembled bytes.
+ */
+function assembleModelBuffer(asset) {
+  const assembled = new Uint8Array(asset.bytes);
+  let offset = 0;
+  for (const part of asset.parts) {
+    const chunk = readFileSync(path.join(vendorRoot, part.path));
+    assembled.set(chunk, offset);
+    offset += chunk.length;
+  }
+  assert.equal(offset, asset.bytes, "concatenated part bytes must equal the manifest's whole-file bytes");
+  const digest = createHash("sha256").update(assembled).digest("hex");
+  assert.equal(
+    digest,
+    asset.assembled_sha256,
+    "assembled model buffer failed sha256 verification - refusing to run inference on corrupt bytes",
+  );
+  return assembled;
+}
+
+const modelAsset = locateChunkedModel();
+const assetsPresent = existsSync(ortEntryPath) && existsSync(tokenizerPath) && modelAsset !== null;
 
 test(
-  "vendored WASM engine + multilingual-e5-small embed 'query: ciao mondo' into a real 384-dim vector",
+  "vendored WASM engine + chunked multilingual-e5-small embed 'query: ciao mondo' into a real 384-dim vector",
   { skip: assetsPresent ? false : "vendored assets are absent (run TV.1 asset acquisition first)" },
   async () => {
     // Import the vendored engine directly by file path - no bare "onnxruntime-web"
@@ -57,7 +104,11 @@ test(
     assert.equal(ids[0], 0, "expected <s> at position 0");
     assert.equal(ids[ids.length - 1], 2, "expected </s> at the last position");
 
-    const session = await ort.InferenceSession.create(modelPath, {
+    // Chunked loading contract: parts -> in-memory Uint8Array -> sha256
+    // verification -> InferenceSession.create(buffer). Never a disk path,
+    // never an on-disk reassembly.
+    const modelBuffer = assembleModelBuffer(modelAsset);
+    const session = await ort.InferenceSession.create(modelBuffer, {
       executionProviders: ["wasm"],
     });
     assert.deepEqual(
