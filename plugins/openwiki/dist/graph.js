@@ -1,7 +1,7 @@
 import path from "node:path";
-import { GRAPH_CONTRACTS_SCHEMA_VERSION, GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, canonicalizeGraph, createGraphEdgeId, createGraphNodeId, } from "./graph-contracts.js";
+import { GRAPH_CONTRACTS_SCHEMA_VERSION, GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, canonicalizeGraph, createGraphEdgeId, createGraphNodeId, mergeEnrichment, } from "./graph-contracts.js";
 import { entityLimit, responseLimit } from "./graph-query.js";
-import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
+import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readEnrichmentShard, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
 import { scanSourceFile } from "./graph-scan.js";
 import { OpenWikiError } from "./errors.js";
 const LAZY_TRAVERSAL_MAX_VISITED = 10_000;
@@ -11,7 +11,9 @@ export async function buildGraph(options) {
     const limits = { maxFiles: options.limits?.maxFiles ?? GRAPH_DEFAULTS.maxFiles, maxFileBytes: options.limits?.maxFileBytes ?? GRAPH_DEFAULTS.maxFileBytes, maxRepositoryBytes: options.limits?.maxRepositoryBytes ?? GRAPH_DEFAULTS.maxRepositoryBytes };
     // eslint-disable-next-line @typescript-eslint/no-deprecated -- build compares generations through the deprecated compatibility snapshot only.
     const previous = options.force ? undefined : await readStoredGraph(resolved.storage).catch(() => undefined);
-    const previousManifest = options.force ? undefined : await readManifest(resolved.storage).catch(() => undefined);
+    const manifest = await readManifest(resolved.storage).catch(() => undefined);
+    const previousManifest = options.force ? undefined : manifest;
+    const enrichmentShards = await Promise.all((manifest?.enrichmentShards ?? []).map((entry) => readEnrichmentShard(resolved.storage, entry.shard)));
     const metadata = await enumerateRepositoryMetadata(resolved.repositoryRoot, limits);
     const previousBySource = new Map(previousManifest?.shards.map((entry) => [`${entry.path}\u0000${entry.sourceId}`, entry]) ?? []);
     const shards = [];
@@ -59,8 +61,9 @@ export async function buildGraph(options) {
     const git = await currentGitFingerprint(resolved.repositoryRoot);
     const fingerprint = { ...git, dirtyFingerprint: repositoryMetadataFingerprint(sourceState) };
     const generatedAt = options.now ?? new Date().toISOString();
-    const graph = assembleGraph(resolved.workspaceId, generatedAt, { ...fingerprint, scannerVersion: GRAPH_SCANNER_VERSION }, shards);
-    await writeGraph(resolved.storage, graph, shards);
+    const codeGraph = assembleGraph(resolved.workspaceId, generatedAt, { ...fingerprint, scannerVersion: GRAPH_SCANNER_VERSION }, shards);
+    const graph = mergeEnrichment(codeGraph, enrichmentShards);
+    await writeGraph(resolved.storage, graph, shards, enrichmentShards);
     const changed = changedBuildPaths(previous, graph);
     const paths = boundedPaths(changed, options.limit);
     return { schemaVersion: 1, action: "build", root: resolved.repositoryRoot, fresh: true, buildMode: previous === undefined ? "full" : "incremental", fullRebuild: Boolean(options.force) || previous === undefined, ...(fingerprint.gitHead === undefined ? {} : { head: fingerprint.gitHead }), ...(previous?.source.gitHead === undefined ? {} : { previousHead: previous.source.gitHead }), dirtyFingerprint: fingerprint.dirtyFingerprint, changedPaths: paths.values, truncated: paths.truncated, scannedFileCount: metadata.length - reused, removedFileCount: Math.max(0, (previous?.files.length ?? 0) - metadata.length), fileCount: graph.files.length, nodeCount: graph.nodes.length, edgeCount: graph.edges.length, diagnosticCount: graph.diagnostics.length, generatedAt };
@@ -167,7 +170,7 @@ function isTruncationCollections(value) { if (value === null || typeof value !==
     return false; const entries = Object.entries(value); return entries.length === 6 && entries.every(([key, item]) => ["modules", "entrypoints", "hubs", "cycles", "flows", "diagnostics"].includes(key) && typeof item === "boolean"); }
 function markCollectionTruncated(collections, key) { if (key === "modules" || key === "entrypoints" || key === "hubs" || key === "cycles" || key === "flows" || key === "diagnostics")
     collections[key] = true; }
-function assembleGraph(workspaceId, generatedAt, source, shards) {
+export function assembleGraph(workspaceId, generatedAt, source, shards) {
     const nodes = [];
     const edges = [];
     const diagnostics = [];

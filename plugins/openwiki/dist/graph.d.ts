@@ -1,5 +1,6 @@
-import { type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
+import { type CodeGraphV1, type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
 import { type ImpactResult } from "./graph-query.js";
+import { type GraphShard } from "./graph-store.js";
 export interface GraphOperationBase {
     root: string;
     homeDir?: string;
@@ -123,3 +124,4 @@ export declare function getArchitectureMap(options: GraphOperationBase): Promise
     };
     diagnostics: GraphDiagnosticV1[];
 }>;
+export declare function assembleGraph(workspaceId: string, generatedAt: string, source: CodeGraphV1["source"], shards: readonly GraphShard[]): CodeGraphV1;
