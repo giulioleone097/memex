@@ -7,7 +7,7 @@ import { afterEach, describe, test } from "node:test";
 import { promisify } from "node:util";
 
 import { OpenWikiError } from "../../dist/errors.js";
-import { buildGraph, renderGraphReport } from "../../dist/graph.js";
+import { buildGraph, listGraphCommunities, renderGraphReport } from "../../dist/graph.js";
 import { readPage } from "../../dist/wiki.js";
 import { initializeWiki } from "../../dist/wiki.js";
 import { resolveWikiLocation } from "../../dist/paths.js";
@@ -88,5 +88,54 @@ describe("graph analytics: report action", () => {
     const homeDir = await temporaryRoot("home");
     await initializeWiki({ mode: "code", root, homeDir });
     await assert.rejects(renderGraphReport({ root, homeDir }), (error) => error instanceof OpenWikiError && error.code === "NOT_INITIALIZED");
+  });
+});
+
+describe("graph analytics: communities action", () => {
+  test("graph: communities lists the persisted snapshot with a fresh flag when generations match", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+    const report = await renderGraphReport({ root, homeDir });
+
+    const communities = await listGraphCommunities({ root, homeDir });
+    assert.equal(communities.schemaVersion, 1);
+    assert.equal(communities.action, "communities");
+    assert.equal(communities.stale, false);
+    assert.equal(communities.generation, report.generation);
+    assert.ok(communities.communities.length >= 1);
+    for (const community of communities.communities) {
+      assert.equal(typeof community.id, "string");
+      assert.ok(Number.isInteger(community.memberCount) && community.memberCount >= 1);
+      assert.ok(Array.isArray(community.topTerms));
+    }
+  });
+
+  test("graph: communities reports stale when the graph is rebuilt after the last report", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+    await renderGraphReport({ root, homeDir });
+
+    await writeFile(path.join(root, "src", "leaf.ts"), "import { hub } from './hub'; export function leaf() { return hub() + 1; }\n");
+    await git(root, ["add", "--all"]);
+    await git(root, ["commit", "-m", "second commit"]);
+    await buildGraph({ root, homeDir, force: true });
+
+    const communities = await listGraphCommunities({ root, homeDir });
+    assert.equal(communities.stale, true);
+  });
+
+  test("graph: communities returns an empty, stale result before any report has run", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+
+    const communities = await listGraphCommunities({ root, homeDir });
+    assert.deepEqual(communities.communities, []);
+    assert.equal(communities.stale, true);
   });
 });

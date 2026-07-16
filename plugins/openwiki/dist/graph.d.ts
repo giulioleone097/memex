@@ -1,6 +1,7 @@
 import { type CodeGraphV1, type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
 import { type ImpactResult } from "./graph-query.js";
 import { type GraphShard } from "./graph-store.js";
+import { type CommunitySummaryV1 } from "./analysis-store.js";
 export interface GraphOperationBase {
     root: string;
     homeDir?: string;
@@ -143,3 +144,14 @@ export interface GraphReportEnvelope {
     generatedAt: string;
 }
 export declare function renderGraphReport(options: GraphReportOptions): Promise<GraphReportEnvelope>;
+export interface GraphCommunitiesEnvelope {
+    schemaVersion: 1;
+    action: "communities";
+    root: string;
+    communities: CommunitySummaryV1[];
+    stale: boolean;
+    generation?: string;
+    generatedAt?: string;
+    truncated: boolean;
+}
+export declare function listGraphCommunities(options: GraphOperationBase): Promise<GraphCommunitiesEnvelope>;

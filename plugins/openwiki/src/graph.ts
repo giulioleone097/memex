@@ -28,7 +28,7 @@ import {
   summarizeCommunities,
   synthesizeMemberOfEdges,
 } from "./analyze.js";
-import { resolveAnalysisStorage, writeCommunitiesSnapshot } from "./analysis-store.js";
+import { probeAnalysisStorage, readCommunitiesSnapshot, resolveAnalysisStorage, writeCommunitiesSnapshot, type CommunitySummaryV1 } from "./analysis-store.js";
 import { renderGraphReportMarkdown } from "./report.js";
 import { resolveWikiLocation } from "./paths.js";
 import { writePage } from "./wiki.js";
@@ -222,5 +222,39 @@ export async function renderGraphReport(options: GraphReportOptions): Promise<Gr
     coverageRatio: coverage.coverageRatio,
     generation: updatedManifest.generation,
     generatedAt,
+  };
+}
+
+export interface GraphCommunitiesEnvelope {
+  schemaVersion: 1;
+  action: "communities";
+  root: string;
+  communities: CommunitySummaryV1[];
+  stale: boolean;
+  generation?: string;
+  generatedAt?: string;
+  truncated: boolean;
+}
+
+export async function listGraphCommunities(options: GraphOperationBase): Promise<GraphCommunitiesEnvelope> {
+  const resolved = await resolveGraphStorage(options.root, options.homeDir);
+  const analysis = await probeAnalysisStorage(options.root, options.homeDir);
+  if (!analysis.initialized) {
+    return { schemaVersion: 1, action: "communities", root: resolved.repositoryRoot, communities: [], stale: true, truncated: false };
+  }
+  const snapshot = await readCommunitiesSnapshot(analysis.storage);
+  const manifest = await readManifest(resolved.storage).catch(() => undefined);
+  const stale = manifest === undefined || manifest.generation !== snapshot.generation;
+  const max = entityLimit(options.limit);
+  const truncated = snapshot.communities.length > max;
+  return {
+    schemaVersion: 1,
+    action: "communities",
+    root: resolved.repositoryRoot,
+    communities: snapshot.communities.slice(0, max),
+    stale,
+    generation: snapshot.generation,
+    generatedAt: snapshot.generatedAt,
+    truncated,
   };
 }

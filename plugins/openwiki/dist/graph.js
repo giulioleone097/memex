@@ -4,7 +4,7 @@ import { entityLimit, responseLimit } from "./graph-query.js";
 import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readEnrichmentShard, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
 import { scanSourceFile } from "./graph-scan.js";
 import { computeCommunities, computeCoverageStats, computeGodNodes, computeSuggestedQuestions, computeSurprisingConnections, summarizeCommunities, synthesizeMemberOfEdges, } from "./analyze.js";
-import { resolveAnalysisStorage, writeCommunitiesSnapshot } from "./analysis-store.js";
+import { probeAnalysisStorage, readCommunitiesSnapshot, resolveAnalysisStorage, writeCommunitiesSnapshot } from "./analysis-store.js";
 import { renderGraphReportMarkdown } from "./report.js";
 import { resolveWikiLocation } from "./paths.js";
 import { writePage } from "./wiki.js";
@@ -321,5 +321,27 @@ export async function renderGraphReport(options) {
         coverageRatio: coverage.coverageRatio,
         generation: updatedManifest.generation,
         generatedAt,
+    };
+}
+export async function listGraphCommunities(options) {
+    const resolved = await resolveGraphStorage(options.root, options.homeDir);
+    const analysis = await probeAnalysisStorage(options.root, options.homeDir);
+    if (!analysis.initialized) {
+        return { schemaVersion: 1, action: "communities", root: resolved.repositoryRoot, communities: [], stale: true, truncated: false };
+    }
+    const snapshot = await readCommunitiesSnapshot(analysis.storage);
+    const manifest = await readManifest(resolved.storage).catch(() => undefined);
+    const stale = manifest === undefined || manifest.generation !== snapshot.generation;
+    const max = entityLimit(options.limit);
+    const truncated = snapshot.communities.length > max;
+    return {
+        schemaVersion: 1,
+        action: "communities",
+        root: resolved.repositoryRoot,
+        communities: snapshot.communities.slice(0, max),
+        stale,
+        generation: snapshot.generation,
+        generatedAt: snapshot.generatedAt,
+        truncated,
     };
 }
