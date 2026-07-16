@@ -7,7 +7,7 @@ import { afterEach, describe, test } from "node:test";
 import { promisify } from "node:util";
 
 import { OpenWikiError } from "../../dist/errors.js";
-import { buildGraph, listGraphCommunities, renderGraphReport } from "../../dist/graph.js";
+import { buildGraph, getGraphPath, listGraphCommunities, renderGraphReport } from "../../dist/graph.js";
 import { readPage } from "../../dist/wiki.js";
 import { initializeWiki } from "../../dist/wiki.js";
 import { resolveWikiLocation } from "../../dist/paths.js";
@@ -175,5 +175,46 @@ describe("graph analytics: communities action", () => {
     assert.ok(clusterA !== undefined, "expected a community whose top terms mention a1/a2");
     assert.ok(clusterB !== undefined, "expected a community whose top terms mention b1/b2");
     assert.notEqual(clusterA.id, clusterB.id);
+  });
+});
+
+describe("graph analytics: path action", () => {
+  test("graph: path finds a deterministic confidence-weighted route between two symbols", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+
+    const first = await getGraphPath({ root, homeDir, from: "leaf", to: "hub" });
+    const second = await getGraphPath({ root, homeDir, from: "leaf", to: "hub" });
+    assert.equal(first.schemaVersion, 1);
+    assert.equal(first.action, "path");
+    assert.equal(first.found, true);
+    assert.ok(first.nodes.some((candidate) => candidate.name === "leaf"));
+    assert.ok(first.nodes.some((candidate) => candidate.name === "hub"));
+    assert.deepEqual(first, second);
+  });
+
+  test("graph: path reports found:false for two real but disconnected targets", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await writeFile(path.join(root, "src", "island.ts"), "export function island() { return 0; }\n");
+    await git(root, ["add", "--all"]);
+    await git(root, ["commit", "-m", "add island"]);
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+
+    const result = await getGraphPath({ root, homeDir, from: "island", to: "hub" });
+    assert.equal(result.found, false);
+    assert.deepEqual(result.nodes, []);
+    assert.deepEqual(result.edges, []);
+  });
+
+  test("graph: path rejects an unknown endpoint with NOT_FOUND", async () => {
+    const root = await repository();
+    const homeDir = await temporaryRoot("home");
+    await initializeWiki({ mode: "code", root, homeDir });
+    await buildGraph({ root, homeDir, force: true });
+    await assert.rejects(getGraphPath({ root, homeDir, from: "hub", to: "doesNotExist" }), (error) => error instanceof OpenWikiError && error.code === "NOT_FOUND");
   });
 });

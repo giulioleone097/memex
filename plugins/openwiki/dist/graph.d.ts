@@ -155,3 +155,20 @@ export interface GraphCommunitiesEnvelope {
     truncated: boolean;
 }
 export declare function listGraphCommunities(options: GraphOperationBase): Promise<GraphCommunitiesEnvelope>;
+export interface GraphPathOptions extends GraphOperationBase {
+    from: string;
+    to: string;
+}
+export interface GraphPathEnvelope {
+    schemaVersion: 1;
+    action: "path";
+    root: string;
+    from: string;
+    to: string;
+    found: boolean;
+    nodes: GraphNodeV1[];
+    edges: GraphEdgeV1[];
+    totalWeight?: number;
+    truncated: boolean;
+}
+export declare function getGraphPath(options: GraphPathOptions): Promise<GraphPathEnvelope>;

@@ -1,9 +1,9 @@
 import path from "node:path";
 import { GRAPH_CONTRACTS_SCHEMA_VERSION, GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, canonicalizeGraph, createGraphEdgeId, createGraphNodeId, mergeEnrichment, } from "./graph-contracts.js";
-import { entityLimit, responseLimit } from "./graph-query.js";
+import { entityLimit, matchTargets, responseLimit } from "./graph-query.js";
 import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readEnrichmentShard, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
 import { scanSourceFile } from "./graph-scan.js";
-import { computeCommunities, computeCoverageStats, computeGodNodes, computeSuggestedQuestions, computeSurprisingConnections, summarizeCommunities, synthesizeMemberOfEdges, } from "./analyze.js";
+import { computeCommunities, computeCoverageStats, computeGodNodes, computeShortestPath, computeSuggestedQuestions, computeSurprisingConnections, summarizeCommunities, synthesizeMemberOfEdges, } from "./analyze.js";
 import { probeAnalysisStorage, readCommunitiesSnapshot, resolveAnalysisStorage, writeCommunitiesSnapshot } from "./analysis-store.js";
 import { renderGraphReportMarkdown } from "./report.js";
 import { resolveWikiLocation } from "./paths.js";
@@ -342,6 +342,44 @@ export async function listGraphCommunities(options) {
         stale,
         generation: snapshot.generation,
         generatedAt: snapshot.generatedAt,
+        truncated,
+    };
+}
+export async function getGraphPath(options) {
+    const resolved = await resolveGraphStorage(options.root, options.homeDir);
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- path needs the full graph for a global shortest-path computation, not a bounded query path.
+    const graph = await readStoredGraph(resolved.storage);
+    const fromNode = matchTargets(graph, options.from)[0];
+    const toNode = matchTargets(graph, options.to)[0];
+    if (fromNode === undefined || toNode === undefined) {
+        throw new OpenWikiError("NOT_FOUND", "Graph target was not found.");
+    }
+    const found = computeShortestPath(graph, fromNode.id, toNode.id);
+    if (found === undefined) {
+        return { schemaVersion: 1, action: "path", root: resolved.repositoryRoot, from: options.from, to: options.to, found: false, nodes: [], edges: [], truncated: false };
+    }
+    const max = entityLimit(options.limit);
+    const truncated = found.nodeIds.length > max;
+    const boundedIds = new Set(found.nodeIds.slice(0, max));
+    const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+    const edgesById = new Map(graph.edges.map((edge) => [edge.id, edge]));
+    const nodes = found.nodeIds
+        .filter((id) => boundedIds.has(id))
+        .map((id) => nodesById.get(id))
+        .filter((node) => node !== undefined);
+    const edges = found.edgeIds
+        .map((id) => edgesById.get(id))
+        .filter((edge) => edge !== undefined && boundedIds.has(edge.from) && boundedIds.has(edge.to));
+    return {
+        schemaVersion: 1,
+        action: "path",
+        root: resolved.repositoryRoot,
+        from: options.from,
+        to: options.to,
+        found: true,
+        nodes,
+        edges,
+        totalWeight: found.totalWeight,
         truncated,
     };
 }
