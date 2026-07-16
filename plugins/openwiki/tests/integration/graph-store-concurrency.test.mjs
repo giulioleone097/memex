@@ -34,7 +34,7 @@ test("graph store: a real child-process writer excludes another writer", { timeo
   const home = await temporaryRoot("home");
   const resolved = await resolveGraphStorage(root, home);
   const repository = createGraphNodeId("repository", ".", "repository");
-  await writeGraph(resolved.storage, { schemaVersion: 1, workspaceId: "a".repeat(64), generatedAt: "2026-07-11T00:00:00.000Z", source: { dirtyFingerprint: "b".repeat(64), scannerVersion: "openwiki-graph-v1" }, files: [], nodes: [{ id: repository, kind: "repository", path: ".", name: "repository" }], edges: [], diagnostics: [] }, []);
+  await writeGraph(resolved.storage, { schemaVersion: 2, workspaceId: "a".repeat(64), generatedAt: "2026-07-11T00:00:00.000Z", source: { dirtyFingerprint: "b".repeat(64), scannerVersion: "openwiki-graph-v1" }, files: [], nodes: [{ id: repository, kind: "repository", path: ".", name: "repository" }], edges: [], diagnostics: [] }, []);
   const script = `import { once } from "node:events"; import { open, unlink } from "node:fs/promises"; const lockPath = process.argv[1]; const serialized = JSON.stringify({ schemaVersion: 1, pid: process.pid, createdAt: new Date().toISOString(), token: "test-writer" }) + "\\n"; const handle = await open(lockPath, "wx", 0o600); await handle.writeFile(serialized, "utf8"); await handle.sync(); process.stdout.write("locked\\n"); await once(process.stdin, "data"); await handle.close(); await unlink(lockPath);`;
   const child = spawn(process.execPath, ["--input-type=module", "--eval", script, resolved.storage.writeLockPath], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   const closed = once(child, "close");

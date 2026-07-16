@@ -1,5 +1,5 @@
 import path from "node:path";
-import { GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, canonicalizeGraph, createGraphEdgeId, createGraphNodeId, } from "./graph-contracts.js";
+import { GRAPH_CONTRACTS_SCHEMA_VERSION, GRAPH_DEFAULTS, GRAPH_SCANNER_VERSION, canonicalizeGraph, createGraphEdgeId, createGraphNodeId, } from "./graph-contracts.js";
 import { entityLimit, responseLimit } from "./graph-query.js";
 import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph } from "./graph-store.js";
 import { scanSourceFile } from "./graph-scan.js";
@@ -237,7 +237,7 @@ function assembleGraph(workspaceId, generatedAt, source, shards) {
                 diagnostics.push({ path: shard.path, code: "UNRESOLVED_SYMBOL", message: `Unable to resolve symbol ${relation.target}.` });
         }
     }
-    return canonicalizeGraph({ schemaVersion: 1, workspaceId, generatedAt, source, files: shards.map(({ path: filePath, language, contentHash, size }) => ({ path: filePath, language, contentHash, size })), nodes, edges, diagnostics });
+    return canonicalizeGraph({ schemaVersion: GRAPH_CONTRACTS_SCHEMA_VERSION, workspaceId, generatedAt, source, files: shards.map(({ path: filePath, language, contentHash, size }) => ({ path: filePath, language, contentHash, size })), nodes, edges, diagnostics });
 }
 function node(kind, nodePath, name, symbolKind, startLine, endLine, scope) { const discriminator = startLine === undefined ? undefined : scope === undefined || scope.length === 0 ? String(startLine) : `${scope}\u0000${startLine.toString()}`; return { id: createGraphNodeId(kind, nodePath, name, symbolKind, discriminator), kind, path: nodePath, name, ...(scope === undefined || scope.length === 0 ? {} : { scope }), ...(symbolKind === undefined ? {} : { symbolKind }), ...(startLine === undefined ? {} : { startLine }), ...(endLine === undefined ? {} : { endLine }) }; }
 function resolveImport(from, specifier, files) { const base = specifier.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier)) : specifier; const candidates = [base, ...[".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs"].map((extension) => `${base}${extension}`), ...["index.ts", "index.js", "__init__.py"].map((index) => `${base}/${index}`)]; return candidates.find((candidate) => files.has(candidate)); }

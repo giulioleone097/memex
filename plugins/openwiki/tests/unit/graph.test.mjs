@@ -19,7 +19,7 @@ const SOURCE = {
 
 function graph(overrides = {}) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     workspaceId: "workspace",
     generatedAt: "2026-07-11T00:00:00.000Z",
     source: SOURCE,
@@ -48,7 +48,8 @@ describe("graph contracts and scanners", () => {
     );
     assert.deepEqual(parsed.nodes.map((node) => node.id), [fileId, repositoryId]);
     assert.deepEqual(parsed.edges.map((edge) => edge.id), [edgeId]);
-    assert.throws(() => parseCodeGraph({ ...graph(), schemaVersion: 2 }), OpenWikiError);
+    assert.throws(() => parseCodeGraph({ ...graph(), schemaVersion: 1 }), OpenWikiError);
+    assert.throws(() => parseCodeGraph({ ...graph(), schemaVersion: 3 }), OpenWikiError);
     assert.throws(() => parseCodeGraph({ ...graph(), unexpected: true }), OpenWikiError);
   });
 

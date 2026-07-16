@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { OpenWikiError } from "./errors.js";
 export const GRAPH_SCANNER_VERSION = "openwiki-graph-v1";
+export const GRAPH_CONTRACTS_SCHEMA_VERSION = 2;
 export const GRAPH_DEFAULTS = {
     defaultEntityLimit: 20,
     defaultResponseBytes: 16 * 1024,
@@ -11,17 +12,39 @@ export const GRAPH_DEFAULTS = {
     maxResponseBytes: 64 * 1024,
     maxTraversalDepth: 5,
 };
-const NODE_KINDS = new Set(["repository", "directory", "file", "module", "symbol"]);
-const EDGE_KINDS = new Set(["contains", "declares", "imports", "exports", "calls", "inherits", "implements", "references"]);
-const CONFIDENCES = new Set(["exact", "resolved", "heuristic"]);
+const NODE_KINDS = new Set(["repository", "directory", "file", "module", "symbol", "concept", "page", "source"]);
+const SCANNER_EDGE_KINDS = new Set(["contains", "declares", "imports", "exports", "calls", "inherits", "implements", "references"]);
+const AGENT_EDGE_KINDS = new Set(["mentions", "describes", "grounds", "related"]);
+const EDGE_KINDS = new Set([...SCANNER_EDGE_KINDS, ...AGENT_EDGE_KINDS, "member-of"]);
+const SCANNER_CONFIDENCES = new Set(["exact", "resolved", "heuristic"]);
+const AGENT_CONFIDENCES = new Set(["extracted", "inferred", "ambiguous"]);
+export function isScannerEdgeKind(kind) { return SCANNER_EDGE_KINDS.has(kind); }
+export function isAgentEdgeKind(kind) { return AGENT_EDGE_KINDS.has(kind); }
+export function validEdgeConfidence(kind, confidence) {
+    if (kind === "member-of")
+        return confidence === "exact";
+    if (isAgentEdgeKind(kind))
+        return AGENT_CONFIDENCES.has(confidence);
+    return SCANNER_CONFIDENCES.has(confidence);
+}
+export function isGraphNodeKind(value) {
+    return typeof value === "string" && NODE_KINDS.has(value);
+}
+export function isGraphEdgeKind(value) {
+    return typeof value === "string" && EDGE_KINDS.has(value);
+}
+export function isGraphConfidence(value) {
+    return typeof value === "string" && (SCANNER_CONFIDENCES.has(value) || AGENT_CONFIDENCES.has(value));
+}
 export function createGraphNodeId(kind, path, name, symbolKind, discriminator) {
     return graphHash(["node", kind, path, name, symbolKind ?? "", discriminator ?? ""]);
 }
 export function createGraphEdgeId(kind, from, to, confidence) {
     return graphHash(["edge", kind, from, to, confidence]);
 }
+const GRAPH_HASH_SEPARATOR = String.fromCharCode(0);
 export function graphHash(parts) {
-    return createHash("sha256").update(parts.join("\u0000"), "utf8").digest("hex");
+    return createHash("sha256").update(parts.join(GRAPH_HASH_SEPARATOR), "utf8").digest("hex");
 }
 export function canonicalizeGraph(graph) {
     return {
@@ -35,12 +58,12 @@ export function canonicalizeGraph(graph) {
 export function parseCodeGraph(value) {
     const record = object(value, "Graph must be an object.");
     assertKeys(record, ["schemaVersion", "workspaceId", "generatedAt", "source", "files", "nodes", "edges", "diagnostics"]);
-    if (record.schemaVersion !== 1)
+    if (record.schemaVersion !== GRAPH_CONTRACTS_SCHEMA_VERSION)
         fail("Graph schema version is unsupported.");
     const source = object(record.source, "Graph source must be an object.");
     assertKeys(source, ["gitHead", "dirtyFingerprint", "scannerVersion"], true);
     const graph = {
-        schemaVersion: 1,
+        schemaVersion: GRAPH_CONTRACTS_SCHEMA_VERSION,
         workspaceId: string(record.workspaceId, "Graph workspaceId must be a string."),
         generatedAt: timestamp(record.generatedAt),
         source: {
@@ -65,17 +88,42 @@ export function parseCodeGraph(value) {
 }
 function parseFile(value) { const r = object(value, "Graph file must be an object."); assertKeys(r, ["path", "language", "contentHash", "size"]); const size = number(r.size, "Graph file size must be a non-negative integer."); if (!Number.isSafeInteger(size) || size < 0)
     fail("Graph file size must be a non-negative integer."); return { path: relativePath(r.path), language: string(r.language, "Graph file language must be a string."), contentHash: hash(r.contentHash), size }; }
-function parseNode(value) { const r = object(value, "Graph node must be an object."); assertKeys(r, ["id", "kind", "path", "name", "scope", "symbolKind", "startLine", "endLine"], true); const kind = string(r.kind, "Graph node kind must be a string."); if (!NODE_KINDS.has(kind))
-    fail("Graph node kind is unsupported."); const node = { id: string(r.id, "Graph node id must be a string."), kind, path: relativePath(r.path), name: string(r.name, "Graph node name must be a string.") }; if (r.scope !== undefined)
-    node.scope = string(r.scope, "Graph symbol scope must be a string."); if (r.symbolKind !== undefined)
-    node.symbolKind = string(r.symbolKind, "Graph symbol kind must be a string."); if (r.startLine !== undefined)
-    node.startLine = line(r.startLine); if (r.endLine !== undefined)
-    node.endLine = line(r.endLine); if (node.endLine !== undefined && node.startLine !== undefined && node.endLine < node.startLine)
-    fail("Graph node line range is invalid."); const discriminator = node.startLine === undefined ? undefined : node.scope === undefined ? String(node.startLine) : `${node.scope}\u0000${node.startLine.toString()}`; if (node.id !== createGraphNodeId(node.kind, node.path, node.name, node.symbolKind, discriminator))
-    fail("Graph node ID does not match its identity fields."); return node; }
-function parseEdge(value) { const r = object(value, "Graph edge must be an object."); assertKeys(r, ["id", "kind", "from", "to", "confidence"]); const kind = string(r.kind, "Graph edge kind must be a string."); const confidence = string(r.confidence, "Graph edge confidence must be a string."); if (!EDGE_KINDS.has(kind) || !CONFIDENCES.has(confidence))
-    fail("Graph edge type is unsupported."); const edge = { id: string(r.id, "Graph edge id must be a string."), kind, from: string(r.from, "Graph edge from must be a string."), to: string(r.to, "Graph edge to must be a string."), confidence }; if (edge.id !== createGraphEdgeId(edge.kind, edge.from, edge.to, edge.confidence))
-    fail("Graph edge ID does not match its identity fields."); return edge; }
+function parseNode(value) {
+    const r = object(value, "Graph node must be an object.");
+    assertKeys(r, ["id", "kind", "path", "name", "scope", "symbolKind", "startLine", "endLine", "summary"], true);
+    const kind = string(r.kind, "Graph node kind must be a string.");
+    if (!NODE_KINDS.has(kind))
+        fail("Graph node kind is unsupported.");
+    const node = { id: string(r.id, "Graph node id must be a string."), kind, path: relativePath(r.path), name: string(r.name, "Graph node name must be a string.") };
+    if (r.scope !== undefined)
+        node.scope = string(r.scope, "Graph symbol scope must be a string.");
+    if (r.symbolKind !== undefined)
+        node.symbolKind = string(r.symbolKind, "Graph symbol kind must be a string.");
+    if (r.startLine !== undefined)
+        node.startLine = line(r.startLine);
+    if (r.endLine !== undefined)
+        node.endLine = line(r.endLine);
+    if (r.summary !== undefined)
+        node.summary = string(r.summary, "Graph node summary must be a string.");
+    if (node.endLine !== undefined && node.startLine !== undefined && node.endLine < node.startLine)
+        fail("Graph node line range is invalid.");
+    const discriminator = node.startLine === undefined ? undefined : node.scope === undefined ? String(node.startLine) : `${node.scope}${GRAPH_HASH_SEPARATOR}${node.startLine.toString()}`;
+    if (node.id !== createGraphNodeId(node.kind, node.path, node.name, node.symbolKind, discriminator))
+        fail("Graph node ID does not match its identity fields.");
+    return node;
+}
+function parseEdge(value) {
+    const r = object(value, "Graph edge must be an object.");
+    assertKeys(r, ["id", "kind", "from", "to", "confidence"]);
+    const kind = string(r.kind, "Graph edge kind must be a string.");
+    const confidence = string(r.confidence, "Graph edge confidence must be a string.");
+    if (!EDGE_KINDS.has(kind) || !validEdgeConfidence(kind, confidence))
+        fail("Graph edge type is unsupported.");
+    const edge = { id: string(r.id, "Graph edge id must be a string."), kind, from: string(r.from, "Graph edge from must be a string."), to: string(r.to, "Graph edge to must be a string."), confidence };
+    if (edge.id !== createGraphEdgeId(edge.kind, edge.from, edge.to, edge.confidence))
+        fail("Graph edge ID does not match its identity fields.");
+    return edge;
+}
 function parseDiagnostic(value) { const r = object(value, "Graph diagnostic must be an object."); assertKeys(r, ["path", "code", "message"]); return { path: relativePath(r.path), code: string(r.code, "Graph diagnostic code must be a string."), message: string(r.message, "Graph diagnostic message must be a string.") }; }
 function object(value, message) { if (value === null || typeof value !== "object" || Array.isArray(value))
     fail(message); return value; }
@@ -100,3 +148,32 @@ function assertKeys(record, keys, optional = false) { for (const key of Object.k
         if (!(key in record))
             fail("Graph is missing a required field."); }
 function fail(message) { throw new OpenWikiError("INVALID_STATE", message); }
+export function mergeEnrichment(graph, shards) {
+    const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
+    const edges = new Map(graph.edges.map((edge) => [edge.id, edge]));
+    const diagnostics = [...graph.diagnostics];
+    const ordered = [...shards].sort((left, right) => left.sourcePath.localeCompare(right.sourcePath) || left.sourceContentHash.localeCompare(right.sourceContentHash));
+    for (const shard of ordered)
+        for (const node of shard.nodes)
+            nodes.set(node.id, node);
+    for (const shard of ordered) {
+        for (const edge of shard.edges) {
+            if (nodes.has(edge.from) && nodes.has(edge.to))
+                edges.set(edge.id, edge);
+            else
+                diagnostics.push({ path: shard.sourcePath, code: "DANGLING_NODE_REF", message: `Enrichment edge ${edge.id} references a node that does not exist.` });
+        }
+    }
+    return canonicalizeGraph({ ...graph, nodes: [...nodes.values()], edges: [...edges.values()], diagnostics });
+}
+export function parseEnrichmentShard(value) {
+    const r = object(value, "Enrichment shard must be an object.");
+    assertKeys(r, ["sourcePath", "sourceContentHash", "nodes", "edges", "enrichedAt"]);
+    return {
+        sourcePath: relativePath(r.sourcePath),
+        sourceContentHash: hash(r.sourceContentHash),
+        nodes: array(r.nodes, "Enrichment shard nodes must be an array.").map(parseNode),
+        edges: array(r.edges, "Enrichment shard edges must be an array.").map(parseEdge),
+        enrichedAt: timestamp(r.enrichedAt),
+    };
+}

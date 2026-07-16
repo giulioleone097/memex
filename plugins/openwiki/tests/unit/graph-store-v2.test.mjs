@@ -39,7 +39,7 @@ function graph(label) {
   const app = createGraphNodeId("symbol", "src/app.ts", `app-${label}`, "function", "1");
   const edge = createGraphEdgeId("calls", app, worker, "exact");
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     workspaceId: "a".repeat(64),
     generatedAt: `2026-07-11T00:00:0${label}.000Z`,
     source: { dirtyFingerprint: label.repeat(64), scannerVersion: "openwiki-graph-v1" },
