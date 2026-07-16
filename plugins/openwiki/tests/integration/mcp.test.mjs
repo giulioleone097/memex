@@ -141,7 +141,7 @@ function graphBranches(tool) {
   assert.equal(JSON.stringify(tool).toLowerCase().includes("gitnexus"), false);
   assert.equal(JSON.stringify(tool).includes("provider"), false);
   assert.ok(Array.isArray(tool.inputSchema.oneOf));
-  assert.equal(tool.inputSchema.oneOf.length, 7);
+  assert.equal(tool.inputSchema.oneOf.length, 11);
   return new Map(
     tool.inputSchema.oneOf.map((branch) => [branch.properties.action.const, branch]),
   );
@@ -160,6 +160,10 @@ function assertGraphSchema(tool) {
     },
     changes: { properties: ["action", "base", "limit", "root"], required: ["action", "root"] },
     map: { properties: ["action", "limit", "root"], required: ["action", "root"] },
+    path: { properties: ["action", "from", "limit", "root", "to"], required: ["action", "root", "from", "to"] },
+    explain: { properties: ["action", "limit", "root", "target"], required: ["action", "root", "target"] },
+    communities: { properties: ["action", "limit", "root"], required: ["action", "root"] },
+    report: { properties: ["action", "root"], required: ["action", "root"] },
   };
 
   assert.deepEqual([...branches.keys()].sort(), Object.keys(expected).sort());
@@ -428,6 +432,40 @@ describe("MCP stdio adapter", () => {
       assert.equal(failure.ok, false);
       assert.equal(failure.error.code, "INVALID_ARGUMENT");
     }
+
+    const reportResponse = await request(session, 7, "tools/call", {
+      name: "graph",
+      arguments: { root: repository, action: "report" },
+    });
+    const report = parseToolEnvelope(reportResponse, false).data;
+    assertGraphCommon(report, "report", repository);
+    assert.equal(report.page, "graph-report.md");
+    assert.equal(report.written, true);
+
+    const communitiesResponse = await request(session, 8, "tools/call", {
+      name: "graph",
+      arguments: { root: repository, action: "communities", limit: 5 },
+    });
+    const communities = parseToolEnvelope(communitiesResponse, false).data;
+    assertGraphCommon(communities, "communities", repository);
+    assert.ok(Array.isArray(communities.communities));
+
+    const explainResponse = await request(session, 9, "tools/call", {
+      name: "graph",
+      arguments: { root: repository, action: "explain", target: "add" },
+    });
+    const explanation = parseToolEnvelope(explainResponse, false).data;
+    assertGraphCommon(explanation, "explain", repository);
+    assert.equal(explanation.node.name, "add");
+
+    const pathResponse = await request(session, 10, "tools/call", {
+      name: "graph",
+      arguments: { root: repository, action: "path", from: "add", to: "add" },
+    });
+    const pathResult = parseToolEnvelope(pathResponse, false).data;
+    assertGraphCommon(pathResult, "path", repository);
+    assert.equal(pathResult.found, true);
+
     assert.equal((await session.finish()).code, 0);
   });
 

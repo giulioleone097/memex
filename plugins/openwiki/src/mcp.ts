@@ -70,6 +70,10 @@ function graphSchema(): JsonRecord {
       object({ action: { const: "impact" }, root, target: { type: "string", minLength: 1 }, direction: { type: "string", enum: ["inbound", "outbound", "both"] }, depth: { type: "integer", minimum: 1, maximum: 5 }, limit }, ["action", "root", "target"]),
       object({ action: { const: "changes" }, root, base: { type: "string", minLength: 1 }, limit }, ["action", "root"]),
       object({ action: { const: "map" }, root, limit }, ["action", "root"]),
+      object({ action: { const: "path" }, root, from: { type: "string", minLength: 1 }, to: { type: "string", minLength: 1 }, limit }, ["action", "root", "from", "to"]),
+      object({ action: { const: "explain" }, root, target: { type: "string", minLength: 1 }, limit }, ["action", "root", "target"]),
+      object({ action: { const: "communities" }, root, limit }, ["action", "root"]),
+      object({ action: { const: "report" }, root }, ["action", "root"]),
     ],
   };
 }
