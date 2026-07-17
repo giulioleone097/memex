@@ -28,9 +28,14 @@ async function makeReady(session, id = 1) {
   session.send({ jsonrpc: "2.0", method: "notifications/initialized", params: {} });
 }
 
+// Generous timeout: graph build scans the repo and the first Cypher call cold-
+// starts the wasm worker (load + SHA-verify the 13 MB module, sync the graph),
+// which legitimately exceeds the harness's 3 s default under full-suite load.
+const CALL_TIMEOUT_MS = 30_000;
+
 async function call(session, id, name, args) {
   session.send({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
-  const response = await session.nextMessage();
+  const response = await session.nextMessage(CALL_TIMEOUT_MS);
   assert.equal(response.id, id);
   assert.equal(response.error, undefined);
   assert.ok(Array.isArray(response.result.content));
