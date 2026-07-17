@@ -15,6 +15,7 @@ const WASM_ENTRY = "ladybug-wasm/nodejs/index.js";
 const WASM_BINARY = "ladybug-wasm/nodejs/lbug/lbug_wasm.wasm";
 let cachedModule;
 let verifiedRoot;
+let inflightLoad;
 async function sha256File(absolute) {
     return createHash("sha256").update(await readFile(absolute)).digest("hex");
 }
@@ -48,25 +49,39 @@ async function verifyCriticalAssets(vendorRoot) {
 async function loadModule(vendorRoot) {
     if (cachedModule !== undefined && verifiedRoot === vendorRoot)
         return cachedModule;
-    await verifyCriticalAssets(vendorRoot);
-    const entryPath = path.join(vendorRoot, WASM_ENTRY);
-    let required;
+    // Share a single in-flight load between concurrent callers so the module is
+    // verified, required, and init()'d exactly once per process.
+    if (inflightLoad !== undefined && verifiedRoot === vendorRoot)
+        return inflightLoad;
+    verifiedRoot = vendorRoot;
+    inflightLoad = (async () => {
+        await verifyCriticalAssets(vendorRoot);
+        const entryPath = path.join(vendorRoot, WASM_ENTRY);
+        let required;
+        try {
+            const require = createRequire(import.meta.url);
+            required = require(entryPath);
+        }
+        catch (error) {
+            throw new MemexError("MODEL_ASSET_CORRUPT", `Failed to load the Ladybug wasm module: ${error.message}`);
+        }
+        const mod = required;
+        if (typeof mod.Database !== "function" || typeof mod.Connection !== "function") {
+            throw new MemexError("MODEL_ASSET_CORRUPT", "Ladybug wasm module does not expose Database/Connection.");
+        }
+        if (mod.init)
+            await mod.init();
+        cachedModule = mod;
+        return mod;
+    })();
     try {
-        const require = createRequire(import.meta.url);
-        required = require(entryPath);
+        return await inflightLoad;
     }
     catch (error) {
-        throw new MemexError("MODEL_ASSET_CORRUPT", `Failed to load the Ladybug wasm module: ${error.message}`);
+        verifiedRoot = undefined;
+        inflightLoad = undefined;
+        throw error;
     }
-    const mod = required;
-    if (typeof mod.Database !== "function" || typeof mod.Connection !== "function") {
-        throw new MemexError("MODEL_ASSET_CORRUPT", "Ladybug wasm module does not expose Database/Connection.");
-    }
-    if (mod.init)
-        await mod.init();
-    cachedModule = mod;
-    verifiedRoot = vendorRoot;
-    return mod;
 }
 /**
  * Opens a LadybugConnection backed by the vendored wasm engine. Throws a
@@ -80,18 +95,35 @@ export async function openLadybugWasmConnection(options = {}) {
     const mod = await loadModule(vendorRoot);
     const database = new mod.Database(options.databasePath ?? ":memory:");
     const connection = new mod.Connection(database);
-    const run = async (raw) => {
+    const run = async (raw, maxRows) => {
         if (!raw.isSuccess())
             throw new Error(await raw.getErrorMessage());
-        const [columns, rows] = await Promise.all([raw.getColumnNames(), raw.getAllObjects()]);
-        return { columns, rows, truncated: false };
+        const columns = await raw.getColumnNames();
+        if (maxRows === undefined) {
+            return { columns, rows: await raw.getAllObjects(), truncated: false };
+        }
+        // Cursor read bounded by maxRows so an unbounded (e.g. cartesian) result is
+        // never fully materialized. wasm getNext() yields a positional row.
+        const rows = [];
+        let truncated = false;
+        while (raw.hasNext()) {
+            if (rows.length >= maxRows) {
+                truncated = true;
+                break;
+            }
+            const positional = await raw.getNext();
+            const row = {};
+            columns.forEach((column, columnIndex) => { row[column] = positional[columnIndex]; });
+            rows.push(row);
+        }
+        return { columns, rows, truncated };
     };
     return {
-        async query(cypher, params) {
+        async query(cypher, params, maxRows) {
             if (params === undefined)
-                return run(await connection.query(cypher));
+                return run(await connection.query(cypher), maxRows);
             const statement = await connection.prepare(cypher);
-            return run(await connection.execute(statement, params));
+            return run(await connection.execute(statement, params), maxRows);
         },
         async close() {
             await connection.close();
@@ -135,6 +167,7 @@ export async function shutdownLadybugWasm() {
     const mod = cachedModule;
     cachedModule = undefined;
     verifiedRoot = undefined;
+    inflightLoad = undefined;
     if (mod?.close)
         await mod.close();
 }

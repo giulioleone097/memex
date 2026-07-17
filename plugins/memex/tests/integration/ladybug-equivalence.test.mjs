@@ -73,6 +73,46 @@ test("read-only guard rejects mutation Cypher through the tier", async () => {
   }
 });
 
+test("read-only guard blocks the comment/string-confusion bypasses against the real engine", async () => {
+  // Exact bypass strings proven to slip past a strip-based guard and execute on
+  // the real engine (security review). Each must be rejected here, and the graph
+  // must be unchanged afterward.
+  const bypasses = [
+    "RETURN '/*' AS a ; CREATE (:Node {id:'PWNED'}) ; RETURN '*/' AS b",
+    "RETURN '/*' AS a ; COPY (LOAD FROM '/etc/passwd' RETURN column0) TO '/tmp/exfil.csv' ; RETURN '*/' AS b",
+    "MATCH (n:Node) WITH '/*' AS c, n CREATE (m:Node {id:'NOSEMI2'}) RETURN '*/' AS z",
+    "MATCH (n) RETURN n ; INSTALL httpfs",
+  ];
+  const tier = await openWasmTier(graph);
+  try {
+    for (const attack of bypasses) {
+      await assert.rejects(() => tier.cypher.cypher(attack), (err) => {
+        assert.equal(err.code, "GRAPH_CYPHER_READONLY", attack);
+        return true;
+      });
+    }
+    // No injected node exists and the node count is unchanged.
+    const pwned = await tier.cypher.cypher("MATCH (n:Node) WHERE n.id = 'PWNED' OR n.id = 'NOSEMI2' RETURN count(n) AS c");
+    assert.equal(Number(pwned.rows[0].c), 0);
+    const total = await tier.cypher.cypher("MATCH (n:Node) RETURN count(n) AS c");
+    assert.equal(Number(total.rows[0].c), graph.nodes.length);
+  } finally {
+    await tier.close();
+  }
+});
+
+test("maxRows bounds an unbounded (cartesian) result via the cursor", async () => {
+  const tier = await openWasmTier(graph);
+  try {
+    // 5 nodes → 5^3 = 125 rows unbounded; the cursor must stop at maxRows.
+    const res = await tier.cypher.cypher("MATCH (a:Node),(b:Node),(c:Node) RETURN a.id AS x, b.id AS y, c.id AS z", {}, 10);
+    assert.equal(res.rows.length, 10, "rows are capped at maxRows");
+    assert.equal(res.truncated, true, "truncation is reported");
+  } finally {
+    await tier.close();
+  }
+});
+
 test("degrade: forcing pure yields no Cypher capability, wasm never attempted", async () => {
   let attempted = false;
   const sel = await openGraphCypher({

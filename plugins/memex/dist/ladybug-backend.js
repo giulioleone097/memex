@@ -6,12 +6,12 @@ export class LadybugCypherEngine {
     constructor(connection) {
         this.connection = connection;
     }
-    async cypher(query, params) {
+    async cypher(query, params, maxRows) {
         if (!isReadOnlyCypher(query)) {
             throw new MemexError("GRAPH_CYPHER_READONLY", "Only read-only Cypher (MATCH/RETURN and friends) is allowed on the derived graph database.");
         }
         try {
-            return await this.connection.query(query, params);
+            return await this.connection.query(query, params, maxRows);
         }
         catch (error) {
             throw new MemexError("GRAPH_CYPHER_FAILED", error.message);

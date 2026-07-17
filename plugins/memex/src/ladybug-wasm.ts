@@ -23,6 +23,8 @@ interface LbugQueryResult {
   getErrorMessage(): Promise<string>;
   getColumnNames(): Promise<string[]>;
   getAllObjects(): Promise<Record<string, unknown>[]>;
+  hasNext(): boolean;
+  getNext(): Promise<unknown[]>;
 }
 interface LbugPreparedStatement { readonly __brand?: "prepared"; }
 interface LbugRawConnection {
@@ -41,6 +43,7 @@ interface LbugModule {
 
 let cachedModule: LbugModule | undefined;
 let verifiedRoot: string | undefined;
+let inflightLoad: Promise<LbugModule> | undefined;
 
 async function sha256File(absolute: string): Promise<string> {
   return createHash("sha256").update(await readFile(absolute)).digest("hex");
@@ -74,23 +77,35 @@ async function verifyCriticalAssets(vendorRoot: string): Promise<void> {
 
 async function loadModule(vendorRoot: string): Promise<LbugModule> {
   if (cachedModule !== undefined && verifiedRoot === vendorRoot) return cachedModule;
-  await verifyCriticalAssets(vendorRoot);
-  const entryPath = path.join(vendorRoot, WASM_ENTRY);
-  let required: unknown;
-  try {
-    const require = createRequire(import.meta.url);
-    required = require(entryPath);
-  } catch (error) {
-    throw new MemexError("MODEL_ASSET_CORRUPT", `Failed to load the Ladybug wasm module: ${(error as Error).message}`);
-  }
-  const mod = required as LbugModule;
-  if (typeof mod.Database !== "function" || typeof mod.Connection !== "function") {
-    throw new MemexError("MODEL_ASSET_CORRUPT", "Ladybug wasm module does not expose Database/Connection.");
-  }
-  if (mod.init) await mod.init();
-  cachedModule = mod;
+  // Share a single in-flight load between concurrent callers so the module is
+  // verified, required, and init()'d exactly once per process.
+  if (inflightLoad !== undefined && verifiedRoot === vendorRoot) return inflightLoad;
   verifiedRoot = vendorRoot;
-  return mod;
+  inflightLoad = (async (): Promise<LbugModule> => {
+    await verifyCriticalAssets(vendorRoot);
+    const entryPath = path.join(vendorRoot, WASM_ENTRY);
+    let required: unknown;
+    try {
+      const require = createRequire(import.meta.url);
+      required = require(entryPath);
+    } catch (error) {
+      throw new MemexError("MODEL_ASSET_CORRUPT", `Failed to load the Ladybug wasm module: ${(error as Error).message}`);
+    }
+    const mod = required as LbugModule;
+    if (typeof mod.Database !== "function" || typeof mod.Connection !== "function") {
+      throw new MemexError("MODEL_ASSET_CORRUPT", "Ladybug wasm module does not expose Database/Connection.");
+    }
+    if (mod.init) await mod.init();
+    cachedModule = mod;
+    return mod;
+  })();
+  try {
+    return await inflightLoad;
+  } catch (error) {
+    verifiedRoot = undefined;
+    inflightLoad = undefined;
+    throw error;
+  }
 }
 
 export interface OpenWasmOptions {
@@ -112,17 +127,31 @@ export async function openLadybugWasmConnection(options: OpenWasmOptions = {}): 
   const database = new mod.Database(options.databasePath ?? ":memory:");
   const connection = new mod.Connection(database);
 
-  const run = async (raw: LbugQueryResult): Promise<CypherResult> => {
+  const run = async (raw: LbugQueryResult, maxRows?: number): Promise<CypherResult> => {
     if (!raw.isSuccess()) throw new Error(await raw.getErrorMessage());
-    const [columns, rows] = await Promise.all([raw.getColumnNames(), raw.getAllObjects()]);
-    return { columns, rows, truncated: false };
+    const columns = await raw.getColumnNames();
+    if (maxRows === undefined) {
+      return { columns, rows: await raw.getAllObjects(), truncated: false };
+    }
+    // Cursor read bounded by maxRows so an unbounded (e.g. cartesian) result is
+    // never fully materialized. wasm getNext() yields a positional row.
+    const rows: Record<string, unknown>[] = [];
+    let truncated = false;
+    while (raw.hasNext()) {
+      if (rows.length >= maxRows) { truncated = true; break; }
+      const positional = await raw.getNext();
+      const row: Record<string, unknown> = {};
+      columns.forEach((column, columnIndex) => { row[column] = positional[columnIndex]; });
+      rows.push(row);
+    }
+    return { columns, rows, truncated };
   };
 
   return {
-    async query(cypher: string, params?: Record<string, CypherParam>): Promise<CypherResult> {
-      if (params === undefined) return run(await connection.query(cypher));
+    async query(cypher: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult> {
+      if (params === undefined) return run(await connection.query(cypher), maxRows);
       const statement = await connection.prepare(cypher);
-      return run(await connection.execute(statement, params));
+      return run(await connection.execute(statement, params), maxRows);
     },
     async close(): Promise<void> {
       await connection.close();
@@ -170,5 +199,6 @@ export async function shutdownLadybugWasm(): Promise<void> {
   const mod = cachedModule;
   cachedModule = undefined;
   verifiedRoot = undefined;
+  inflightLoad = undefined;
   if (mod?.close) await mod.close();
 }

@@ -75,7 +75,12 @@ export interface CypherResult {
 }
 /** Capability implemented by LadybugDB-backed tiers only. */
 export interface CypherCapable {
-    cypher(query: string, params?: Record<string, CypherParam>): Promise<CypherResult>;
+    /**
+     * Runs a read-only Cypher query. `maxRows` bounds how many rows are read from
+     * the engine (via a cursor, so an unbounded result set is never fully
+     * materialized); the result's `truncated` flag reports whether more existed.
+     */
+    cypher(query: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult>;
 }
 export type GraphCypherTier = "native" | "wasm" | "pure";
 export interface GraphCypherSelection {

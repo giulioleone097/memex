@@ -41,18 +41,34 @@ export function openLadybugNativeConnection(options = {}) {
     catch {
         return null;
     }
-    const shape = async (result) => {
-        const [rows, columns] = await Promise.all([result.getAll(), Promise.resolve(result.getColumnNames())]);
+    const shape = async (result, maxRows) => {
+        const columns = await Promise.resolve(result.getColumnNames());
+        if (maxRows === undefined) {
+            const rows = await result.getAll();
+            if (result.close)
+                result.close();
+            return { columns, rows, truncated: false };
+        }
+        // Cursor read bounded by maxRows. Native getNext() yields a row object.
+        const rows = [];
+        let truncated = false;
+        while (result.hasNext()) {
+            if (rows.length >= maxRows) {
+                truncated = true;
+                break;
+            }
+            rows.push(await result.getNext());
+        }
         if (result.close)
             result.close();
-        return { columns, rows, truncated: false };
+        return { columns, rows, truncated };
     };
     return {
-        async query(cypher, params) {
+        async query(cypher, params, maxRows) {
             const result = params === undefined
                 ? await connection.query(cypher)
                 : await connection.execute(await connection.prepare(cypher), params);
-            return shape(result);
+            return shape(result, maxRows);
         },
         async close() {
             await connection.close();

@@ -6,13 +6,13 @@ import type { GraphNodeV1, GraphEdgeV1 } from "./graph-contracts.js";
  * read-only guard lives in LadybugCypherEngine.cypher, not here.
  */
 export interface LadybugConnection {
-    query(cypher: string, params?: Record<string, CypherParam>): Promise<CypherResult>;
+    query(cypher: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult>;
     close(): Promise<void>;
 }
 export declare class LadybugCypherEngine implements CypherCapable {
     private readonly connection;
     constructor(connection: LadybugConnection);
-    cypher(query: string, params?: Record<string, CypherParam>): Promise<CypherResult>;
+    cypher(query: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult>;
     close(): Promise<void>;
 }
 /**

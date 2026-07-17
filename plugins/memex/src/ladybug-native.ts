@@ -12,6 +12,8 @@ import type { GraphNodeV1, GraphEdgeV1 } from "./graph-contracts.js";
 interface NativeQueryResult {
   getAll(): Promise<Record<string, unknown>[]>;
   getColumnNames(): Promise<string[]> | string[];
+  hasNext(): boolean;
+  getNext(): Promise<Record<string, unknown>>;
   close?(): void;
 }
 interface NativePreparedStatement { readonly __brand?: "native-prepared"; }
@@ -67,18 +69,30 @@ export function openLadybugNativeConnection(options: OpenNativeOptions = {}): La
     return null;
   }
 
-  const shape = async (result: NativeQueryResult): Promise<CypherResult> => {
-    const [rows, columns] = await Promise.all([result.getAll(), Promise.resolve(result.getColumnNames())]);
+  const shape = async (result: NativeQueryResult, maxRows?: number): Promise<CypherResult> => {
+    const columns = await Promise.resolve(result.getColumnNames());
+    if (maxRows === undefined) {
+      const rows = await result.getAll();
+      if (result.close) result.close();
+      return { columns, rows, truncated: false };
+    }
+    // Cursor read bounded by maxRows. Native getNext() yields a row object.
+    const rows: Record<string, unknown>[] = [];
+    let truncated = false;
+    while (result.hasNext()) {
+      if (rows.length >= maxRows) { truncated = true; break; }
+      rows.push(await result.getNext());
+    }
     if (result.close) result.close();
-    return { columns, rows, truncated: false };
+    return { columns, rows, truncated };
   };
 
   return {
-    async query(cypher: string, params?: Record<string, CypherParam>): Promise<CypherResult> {
+    async query(cypher: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult> {
       const result = params === undefined
         ? await connection.query(cypher)
         : await connection.execute(await connection.prepare(cypher), params);
-      return shape(result);
+      return shape(result, maxRows);
     },
     async close(): Promise<void> {
       await connection.close();

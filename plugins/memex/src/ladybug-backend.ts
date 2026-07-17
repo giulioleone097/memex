@@ -20,7 +20,7 @@ import {
  * read-only guard lives in LadybugCypherEngine.cypher, not here.
  */
 export interface LadybugConnection {
-  query(cypher: string, params?: Record<string, CypherParam>): Promise<CypherResult>;
+  query(cypher: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult>;
   close(): Promise<void>;
 }
 
@@ -29,7 +29,7 @@ const DEFAULT_BATCH_SIZE = 5000;
 export class LadybugCypherEngine implements CypherCapable {
   constructor(private readonly connection: LadybugConnection) {}
 
-  async cypher(query: string, params?: Record<string, CypherParam>): Promise<CypherResult> {
+  async cypher(query: string, params?: Record<string, CypherParam>, maxRows?: number): Promise<CypherResult> {
     if (!isReadOnlyCypher(query)) {
       throw new MemexError(
         "GRAPH_CYPHER_READONLY",
@@ -37,7 +37,7 @@ export class LadybugCypherEngine implements CypherCapable {
       );
     }
     try {
-      return await this.connection.query(query, params);
+      return await this.connection.query(query, params, maxRows);
     } catch (error) {
       throw new MemexError("GRAPH_CYPHER_FAILED", (error as Error).message);
     }

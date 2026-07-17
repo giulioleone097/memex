@@ -73,7 +73,12 @@ test("isReadOnlyCypher allows reads, blocks mutations", () => {
     "MATCH (n:Node) WHERE n.kind = 'symbol' RETURN n.name",
     "MATCH (n:Node) RETURN n.name AS set",           // alias named like a keyword
     "MATCH (n:Node) WHERE n.set = 1 RETURN n",        // property named like a keyword
+    "MATCH (n:Node) RETURN n.name AS create",         // alias named exactly like a forbidden keyword
+    "MATCH (n:Node) WHERE n.create = 1 RETURN n",      // property named exactly like a forbidden keyword
     "OPTIONAL MATCH (a)-[e:Edge]->(b) RETURN a, b",
+    "MATCH (n:Node) WHERE n.summary = 'we CREATE things here' RETURN n", // keyword only inside a string literal
+    "MATCH (n:Node) /* keep only calls */ WHERE n.kind = 'symbol' RETURN n", // real block comment
+    "MATCH (n:Node) RETURN n.name AS c ; ",           // a lone trailing semicolon is fine
   ]) assert.equal(isReadOnlyCypher(ok), true, ok);
 
   for (const bad of [
@@ -84,8 +89,17 @@ test("isReadOnlyCypher allows reads, blocks mutations", () => {
     "MATCH (n) DETACH DELETE n",
     "DROP TABLE Node",
     "COPY Node FROM 'x.csv'",
+    "COPY (MATCH (n) RETURN n) TO '/tmp/x.csv'",
     "ALTER TABLE Node ADD col STRING",
     "LOAD FROM '/etc/passwd' RETURN *",
     "CALL write_proc()",
+    "INSTALL httpfs",
+    "ATTACH '/tmp/other.db' AS other",
+    // Proven guard-bypass attempts (security review): comment/string confusion.
+    "RETURN '/*' AS a ; CREATE (:Node {id:'PWNED'}) ; RETURN '*/' AS b",
+    "RETURN '/*' AS a ; COPY (LOAD FROM '/etc/passwd' RETURN column0) TO '/tmp/exfil.csv' ; RETURN '*/' AS b",
+    "MATCH (n:Node) WITH '/*' AS c, n CREATE (m:Node {id:'NOSEMI2'}) RETURN '*/' AS z",
+    // Multi-statement even without the comment trick.
+    "MATCH (n) RETURN n ; DROP TABLE Node",
   ]) assert.equal(isReadOnlyCypher(bad), false, bad);
 });

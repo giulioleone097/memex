@@ -116,10 +116,29 @@ hand-rolled Cypher sub-parser** (that would be a fragile workaround). Existing
 hand-coded traversals (query/context/impact/path) keep working on every tier;
 Cypher is purely additive power on the Ladybug tiers.
 
-Read-only guard: `cypher()` rejects statements that mutate the derived DB
-(`CREATE/MERGE/SET/DELETE/DROP/COPY/ALTER` outside the internal sync path) so
-agent/user Cypher cannot corrupt the index. Sync uses an internal privileged
-path, not the public `cypher()`.
+Read-only guard: `cypher()` rejects any statement that mutates the DB, touches
+the host filesystem (`LOAD FROM` / `COPY … TO`), or loads native extensions
+(`INSTALL` / `LOAD` / `ATTACH`), plus multi-statement input. Sync uses an
+internal privileged path, not the public `cypher()`.
+
+**Security hardening (review-driven, 2026-07-17).** The first guard implementation
+was a strip-based regex that a security review defeated end-to-end: because it
+stripped comments before string literals with context-blind replaces, a payload
+like `RETURN '/*' AS a ; CREATE(...) ; RETURN '*/' AS b` had its middle deleted
+as a "comment" and executed on the real engine (DB mutation, arbitrary file
+read→write, extension-load RCE path). The guard is now a **single-pass
+context-aware lexer** (`scanCypher`) that lexes strings/backtick identifiers/
+comments exactly as the engine does — a comment marker or keyword inside a string
+is data, never a clause — then denylists side-effecting keywords over the bare
+token stream and rejects `;`-multi-statements. The proven bypasses are covered by
+regression tests that run them against the real engine and assert the graph is
+unmutated. Query parameters are bound as real prepared-statement parameters
+(never string-interpolated), so there is no param-injection path.
+
+Result bounding: `cypher()` reads rows through a **cursor capped at the requested
+limit** rather than materializing the full result set; since the engine executes
+lazily (verified: a 60⁴-row cartesian product returns in ~160 ms and is never
+fully computed), this bounds both memory and compute for pathological queries.
 
 ## 5. Ladybug schema (stable mapping)
 

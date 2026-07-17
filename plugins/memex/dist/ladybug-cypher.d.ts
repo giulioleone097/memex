@@ -17,9 +17,8 @@ export declare function edgeRowsParam(edges: readonly GraphEdgeV1[]): {
 export declare function rowToNode(row: Record<string, unknown>): GraphNodeV1;
 export declare function rowToEdge(row: Record<string, unknown>): GraphEdgeV1;
 /**
- * Conservative read-only guard for the public `cypher()` surface. Strips
- * comments, string literals, `AS <alias>` clauses, and `.property` accessors
- * (so a read query with an alias/property named like a keyword is not falsely
- * rejected), then rejects any remaining mutation/side-effecting keyword.
+ * Read-only guard for the public `cypher()` surface. Rejects multi-statement
+ * input and any statement containing a side-effecting keyword as a bare token,
+ * using a context-aware lexer (see scanCypher) rather than string mangling.
  */
 export declare function isReadOnlyCypher(query: string): boolean;

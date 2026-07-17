@@ -108,20 +108,130 @@ export function rowToEdge(row) {
         confidence: String(row.confidence),
     };
 }
-const MUTATION = /\b(CREATE|MERGE|SET|DELETE|REMOVE|DROP|COPY|ALTER|INSTALL|LOAD|ATTACH|DETACH|EXPORT|IMPORT|CALL)\b/i;
+// Side-effecting / non-read Cypher keywords. Any of these appearing as a bare
+// (unquoted, uncommented) clause token means the statement can mutate the graph,
+// touch the host filesystem (LOAD FROM / COPY TO), or load native extensions
+// (INSTALL / LOAD / ATTACH) — none permitted on the read-only public surface.
+const FORBIDDEN_KEYWORDS = new Set([
+    "CREATE", "MERGE", "SET", "DELETE", "REMOVE", "DROP", "ALTER", "RENAME",
+    "COPY", "LOAD", "INSTALL", "ATTACH", "DETACH", "EXPORT", "IMPORT", "USE",
+    "CALL", "MACRO", "BEGIN", "COMMIT", "ROLLBACK", "CHECKPOINT", "TRANSACTION",
+]);
+const isWordStart = (ch) => /[A-Za-z_]/.test(ch);
+const isWordChar = (ch) => /[A-Za-z0-9_]/.test(ch);
+// Single left-to-right pass that lexes the query exactly as the engine does:
+// single/double-quoted string literals (with backslash escapes), backtick-quoted
+// identifiers, double-slash line comments, and slash-star block comments. It
+// returns the bare (code-level) identifier tokens plus whether a second
+// statement follows a ";". Crucially, a comment marker or keyword that appears
+// INSIDE a string literal is treated as data, never as a comment or clause: this
+// closes the comment/string-confusion bypass a strip-based regex guard is
+// vulnerable to. Identifiers immediately after "." (property access) or "AS"
+// (alias) are skipped, since they name data, never a clause, so a read query
+// with a property/alias named like a keyword is allowed without weakening the
+// guard (a real clause keyword is always a separate token).
+function scanCypher(query) {
+    const bareWords = [];
+    let multiStatement = false;
+    let sawTerminator = false;
+    let skipNextIdentifier = false;
+    let index = 0;
+    const length = query.length;
+    const noteBare = (word) => {
+        const upper = word.toUpperCase();
+        if (sawTerminator)
+            multiStatement = true;
+        if (skipNextIdentifier) {
+            skipNextIdentifier = false;
+            return;
+        }
+        bareWords.push(upper);
+        skipNextIdentifier = upper === "AS";
+    };
+    while (index < length) {
+        const ch = query[index] ?? "";
+        if (ch === "'" || ch === '"') {
+            index += 1;
+            while (index < length) {
+                if (query[index] === "\\") {
+                    index += 2;
+                    continue;
+                }
+                if (query[index] === ch) {
+                    index += 1;
+                    break;
+                }
+                index += 1;
+            }
+            continue;
+        }
+        if (ch === "`") {
+            index += 1;
+            while (index < length && query[index] !== "`")
+                index += 1;
+            index += 1;
+            // A backtick-quoted identifier names data (e.g. `MATCH (n:\`CREATE\`)`),
+            // never a clause; treat it like a skipped identifier and honor AS-skip.
+            if (skipNextIdentifier)
+                skipNextIdentifier = false;
+            continue;
+        }
+        if (ch === "/" && query[index + 1] === "/") {
+            index += 2;
+            while (index < length && query[index] !== "\n")
+                index += 1;
+            continue;
+        }
+        if (ch === "/" && query[index + 1] === "*") {
+            index += 2;
+            while (index < length && !(query[index] === "*" && query[index + 1] === "/"))
+                index += 1;
+            index += 2;
+            continue;
+        }
+        if (ch === ";") {
+            sawTerminator = true;
+            index += 1;
+            continue;
+        }
+        if (ch === ".") {
+            // Property access: skip the following identifier so a property named like a
+            // keyword is not scanned as a clause.
+            skipNextIdentifier = true;
+            index += 1;
+            continue;
+        }
+        if (isWordStart(ch)) {
+            let word = ch;
+            index += 1;
+            while (index < length) {
+                const next = query[index] ?? "";
+                if (!isWordChar(next))
+                    break;
+                word += next;
+                index += 1;
+            }
+            noteBare(word);
+            continue;
+        }
+        if (sawTerminator && !/\s/.test(ch))
+            multiStatement = true;
+        index += 1;
+    }
+    return { bareWords, multiStatement };
+}
 /**
- * Conservative read-only guard for the public `cypher()` surface. Strips
- * comments, string literals, `AS <alias>` clauses, and `.property` accessors
- * (so a read query with an alias/property named like a keyword is not falsely
- * rejected), then rejects any remaining mutation/side-effecting keyword.
+ * Read-only guard for the public `cypher()` surface. Rejects multi-statement
+ * input and any statement containing a side-effecting keyword as a bare token,
+ * using a context-aware lexer (see scanCypher) rather than string mangling.
  */
 export function isReadOnlyCypher(query) {
-    const stripped = query
-        .replace(/\/\*[\s\S]*?\*\//g, " ")
-        .replace(/\/\/[^\n]*/g, " ")
-        .replace(/'(?:[^'\\]|\\.)*'/g, "''")
-        .replace(/"(?:[^"\\]|\\.)*"/g, '""')
-        .replace(/\bAS\s+`?[A-Za-z_][A-Za-z0-9_]*`?/gi, " ")
-        .replace(/\.`?[A-Za-z_][A-Za-z0-9_]*`?/g, " ");
-    return !MUTATION.test(stripped);
+    const scan = scanCypher(query);
+    if (scan.multiStatement)
+        return false;
+    for (const word of scan.bareWords) {
+        if (FORBIDDEN_KEYWORDS.has(word))
+            return false;
+    }
+    return true;
 }

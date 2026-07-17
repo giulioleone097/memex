@@ -180,7 +180,7 @@ function boundedEnvelope(value, requestedByteLimit) { const limit = responseLimi
         markCollectionTruncated(collections, key);
     return true;
 } return false; }; while (Buffer.byteLength(JSON.stringify(bounded), "utf8") > limit)
-    if (!(trim("diagnostics") || trim("paths") || trim("edges") || trim("nodes") || trim("cycles") || trim("flows") || trim("hubs") || trim("entrypoints") || trim("modules") || trim("changedPaths")))
+    if (!(trim("diagnostics") || trim("paths") || trim("edges") || trim("nodes") || trim("cycles") || trim("flows") || trim("hubs") || trim("entrypoints") || trim("modules") || trim("changedPaths") || trim("rows")))
         break; if (Buffer.byteLength(JSON.stringify(bounded), "utf8") > limit)
     throw new MemexError("SOURCE_TOO_LARGE", "Graph response metadata exceeds the response byte limit."); return bounded; }
 function isTruncationCollections(value) { if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -432,6 +432,9 @@ export async function explainGraphNode(options) {
 // per call. On the pure tier (no Cypher) this fails with a typed, actionable
 // error rather than silently returning nothing.
 export async function cypherGraph(options) {
+    // Validate/derive the row cap BEFORE opening a tier, so an out-of-range limit
+    // fails fast without paying the graph build + sync cost.
+    const max = entityLimit(options.limit);
     const resolved = await resolveGraphStorage(options.root, options.homeDir);
     const index = await openGraphIndex(resolved.storage);
     const [nodes, edges] = await Promise.all([index.allNodes(), index.allEdges()]);
@@ -445,17 +448,17 @@ export async function cypherGraph(options) {
             throw new MemexError("GRAPH_CYPHER_UNAVAILABLE", `Cypher requires the LadybugDB backend but the active tier is "${selection.tier}" (${selection.reason}). `
                 + "Install @ladybugdb/core for the native tier, or run `memex doctor` to check the vendored wasm assets.");
         }
-        const result = await selection.cypher.cypher(options.query, options.params);
-        const max = entityLimit(options.limit);
-        const rows = result.rows.slice(0, max);
+        // maxRows bounds the cursor read so an unbounded result set is never fully
+        // materialized; `truncated` reflects whether more rows existed.
+        const result = await selection.cypher.cypher(options.query, options.params, max);
         const value = {
             schemaVersion: 1,
             action: "cypher",
             root: resolved.repositoryRoot,
             tier: selection.tier,
             columns: result.columns,
-            rows,
-            truncated: result.truncated || result.rows.length > max,
+            rows: result.rows,
+            truncated: result.truncated,
             diagnostics: [],
         };
         return boundedEnvelope(value, options.responseByteLimit);

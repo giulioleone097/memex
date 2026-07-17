@@ -140,7 +140,7 @@ function containedEdges(edges: readonly GraphEdgeV1[], nodes: readonly GraphNode
 async function lazyFlows(index: GraphIndexPort, flows: ReadonlyArray<{ from: string; to: string; kind: GraphEdgeV1["kind"] }>): Promise<Array<{ from: string; to: string; weight: number }>> { const weights = new Map<string, number>(); for (const flow of flows.filter((flow) => flow.kind === "imports")) { const [from, to] = await Promise.all([index.node(flow.from), index.node(flow.to)]); if (from !== undefined && to !== undefined) { const key = `${from.path}\u0000${to.path}`; weights.set(key, (weights.get(key) ?? 0) + 1); } } return [...weights.entries()].map(([key, weight]) => { const parts = key.split("\u0000"); return { from: parts[0] ?? "", to: parts[1] ?? "", weight }; }).sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to)); }
 async function lazyCycles(index: GraphIndexPort, cycles: readonly string[][]): Promise<string[][]> { const result: string[][] = []; for (const cycle of cycles) { const nodes = await nodesByIds(index, cycle); const paths = nodes.map((node) => node.path); if (paths.length > 1 && paths[0] === paths.at(-1)) paths.pop(); if (paths.length > 0) result.push([...new Set(paths)].sort((left, right) => left.localeCompare(right))); } return result.sort((left, right) => left.join("\u0000").localeCompare(right.join("\u0000"))); }
 
-function boundedEnvelope<T extends { truncated: boolean }>(value: T, requestedByteLimit: number | undefined): T { const limit = responseLimit(requestedByteLimit); const bounded = structuredClone(value) as T & Record<string, unknown>; const trim = (key: string): boolean => { const valueAtKey = bounded[key]; if (Array.isArray(valueAtKey) && valueAtKey.length > 0) { valueAtKey.pop(); bounded.truncated = true; const collections = bounded.truncatedCollections; if (isTruncationCollections(collections)) markCollectionTruncated(collections, key); return true; } return false; }; while (Buffer.byteLength(JSON.stringify(bounded), "utf8") > limit) if (!(trim("diagnostics") || trim("paths") || trim("edges") || trim("nodes") || trim("cycles") || trim("flows") || trim("hubs") || trim("entrypoints") || trim("modules") || trim("changedPaths"))) break; if (Buffer.byteLength(JSON.stringify(bounded), "utf8") > limit) throw new MemexError("SOURCE_TOO_LARGE", "Graph response metadata exceeds the response byte limit."); return bounded; }
+function boundedEnvelope<T extends { truncated: boolean }>(value: T, requestedByteLimit: number | undefined): T { const limit = responseLimit(requestedByteLimit); const bounded = structuredClone(value) as T & Record<string, unknown>; const trim = (key: string): boolean => { const valueAtKey = bounded[key]; if (Array.isArray(valueAtKey) && valueAtKey.length > 0) { valueAtKey.pop(); bounded.truncated = true; const collections = bounded.truncatedCollections; if (isTruncationCollections(collections)) markCollectionTruncated(collections, key); return true; } return false; }; while (Buffer.byteLength(JSON.stringify(bounded), "utf8") > limit) if (!(trim("diagnostics") || trim("paths") || trim("edges") || trim("nodes") || trim("cycles") || trim("flows") || trim("hubs") || trim("entrypoints") || trim("modules") || trim("changedPaths") || trim("rows"))) break; if (Buffer.byteLength(JSON.stringify(bounded), "utf8") > limit) throw new MemexError("SOURCE_TOO_LARGE", "Graph response metadata exceeds the response byte limit."); return bounded; }
 function isTruncationCollections(value: unknown): value is { modules: boolean; entrypoints: boolean; hubs: boolean; cycles: boolean; flows: boolean; diagnostics: boolean } { if (value === null || typeof value !== "object" || Array.isArray(value)) return false; const entries = Object.entries(value); return entries.length === 6 && entries.every(([key, item]) => ["modules", "entrypoints", "hubs", "cycles", "flows", "diagnostics"].includes(key) && typeof item === "boolean"); }
 function markCollectionTruncated(collections: { modules: boolean; entrypoints: boolean; hubs: boolean; cycles: boolean; flows: boolean; diagnostics: boolean }, key: string): void { if (key === "modules" || key === "entrypoints" || key === "hubs" || key === "cycles" || key === "flows" || key === "diagnostics") collections[key] = true; }
 
@@ -420,6 +420,9 @@ export interface GraphCypherOptions extends GraphOperationBase {
 // per call. On the pure tier (no Cypher) this fails with a typed, actionable
 // error rather than silently returning nothing.
 export async function cypherGraph(options: GraphCypherOptions): Promise<GraphCypherEnvelope> {
+  // Validate/derive the row cap BEFORE opening a tier, so an out-of-range limit
+  // fails fast without paying the graph build + sync cost.
+  const max = entityLimit(options.limit);
   const resolved = await resolveGraphStorage(options.root, options.homeDir);
   const index = await openGraphIndex(resolved.storage);
   const [nodes, edges] = await Promise.all([index.allNodes(), index.allEdges()]);
@@ -436,17 +439,17 @@ export async function cypherGraph(options: GraphCypherOptions): Promise<GraphCyp
           + "Install @ladybugdb/core for the native tier, or run `memex doctor` to check the vendored wasm assets.",
       );
     }
-    const result = await selection.cypher.cypher(options.query, options.params);
-    const max = entityLimit(options.limit);
-    const rows = result.rows.slice(0, max);
+    // maxRows bounds the cursor read so an unbounded result set is never fully
+    // materialized; `truncated` reflects whether more rows existed.
+    const result = await selection.cypher.cypher(options.query, options.params, max);
     const value: GraphCypherEnvelope = {
       schemaVersion: 1,
       action: "cypher",
       root: resolved.repositoryRoot,
       tier: selection.tier,
       columns: result.columns,
-      rows,
-      truncated: result.truncated || result.rows.length > max,
+      rows: result.rows,
+      truncated: result.truncated,
       diagnostics: [],
     };
     return boundedEnvelope(value, options.responseByteLimit);
