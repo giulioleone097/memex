@@ -143,7 +143,7 @@ function graphBranches(tool) {
   assert.equal(JSON.stringify(tool).toLowerCase().includes("gitnexus"), false);
   assert.equal(JSON.stringify(tool).includes("provider"), false);
   assert.ok(Array.isArray(tool.inputSchema.oneOf));
-  assert.equal(tool.inputSchema.oneOf.length, 11);
+  assert.equal(tool.inputSchema.oneOf.length, 12);
   return new Map(
     tool.inputSchema.oneOf.map((branch) => [branch.properties.action.const, branch]),
   );
@@ -166,6 +166,10 @@ function assertGraphSchema(tool) {
     explain: { properties: ["action", "limit", "root", "target"], required: ["action", "root", "target"] },
     communities: { properties: ["action", "limit", "root"], required: ["action", "root"] },
     report: { properties: ["action", "root"], required: ["action", "root"] },
+    cypher: {
+      properties: ["action", "limit", "params", "preference", "query", "root"],
+      required: ["action", "query", "root"],
+    },
   };
 
   assert.deepEqual([...branches.keys()].sort(), Object.keys(expected).sort());
