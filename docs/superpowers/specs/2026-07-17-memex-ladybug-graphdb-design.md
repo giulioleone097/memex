@@ -160,13 +160,15 @@ addressed IDs, so results are directly comparable to the pure-TS backend.
   `@ladybugdb/wasm-core@0.18.2` under `plugins/memex/vendor/ladybug-wasm/nodejs/`
   (~13 MB total; largest file 12.9 MB). **No chunking is required** — every file
   is under the GitHub 50 MB warning threshold, so files are committed as-is.
-- On first use, the loader **materializes the vendored dir into a cache under
-  `~/.memex/cache/ladybug-wasm/<version>/` and verifies SHA-256 per file**
-  (protects against iCloud dataless eviction of the in-repo copy and against
-  corruption), then `require()`s `<cache>/nodejs/index.js`. The MANIFEST group
-  reuses the existing `VendorManifestEntry` shape (`path` + `sha256` + `bytes`);
-  the general part-assembly machinery in `embedder.ts` is extracted to a shared
-  helper but the ladybug entries are unsplit.
+- The loader `require()`s the vendored CommonJS entry directly (mirroring how the
+  ORT runtime is loaded from `vendor/ort/`), after verifying the two
+  integrity-critical files (the CJS entry and the `.wasm`) against the shared
+  `vendor/MANIFEST.json`. Ladybug files use the existing `VendorManifestEntry`
+  shape (`path`, `sha256`, `bytes`, `license`, `upstream`, `revision`) and are
+  recorded in the single shared manifest alongside the model/ort assets — the
+  codebase's established convention (the vendor test enforces no stray files).
+  The runtime deps are vendored under `ladybug-wasm/nodejs/node_modules/` with a
+  scoped `.gitignore` negation. No cache-materialization step is used.
 - Record pinned version, file list, and SHAs in **PRD §16 (vendor facts)**, same
   governance as the embedding model. MIT attribution recorded.
 - **Git LFS is deliberately NOT used** — it needs a network remote, which would

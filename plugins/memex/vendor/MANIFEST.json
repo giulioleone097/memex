@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-14T22:53:23.344Z",
-  "totalBytes": 149020859,
+  "generatedAt": "2026-07-17T00:00:00.000Z",
+  "totalBytes": 163710288,
   "assets": [
     {
       "path": "model/multilingual-e5-small-int8/model.onnx",
@@ -237,6 +237,3494 @@
       "license": "MIT",
       "upstream": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.27.0.tgz",
       "revision": "1.27.0"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/README.md",
+      "sha256": "b80e984e7c0968e4fe1316e9d99595a99808e3f28934d0cff369bdb2b35e014a",
+      "bytes": 761,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/connection.js",
+      "sha256": "185bda6492aed915dcd8612290052020f0b598e056a1772f6b3b982e8a99d1da",
+      "bytes": 5951,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/database.js",
+      "sha256": "aa60882c76571809c7aabe75d10c6086acdaa8c1fe38f87e11ca48d8a44b1448",
+      "bytes": 3206,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/dispatcher.js",
+      "sha256": "05cd8809faa119a2ebeebab64c8d8faa54f5e58fa3d0beb23a06ca13ae128288",
+      "bytes": 1674,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/fs.js",
+      "sha256": "89b3883dfff0c257b4299b49be32e301c706d9359ad709f7e28f5b6e1c9316b9",
+      "bytes": 5589,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/index.d.ts",
+      "sha256": "f12655a5a0775f709e74e26e24db3c801d10dedce72c2518a424b05a69c9e60f",
+      "bytes": 8388,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/index.js",
+      "sha256": "570b3134e2598b85ca91281f438985ed155d5af4a67ae1f20cd62586e5c5207f",
+      "bytes": 2499,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/lbug/lbug_wasm.js",
+      "sha256": "c1a164e1c9d68fb1c7576aad35577261a3cd148df9cb5d92e52dffc02d433cfe",
+      "bytes": 255918,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/lbug/lbug_wasm.wasm",
+      "sha256": "18911607caa51182c2e73b27005c47f80c24b99dcc0fb442cf0ce984b03b613d",
+      "bytes": 13558799,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/lbug_wasm_worker.js",
+      "sha256": "3e1e879a7345c0de80f248cb9e1e5cb98da466354c6b35bdbfbc14364cfad871",
+      "bytes": 16479,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/callsites/index.d.ts",
+      "sha256": "6fdc7cbbbc0601f9bb153c30c0e8063321cd1c9211ad512b9fde1d1f785b35dd",
+      "bytes": 2351,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/callsites/index.js",
+      "sha256": "3030a89b199e479581ce9a7587f5e1fba386d5a2fc8a23a861116ecdd959e30a",
+      "bytes": 363,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/callsites/license",
+      "sha256": "48da2f39e100d4085767e94966b43f4fa95ff6a0698fba57ed460914e35f94a0",
+      "bytes": 1109,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/callsites/package.json",
+      "sha256": "9c27ea7f90c3a348c038fd6b3213848552ed1ec5dd38e0a06016af19d19e526a",
+      "bytes": 622,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/callsites/readme.md",
+      "sha256": "3b0f204c61a7c3ac352f566333ddca12215c93242de1a02b4800fbe0230f6806",
+      "bytes": 1887,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/LICENSE",
+      "sha256": "3a61c6c96caf5c1d9b623fb9b04c822b783dfcb78aa7e49c76a3f643e6ed7f95",
+      "bytes": 1139,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/README.md",
+      "sha256": "486cb669048bd5014adf9ea117e27a45c4e61b0e668f464c724273beb8170797",
+      "bytes": 22115,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/package.json",
+      "sha256": "ea8e33d63fe5f3a4c36609b6c3df8e2ef1f8b8ba2fc3a2e1e53cb27291f384af",
+      "bytes": 1479,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/src/browser.js",
+      "sha256": "19920671f5902f64ad8ea11767fa50ea9d7a71ae0b7dff7ba5693c0075afc763",
+      "bytes": 6103,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/src/common.js",
+      "sha256": "dbe83d2bb5837f3c4d7fe537b8004c585987270eceed5b06b8e078deb0ae214a",
+      "bytes": 6915,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/src/index.js",
+      "sha256": "aa127ff1752b7d9c7415c5c7bb6994d9aa722b81bcbcab4bd48316b013d23bf3",
+      "bytes": 314,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/debug/src/node.js",
+      "sha256": "d7b26d7c92f8ea7794b77ce11f3c11cd18c9084df7c357e3c7025344fa28aac6",
+      "bytes": 4728,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/esm/LICENSE",
+      "sha256": "fe315c4bce49df19bf06297ca372b2b486f4351d09a487918711c8ed624dcbe8",
+      "bytes": 1147,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/esm/README.md",
+      "sha256": "3cc5397f5576b2396da58d86f4c37db8332fd0d05d27b85bb76065e42ea1605f",
+      "bytes": 7686,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/esm/esm.js",
+      "sha256": "22b416725c491aed76b8cb9e7d88743ece46e5541bfec214331ca347d02d7755",
+      "bytes": 2028,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/esm/esm/loader.js",
+      "sha256": "1e83275fa298990c832d65d7f109796f3ca1f3a3069a65806958f6251644147a",
+      "bytes": 296989,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/esm/index.js",
+      "sha256": "395aa96e4b48ed85769ec5e26eb0dd0db6ac2b8faea894fd1ee2fa74bbef1505",
+      "bytes": 48,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/esm/package.json",
+      "sha256": "4c0ffd8e1c87672cff3e799da5169d421f89387e4a16afb577ebba4ba88cda80",
+      "bytes": 658,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/is-observable/index.js",
+      "sha256": "b4c90108098510249ba5d5380fc156a19530c328938bcf44647ded9d44637514",
+      "bytes": 486,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/is-observable/license",
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+      "bytes": 1117,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/is-observable/package.json",
+      "sha256": "bc69d1e22a3760e76d19641f98ae84a814054d73ba7cf22ae571c6de1238be3c",
+      "bytes": 730,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/is-observable/readme.md",
+      "sha256": "23ca4ad723d9a011cd0b8b5aeff2b3872931e33995741561d8939549f164c992",
+      "bytes": 981,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/ms/index.js",
+      "sha256": "e5f0b6a946a9b2b356a28557728410717df54ea2f599edb619f9839df6b7b0e9",
+      "bytes": 3024,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/ms/license.md",
+      "sha256": "1662fae9b5314d11cf51284e2dcd1f006a354f7343f08712a730fcff9a359801",
+      "bytes": 1079,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/ms/package.json",
+      "sha256": "1a6b4d9739790c0b94ab96c8cc0507e281c164c311ff4fbf5e57fb8d26290b40",
+      "bytes": 732,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/ms/readme.md",
+      "sha256": "8bf6c4f414b123ea2a9375b91982882d01d8561ce7d12e3bb4f448c23359f040",
+      "bytes": 1886,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/LICENSE",
+      "sha256": "b0c14795341a03514de92c45b9ea9f13e859733739ed7a46e7a3e7e723063b12",
+      "bytes": 1078,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/README.md",
+      "sha256": "87344c7edc86f102819f6518c13343105e4fb513f39d4918ee890b6d45ddb372",
+      "bytes": 3898,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/_scheduler.d.ts",
+      "sha256": "82066231a61cb3d13443d3effd6595f79f24539f700912ab563327d889b87583",
+      "bytes": 406,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/_scheduler.js",
+      "sha256": "682eca2d059dde202fe9693251ba2f0c39dadcfeb170b03d774dbddecbcb12e6",
+      "bytes": 1799,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/_symbols.d.ts",
+      "sha256": "ecbe4a9915740f0a79315781c4680f91ff47ba7979237b85bd14d93d90990a6b",
+      "bytes": 232,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/_symbols.js",
+      "sha256": "6cb71add1a1d0caaf7fab84970d15285cee11f68602dcef9a49ce4f70923a139",
+      "bytes": 496,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/_util.d.ts",
+      "sha256": "c0e79d71d15501daceedace746556a5faf64371251db09fcac6a49f0224d524d",
+      "bytes": 193,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/_util.js",
+      "sha256": "d2eaccd5382f61c1e2e6c0eda33a0c75fa0bfe052090fc025fd44ceca0a302ea",
+      "bytes": 300,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/filter.d.ts",
+      "sha256": "21a2907acf3036c4f861acbf4e0d3c39234b37ce9c09813b701402d798d28a43",
+      "bytes": 347,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/filter.js",
+      "sha256": "a799cb2af164360a39fd5aac4c61d294c628551a9f1e8308c2477d71cb4eebff",
+      "bytes": 1731,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/flatMap.d.ts",
+      "sha256": "b483b6e55a091cfc957c4a2777fb0aa339d2eb8272823dcdde6e9a756925e57d",
+      "bytes": 575,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/flatMap.js",
+      "sha256": "03782d0b62ca9cf4dc2802382ffd66562a7d50b9f72930bd9ed9ab32a1dd58c3",
+      "bytes": 3658,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/index.d.ts",
+      "sha256": "426ca500daf1ba4b1951bb7e71ab826588a7a74aca2ac527910ac5d06692b24d",
+      "bytes": 828,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/index.js",
+      "sha256": "37414c3add406b3a62948f41e8a79cd7eb71c0e8e66a3efdfe398249fc20d1c2",
+      "bytes": 480,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/interval.d.ts",
+      "sha256": "27ae21c57a953e900f86d621a514c3f729fb9ff84a730651cad5c053fb01dddd",
+      "bytes": 325,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/interval.js",
+      "sha256": "1e45bd7f2aa643b28e60b5cfc04e41d584618f19be0c6bbb744910dbeaa813ae",
+      "bytes": 518,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/map.d.ts",
+      "sha256": "a964d0067536a4f6a865187f5e35704594e82415b45c3f97404377cd2d0cb2ed",
+      "bytes": 340,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/map.js",
+      "sha256": "8864279ee389f35ad616af597b975294a182b16953c0550909265afcdb8e6787",
+      "bytes": 1726,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/merge.d.ts",
+      "sha256": "a64b56ee548a0e7a008ade684bb4e90f839f6fa7b5fdf3c094c3d3afdf8e7a50",
+      "bytes": 907,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/merge.js",
+      "sha256": "986c1482990748e5c241b57e990e1711a7b0f2e4569e7c5fb22fa361c70006c5",
+      "bytes": 1015,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/multicast.d.ts",
+      "sha256": "549f135dc5036cd796e696f674ebed023ea8975fe3c45f9756c7af367ec22d17",
+      "bytes": 822,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/multicast.js",
+      "sha256": "9913adce162d43d85a068a90408e0e12b8391d2388d38a0d5d9eb9b25acb8ede",
+      "bytes": 1789,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/observable.d.ts",
+      "sha256": "1a21aa114a3d3c820c9ce08882b787c57d45dd6fc4403470082a8af67184f579",
+      "bytes": 4388,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/observable.js",
+      "sha256": "f3be6b4904f13be5f3d126d5b5e121987b9186d4e1c8f928e9d09695b535dd69",
+      "bytes": 16058,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/scan.d.ts",
+      "sha256": "cd863a4b8db476cc40a29499fc53060dade5252cfb7ab66bdf6ffab812759e80",
+      "bytes": 795,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/scan.js",
+      "sha256": "c851fb10ec375387a562020b70fbb7e4c12cb09d918948147df2566eb0ba74de",
+      "bytes": 1858,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/subject.d.ts",
+      "sha256": "7d4850e43830e9d91d3404f13df3d9a3ba77b265a3651b4f2a2be4974a3f88d4",
+      "bytes": 695,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/subject.js",
+      "sha256": "9e69db08ef221829ca1a35482fd72008212b0096615b4cd1de16c36f8262490b",
+      "bytes": 1307,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/symbols.d.ts",
+      "sha256": "6bdad1ac6bb4fcaa30d0411fd8ae5e40085ce9f22cffcb21f95c02290b0653d9",
+      "bytes": 107,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/symbols.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/unsubscribe.d.ts",
+      "sha256": "81899fdb2022b2a8cfd33a3c841287a41eece3632d585b98c85e6cf759b2d2fb",
+      "bytes": 334,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist.esm/unsubscribe.js",
+      "sha256": "63ba06a6e981fe441a31029b76ea84b3d58a5bdc2217afa34a6f7445e8f190a8",
+      "bytes": 417,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/_scheduler.d.ts",
+      "sha256": "82066231a61cb3d13443d3effd6595f79f24539f700912ab563327d889b87583",
+      "bytes": 406,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/_scheduler.js",
+      "sha256": "389c0c19d5e316ad52abf603a43e3623fd43dc3d5084fa4a0b54fa01bd02fa13",
+      "bytes": 1961,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/_symbols.d.ts",
+      "sha256": "ecbe4a9915740f0a79315781c4680f91ff47ba7979237b85bd14d93d90990a6b",
+      "bytes": 232,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/_symbols.js",
+      "sha256": "ef6f04bb728518f30fe5cc69ead1cec805fd141f4022672748677c8b445cbe43",
+      "bytes": 845,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/_util.d.ts",
+      "sha256": "c0e79d71d15501daceedace746556a5faf64371251db09fcac6a49f0224d524d",
+      "bytes": 193,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/_util.js",
+      "sha256": "3eeafa0ca739e197f2cd981b91b84f92b7915cb5b579e6d60373339ba8241b44",
+      "bytes": 518,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/filter.d.ts",
+      "sha256": "21a2907acf3036c4f861acbf4e0d3c39234b37ce9c09813b701402d798d28a43",
+      "bytes": 347,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/filter.js",
+      "sha256": "65d3384278ca687947ea20f56daa0954561002527cd6d0b241ada38b7cba28e0",
+      "bytes": 1851,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/flatMap.d.ts",
+      "sha256": "b483b6e55a091cfc957c4a2777fb0aa339d2eb8272823dcdde6e9a756925e57d",
+      "bytes": 575,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/flatMap.js",
+      "sha256": "d8aba0c2f9c5823fb02e20591892c40e5dc3000a13a457621bb073d392ab6c8c",
+      "bytes": 3775,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/index.d.ts",
+      "sha256": "426ca500daf1ba4b1951bb7e71ab826588a7a74aca2ac527910ac5d06692b24d",
+      "bytes": 828,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/index.js",
+      "sha256": "6ed47d60c874bbe1713746540f1791d37fb4183d1e4ef283400e523d3b5d43af",
+      "bytes": 1775,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/interval.d.ts",
+      "sha256": "27ae21c57a953e900f86d621a514c3f729fb9ff84a730651cad5c053fb01dddd",
+      "bytes": 325,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/interval.js",
+      "sha256": "350864c80dfa7c06a559e0a0952710bb69ea8534ca88464d034351afa7f5addc",
+      "bytes": 624,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/map.d.ts",
+      "sha256": "a964d0067536a4f6a865187f5e35704594e82415b45c3f97404377cd2d0cb2ed",
+      "bytes": 340,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/map.js",
+      "sha256": "b389248161fc6d384ea134bebab8cdc4af1c86161b829bea0fd4c389eba75340",
+      "bytes": 1846,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/merge.d.ts",
+      "sha256": "a64b56ee548a0e7a008ade684bb4e90f839f6fa7b5fdf3c094c3d3afdf8e7a50",
+      "bytes": 907,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/merge.js",
+      "sha256": "98acd0670ef7a655b4137f85077682edde78dfdf3a90de0bdd09f20f28189cc6",
+      "bytes": 1141,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/multicast.d.ts",
+      "sha256": "549f135dc5036cd796e696f674ebed023ea8975fe3c45f9756c7af367ec22d17",
+      "bytes": 822,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/multicast.js",
+      "sha256": "7f74b0f1e6f3ca1c2b1c425a35ed1932cdc390de33bce110272fc7c9f68a0ab3",
+      "bytes": 1920,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/observable.d.ts",
+      "sha256": "1a21aa114a3d3c820c9ce08882b787c57d45dd6fc4403470082a8af67184f579",
+      "bytes": 4388,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/observable.js",
+      "sha256": "a795e40c2304a3ccbc0a6cf217774e3ac2edffe259fc76caf71a41c7a582dca6",
+      "bytes": 16359,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/scan.d.ts",
+      "sha256": "cd863a4b8db476cc40a29499fc53060dade5252cfb7ab66bdf6ffab812759e80",
+      "bytes": 795,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/scan.js",
+      "sha256": "bde565430e6d50cf724a686cf9d4b49a65e8d876e83bc3623c4b99226c9a9666",
+      "bytes": 1978,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/subject.d.ts",
+      "sha256": "7d4850e43830e9d91d3404f13df3d9a3ba77b265a3651b4f2a2be4974a3f88d4",
+      "bytes": 695,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/subject.js",
+      "sha256": "5b296947203ce1646b4d4c99bb54fd1e00f9e7bbb97dd4869429f52c9790ab22",
+      "bytes": 1404,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/symbols.d.ts",
+      "sha256": "6bdad1ac6bb4fcaa30d0411fd8ae5e40085ce9f22cffcb21f95c02290b0653d9",
+      "bytes": 107,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/symbols.js",
+      "sha256": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
+      "bytes": 77,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/unsubscribe.d.ts",
+      "sha256": "81899fdb2022b2a8cfd33a3c841287a41eece3632d585b98c85e6cf759b2d2fb",
+      "bytes": 334,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/dist/unsubscribe.js",
+      "sha256": "7c3d27a42e3255fc54eca9521333f763cbba07975f5b3205991a6fde297129af",
+      "bytes": 497,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/filter.d.ts",
+      "sha256": "bcfa060e9c5c36d8ffbbcdf9b7d8dbce509c01e64c33dda265a2422006686416",
+      "bytes": 70,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/filter.js",
+      "sha256": "b3f66819ab5b4355053a25cf71d9e89d3cbe465b7cd235c29b45516d9dba1df5",
+      "bytes": 45,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/flatMap.d.ts",
+      "sha256": "5ab660d38840eb4109edd9b54a3c03a5ee2004ade62b502897b0f30476a03335",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/flatMap.js",
+      "sha256": "a2979cb86a875e6e7185a132ebb06c7a84374f3d5562a0dafd5b12d4a3f84cf4",
+      "bytes": 46,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/index.d.ts",
+      "sha256": "f1b54bf51de1d22118aeb86459bda37254eef4c55cda66dc89a7e01fca9bff48",
+      "bytes": 29,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/index.js",
+      "sha256": "cd2db17bf25389bab25967e1e805d304c140b17ba628594f4205db80b2b8f57e",
+      "bytes": 44,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/interval.d.ts",
+      "sha256": "02e1759bd973c34f90f256c1982519e1bf4dcf6196f4973337bc0eca61094544",
+      "bytes": 74,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/interval.js",
+      "sha256": "7159515d8cb048dce0f823076ab92ccfff2d3375bc3fefd1e2a0118240aab304",
+      "bytes": 47,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/map.d.ts",
+      "sha256": "ff37aaa8b845b7792adeaaf0083330e641fd347f8664630e8b40e62f733ea52c",
+      "bytes": 64,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/map.js",
+      "sha256": "0f25e9ef576b960bd6605b9f39341bcff3523f707ff99d17bc3965ce9ccaa52f",
+      "bytes": 42,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/merge.d.ts",
+      "sha256": "a85c6128e707245f31be4f064ad88b7895c709d7eb941ea2b3ffb5920d450cb6",
+      "bytes": 68,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/merge.js",
+      "sha256": "4662a20a8da7e95e7dcd7ea0e3ca291520fc3f4e6d93d6774d39de29ce0f56b3",
+      "bytes": 44,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/multicast.d.ts",
+      "sha256": "1dd6f9155ea4aba969eaceac8476f9b7315f80a78755d02f0cd9580084477145",
+      "bytes": 76,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/multicast.js",
+      "sha256": "8bf4b5db73220a6bc58e1c5b25b3dac94e2fb34095c2bd24d8c35ef3fb6f7383",
+      "bytes": 48,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/observable.d.ts",
+      "sha256": "0860d3f44355956df88ba796358415224cc00d866d85b95dbc5f9ede3c078ed0",
+      "bytes": 78,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/observable.js",
+      "sha256": "7ae6b976c3cb78dc018574a1a80f8be5268ec2d8beba774575834d34e572bebd",
+      "bytes": 49,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/package.json",
+      "sha256": "c445496e22a9941a29bec917e267305c87c12f3665e22e3c286f64fd5f350f3f",
+      "bytes": 1206,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/scan.d.ts",
+      "sha256": "94f90eaed2981709bb822fe44a07e5c5f083a41bd6b20157edd7fa8641b9e503",
+      "bytes": 66,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/scan.js",
+      "sha256": "7f8c5d694157563b49d2b035554836975512f3d2878c2bb655e0c94b2a438c3a",
+      "bytes": 43,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/subject.d.ts",
+      "sha256": "5f27006c67f4929e566efeaec6671eea67892b43432f1e19f937b79aaccf19f4",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/subject.js",
+      "sha256": "4c39859c6f2b1dac42e14134b3e0ccc7ef2a05b98c42a00fc011919ec4b734d4",
+      "bytes": 46,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/symbols.d.ts",
+      "sha256": "5dda02c8045953fcdadbd43eeec8e11f4b9431e36474d53b48af66bb5524bc78",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/symbols.js",
+      "sha256": "cdd94ff29410e505b3de45da32ad5adb433e871ba4cbdb65d46418b7af21b01c",
+      "bytes": 46,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/types/common.d.ts",
+      "sha256": "9b1cd758a6c642e00bd3f8421f8cd4e054abb956a404c89d922e0bc46101606e",
+      "bytes": 208,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/unsubscribe.d.ts",
+      "sha256": "cce86b2cb7083cfa8d47db4f6ec52c4b109e804ce317e99a617e859c7a1a01cd",
+      "bytes": 80,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/observable-fns/unsubscribe.js",
+      "sha256": "f307e297844af99b74cbd6bcf9fefa31af4c5245e4952d8c4fd3f745c4b3abf7",
+      "bytes": 50,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/CHANGELOG.md",
+      "sha256": "e0e1a3bee29855335f8de2224a0c27de52ca55da30d9a25d858eb6fc18bf32c6",
+      "bytes": 359,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/LICENSE",
+      "sha256": "b0c14795341a03514de92c45b9ea9f13e859733739ed7a46e7a3e7e723063b12",
+      "bytes": 1078,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/README.md",
+      "sha256": "6d4ac9c650608c25d5a6842a5adc19b0d45a6f42b371a473fe3bff5591d36a7e",
+      "bytes": 7041,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/common.js",
+      "sha256": "9cd63fd0ee028d62bb5cda80b99ce272cd342bcfc27816e6259e397946deedf8",
+      "bytes": 427,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/index.js",
+      "sha256": "ef129228235b65e7ce1e5d9469321db42c665e5e70630d836503df3ff7e9add8",
+      "bytes": 214,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/get-bundle-url.browser.js",
+      "sha256": "07190b7c81acbccedce93acee25d1a2fcf161e20e5012bae01ddee96c1ecc352",
+      "bytes": 850,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/implementation.browser.js",
+      "sha256": "9314634d066bdc0609ca7d1d8e2985f13ecb4ec58a1a0adbb8779d51606d613e",
+      "bytes": 3014,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/implementation.js",
+      "sha256": "4e8fee433b3fff9fd52027263c0ac78f2f178a4bf82239674d6f3dc07e5543b0",
+      "bytes": 977,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/implementation.node.js",
+      "sha256": "c5ff717df773905c726878893b50eb4fdababcadb0f49a659095d346ea181e63",
+      "bytes": 9178,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/index.js",
+      "sha256": "d191bcd0664fe3a36ea821b89039fdf49deda94e580212e4aa67f849b126091c",
+      "bytes": 468,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/invocation-proxy.js",
+      "sha256": "37c439b3ec90dc1470a3ce0d07d838d75ae0e1b6f56a1500be117c3d4bc38e98",
+      "bytes": 4538,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/pool-types.js",
+      "sha256": "259ddb9c753486eee7254d9ff9827f35ddcf8253ef985fef54ef4888558ad83e",
+      "bytes": 567,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/pool.js",
+      "sha256": "28f551673cba3d400de11d1db1b62be3e39d20c9feeaa9d03a1f59861b48533d",
+      "bytes": 11827,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/register.js",
+      "sha256": "1f40bb67277ebe583c90b84fa12a77a17e0ebd3140c53c64ee890782c372fabc",
+      "bytes": 225,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/spawn.js",
+      "sha256": "f3a64386d803f65bb734709bf9a133ab5708b654423029acfd97c09056789747",
+      "bytes": 6344,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/master/thread.js",
+      "sha256": "2d21a49c959f466b8d954c5658ecb52bb43b177dfef26591ce9911239e865bb0",
+      "bytes": 958,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/observable-promise.js",
+      "sha256": "b6f04f6e9ce1fb1ac3e38c82da3683f7586757bca108f9140bc1667a1015e9a4",
+      "bytes": 4966,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/observable.js",
+      "sha256": "5c3be4bdba8110f8957a49388b3b407a3a84bb1fd11f81a2161b377f2f234096",
+      "bytes": 1230,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/ponyfills.js",
+      "sha256": "7aea311cb4a471eed99bdc438ea2d9448f2430e08e5c85a3b1b7167e7e60e19f",
+      "bytes": 594,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/promise.js",
+      "sha256": "4744bd4f704eba94c81db932d5c38ba6819a02363f94e51e234d3f31834225cb",
+      "bytes": 613,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/serializers.js",
+      "sha256": "808a6aad8401ae217f07c3674911dde79a4e0518634e4e31c1b989464a591a08",
+      "bytes": 1402,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/symbols.js",
+      "sha256": "f337e576ecb44a31a3920b9e1d104180b30c4d03018da0d6f350da4bcc16894b",
+      "bytes": 258,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/transferable.js",
+      "sha256": "b9cebff935fabf363ab61856456b044493fb6019f9b882b2d85542736b54a865",
+      "bytes": 662,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/types/master.js",
+      "sha256": "a5f67779f5738b666f6749f2f82916a4f64716f9c93cc799b63c284018d4a8ea",
+      "bytes": 478,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/types/messages.js",
+      "sha256": "9a596f549fd771364537138a5a315ef22c89bec5207714a9264123274dbde805",
+      "bytes": 653,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/types/worker.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker/bundle-entry.js",
+      "sha256": "3c13d5463b21119d87e87ede30057461cfb9c128d46edb15a5327b4895d73b01",
+      "bytes": 189,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker/implementation.browser.js",
+      "sha256": "14575a266f2f02d4fb0a299dc08b3c50d3cf82a6af013f0e4ff248d19137711f",
+      "bytes": 909,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker/implementation.js",
+      "sha256": "bc6fcd72609aa57e3a27c9bdc32f14f1baace571ab5ad56e0717d6778d3d1139",
+      "bytes": 755,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker/implementation.tiny-worker.js",
+      "sha256": "03cda01a48b7096dfdc924294cb4eebe7a7207a91ac22be5462e5814b71267cd",
+      "bytes": 1173,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker/implementation.worker_threads.js",
+      "sha256": "52a799b4166befaf5d713443df22c7302bdd3799fd48c73874b34fb55ac14593",
+      "bytes": 1228,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker/index.js",
+      "sha256": "fa55b2ae8bf68993b132e53bc411460a1e194805799d9365c902ab80a8978ad6",
+      "bytes": 8326,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist-esm/worker_threads.js",
+      "sha256": "f3d21789233c1d21299b9f9037204adcd171e0b7dbf65ab029c2bd30a5456622",
+      "bytes": 409,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/common.d.ts",
+      "sha256": "4e006051d228db7353bce62d800a5536415dda05b95b7e2c670a0e00a076f710",
+      "bytes": 316,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/common.js",
+      "sha256": "6dd39cb28098e322366b7d2f70a60449b6ac832b4b0df2e3bd780cc61611e4cf",
+      "bytes": 684,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/index.d.ts",
+      "sha256": "59156af96d277cd3c5d37a5dd74423dd60c1dc5635e221feb689a07d4d3b708e",
+      "bytes": 290,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/index.js",
+      "sha256": "9ff0660a40f20c61623cd86e48df6cca954864ee56dbcb6bd86c9d480092e75c",
+      "bytes": 1411,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/get-bundle-url.browser.d.ts",
+      "sha256": "a9c205d3724432d089971d12a5bbaf3fc6812cef63fc1a940008a7ae03d72ba9",
+      "bytes": 156,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/get-bundle-url.browser.js",
+      "sha256": "3e9094548be7884d79317ed8c27f41b2c34a2b99eaf206fe6b1ba78f376e6754",
+      "bytes": 996,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/implementation.browser.d.ts",
+      "sha256": "d464fdf3bde9821280c214324af7b6c667c2527a12ad8cef9ad4e9f8f1dcedde",
+      "bytes": 227,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/implementation.browser.js",
+      "sha256": "9217e0ebc387121b0f41a15caada4ca6ec966e6c15004a5c1b2c351cda28e272",
+      "bytes": 3331,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/implementation.d.ts",
+      "sha256": "27a3f6a036bf401336140a81167c215dd259223c80e8768470bba79eca0799d7",
+      "bytes": 466,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/implementation.js",
+      "sha256": "4f218ff23aad5577c3b2063e9c4e59ec4e13554c239494f01967f712361178e7",
+      "bytes": 2020,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/implementation.node.d.ts",
+      "sha256": "4333d5be9b1d4d04efa49fc952eddb11d509209c842bf820cf7822ccf1d1ea21",
+      "bytes": 255,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/implementation.node.js",
+      "sha256": "a9e228bb553ddf9a6469a597a691295da473f75a35e4e68583b446f5665d9833",
+      "bytes": 10483,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/index.d.ts",
+      "sha256": "e8042728b35d5811aa01640537f39bc046b19af5689bee4cd3973a510eca72dd",
+      "bytes": 757,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/index.js",
+      "sha256": "1f168ef0acdbfd6052eb1848ca0b8f49ab002d5ffddfa699383700e6d6f34b49",
+      "bytes": 1098,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/invocation-proxy.d.ts",
+      "sha256": "1cf7daf1724c82a73e10d8782b5424a136d4688ca8883e153b592b7c5ae64477",
+      "bytes": 393,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/invocation-proxy.js",
+      "sha256": "a6e6cc404ab8466996a88e3dbb0854523faaa2f5e8dbbf5b1972d20c0747d79b",
+      "bytes": 5074,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/pool-types.d.ts",
+      "sha256": "5f967c9dd0a0c6c173540f46c7a81c29fcb628e3c352ff4b774120286f00d961",
+      "bytes": 1973,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/pool-types.js",
+      "sha256": "671a765c786901df857fb34d46cd53c9a0e99966f6708f5a1b684aac646fb4ef",
+      "bytes": 701,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/pool.d.ts",
+      "sha256": "d35f21999c1a46b8a87854d87c935e2596efdb13de821882aaacf2b9acebb43e",
+      "bytes": 3702,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/pool.js",
+      "sha256": "adb46a4a6a57b959a1d78d5d04cba8ebfb35dbf82964f0bd01b6aa28179e9cde",
+      "bytes": 12644,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/register.d.ts",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/register.js",
+      "sha256": "e6593e1228efbb0ca2f96b7372b0313bc9469b0a75997baa070737d87a24a8ca",
+      "bytes": 268,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/spawn.d.ts",
+      "sha256": "1f1577135ea1e3e684ec6cd18ec50ed508540d24415c33426e39ee621c878d1d",
+      "bytes": 1357,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/spawn.js",
+      "sha256": "4816dfee0f1792a86068b62cc73f4d23cbf204ce524d093b61b51facfc662c36",
+      "bytes": 6718,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/thread.d.ts",
+      "sha256": "ddbcb0247bf4c46829521caf2a98c4935d2ac833b48e835cfd2b78e66e302107",
+      "bytes": 839,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/master/thread.js",
+      "sha256": "cf9724890f5a80de8ef709260b708a8de8024c58531c13a88af9aeef6df3e229",
+      "bytes": 1067,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/observable-promise.d.ts",
+      "sha256": "b822d007931f0444c96474838a6bf53fac2e6f4a831c56dfd7c9cffff7b2acf8",
+      "bytes": 1876,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/observable-promise.js",
+      "sha256": "5eb238e831c1cbf4899bf9897e19a8e34671ec6dba54161d715353e249b36114",
+      "bytes": 5143,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/observable.d.ts",
+      "sha256": "468f540f9c9bfa1360bf76decf61882c39dda0a2c2814d347a7107f194c79bab",
+      "bytes": 731,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/observable.js",
+      "sha256": "26b7d18acf9a0d7f5ce2d410fcb3b7f21580bf511b49ad7af1e9bb41acef2629",
+      "bytes": 1501,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/ponyfills.d.ts",
+      "sha256": "2eca5b2d7d9bb1119a16d0e0c3d39aa84494a3e2cb3f09140e04e07b055bd203",
+      "bytes": 222,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/ponyfills.js",
+      "sha256": "d6fb8657b999fe3c33e4e97f065e48a85a1e2e9aa838c6291d4e94daa45c9a23",
+      "bytes": 726,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/promise.d.ts",
+      "sha256": "08127d964d449ee4b0f559e636e63b4d1b5c91f3d145af0a70391083f3b31ba2",
+      "bytes": 177,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/promise.js",
+      "sha256": "41d25bfed63261ed9dc56112a3c11fd1feed889b484cba101ac5942b05e48942",
+      "bytes": 790,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/serializers.d.ts",
+      "sha256": "f1d9160fb81541f3c10fc6457460996513b2b7c5ab24dd04fd73eef3715ce77a",
+      "bytes": 1085,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/serializers.js",
+      "sha256": "f98785fc8a4230b83714cefdcdb4bf1e3d662e928a866e23a68948d4ed536bda",
+      "bytes": 1575,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/symbols.d.ts",
+      "sha256": "22772ceb28dd19d22a90b7206590ad35caa6ac0110756116e922445964758954",
+      "bytes": 234,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/symbols.js",
+      "sha256": "9adf3380b636559b3bfe4ec4ed40a53a3133426321b49d050aeb0c40ca5caa37",
+      "bytes": 417,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/transferable.d.ts",
+      "sha256": "f315fd09bba3098c1cde1c596aa54ad931b151be02fa7636cbe49afb4895a52b",
+      "bytes": 1807,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/transferable.js",
+      "sha256": "880de5bdfc6933fd5311e84e50c1363e5e7eac3a4fd78a0dfc732528a4ceadfe",
+      "bytes": 882,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/types/master.d.ts",
+      "sha256": "80a5292858446561265c46e761aed019b175834614b22e866a19a7a43a41d50b",
+      "bytes": 4961,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/types/master.js",
+      "sha256": "59bf5be099d1a300453e51e9e431cac4665897885da254e7547d3a4be92dc8d7",
+      "bytes": 589,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/types/messages.d.ts",
+      "sha256": "41d169b6b7572a5cfdb341aad2202241e5c134f9540d4f1f862f811015087acc",
+      "bytes": 1652,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/types/messages.js",
+      "sha256": "3a08efcc3c626f214eed9629ebf0f3995872b2e4022f5ee5a722683d4b658721",
+      "bytes": 852,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/types/worker.d.ts",
+      "sha256": "923f74b8838ff6fc649a8c2da1fed004d0e644ce384134de46d6612450b1b106",
+      "bytes": 453,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/types/worker.js",
+      "sha256": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
+      "bytes": 77,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/bundle-entry.d.ts",
+      "sha256": "78770540a44fbb91253c88273e0d5431d223ada7322d5beb2e4d6c296851c493",
+      "bytes": 25,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/bundle-entry.js",
+      "sha256": "b3cd6b6a37ba4ae8a2756ebcef93acea2df9bf41b3a8b30d41499e138bddfc8e",
+      "bytes": 814,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.browser.d.ts",
+      "sha256": "4053938ec41a22a9805f083beede80ecef72eddaffcaebd0074f8720fe4643d0",
+      "bytes": 289,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.browser.js",
+      "sha256": "e2f0c163764ff1dec7d532ef83757820593b7a505cd18cc3fa07ec05b76f1939",
+      "bytes": 989,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.d.ts",
+      "sha256": "b113bea8db2d07c86e7194fddf8f5b0a1d814d9ab93272e5d8fa1959af15bef1",
+      "bytes": 125,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.js",
+      "sha256": "0df046ba830494da7e01ac93bb34144493511117132eccb474b75305b761907a",
+      "bytes": 1094,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.tiny-worker.d.ts",
+      "sha256": "4053938ec41a22a9805f083beede80ecef72eddaffcaebd0074f8720fe4643d0",
+      "bytes": 289,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.tiny-worker.js",
+      "sha256": "c93bcc0a73c2ab56ebde75500d78df75c96b1e404bdb6cf1ebd6485522b6a9a9",
+      "bytes": 1253,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.worker_threads.d.ts",
+      "sha256": "5dc3968ba9bd5a8d876d7852b84b71bb52b80341ec7726f4b364d2cdf296b1e3",
+      "bytes": 357,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/implementation.worker_threads.js",
+      "sha256": "b13f12e0ccbcea5bbfdfaad482b0ad81d9f807aec5414494c32e1f008154572b",
+      "bytes": 1516,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/index.d.ts",
+      "sha256": "33fc2c19ec6e854a01855c283ca4401fffa884cbe97a8e3d238a8824bcf946b6",
+      "bytes": 623,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker/index.js",
+      "sha256": "a71e3a5acd5813460ace5ef2530746022b9e00df1412c3d5b3c96f447542cd8a",
+      "bytes": 9216,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker_threads.d.ts",
+      "sha256": "b7763e5fd865e2f2795d44aa186188a4f602b70ea69bcb4a27ac0cd8e58deb63",
+      "bytes": 236,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/dist/worker_threads.js",
+      "sha256": "9487c4d88f72c48674696c96b1f789890f033422bed64aac7609ce41f1e1a549",
+      "bytes": 508,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/index.mjs",
+      "sha256": "eaea1b1e5e9231c532226077efbbd236177a13c83743b4509326f49ec3a65bd8",
+      "bytes": 387,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/observable.d.ts",
+      "sha256": "0951ba5361070cf4e156ea9c1bc062ecb8e9720c236a01d7603fc64e7a7cd5fb",
+      "bytes": 34,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/observable.js",
+      "sha256": "5454b08ef9571d70dd3196fd8cc08c2946eb1e0ee38170e1ce10b760ea3c7318",
+      "bytes": 46,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/observable.mjs",
+      "sha256": "c24312fcbe25a062a25e36f90497be792ae3159b17a0dbfead98c2d3d180a4e1",
+      "bytes": 140,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/package.json",
+      "sha256": "2ca1a8a6799efefd1ccc5f156ee4ddde848fc3a50ad2768c6c03e14d9f078c25",
+      "bytes": 4555,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/register.d.ts",
+      "sha256": "e265959f5c22b2b88f8110c7048d57469e332711dbefec5ec83d9962a13fb44f",
+      "bytes": 39,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/register.js",
+      "sha256": "d74a3615a5c4e44e2e1f80bfe3d8922ef0d191903ba692f4b424ee86542ec3ed",
+      "bytes": 34,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/register.mjs",
+      "sha256": "40d306df36300f437773928fa8934f55e305596a8da35ab1b3a2157e2117cac2",
+      "bytes": 35,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/rollup.config.js",
+      "sha256": "f02aef01bc8f10ac0de1821de441c13dc088a5a8e0e54d4b721d3ceb9792a4ad",
+      "bytes": 283,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/worker.d.ts",
+      "sha256": "cde6be327ffd342a8c840cb67e85c94dfff93d16613c273971f1cc9e6201ded7",
+      "bytes": 36,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/worker.js",
+      "sha256": "0a4f4e2b081cfb6a41067f3cfb60673db0bf5772531602105b6461624f6633a9",
+      "bytes": 48,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/threads/worker.mjs",
+      "sha256": "b91a44e248d5195a0d198d4103c979aa7d98eacbac699ee2599c88418de7772d",
+      "bytes": 209,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/tiny-worker/LICENSE",
+      "sha256": "f798515cfc2ec65eeb6706a2a7254247b8ac8a0e8ad3dbcf23fc76f7b26453c6",
+      "bytes": 1512,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/tiny-worker/README.md",
+      "sha256": "d5690fcd5dd90f7a6f652ac7f28d2797727133b36b564c48ef526c7c209633a5",
+      "bytes": 3804,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/tiny-worker/lib/index.js",
+      "sha256": "2f6253bf45953becbdb77538fc200e8a3a86c19b28f950ce364f6723468e9de0",
+      "bytes": 4219,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/tiny-worker/lib/noop.js",
+      "sha256": "7cf516184460e55131180668c4d20cd9c66b98d68c062d21aa507632117879ac",
+      "bytes": 66,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/tiny-worker/lib/worker.js",
+      "sha256": "5f4eea8bf6cdb0e9bef43e184028859455c8f168fc47b81c0b64e0246575d16f",
+      "bytes": 2135,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/tiny-worker/package.json",
+      "sha256": "33468fab2dd991f7e2677d311530a79842b8f7f27c09de7fc0173813630bf8cd",
+      "bytes": 926,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/LICENSE.md",
+      "sha256": "beaa6b04fb82e41dd2ad679e19e27953afb5999b1abbb455b6564e78ebfeb332",
+      "bytes": 1109,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/README.md",
+      "sha256": "b2ba3cb5eb8ee5948c0892af69ac15f0baa39069000169fc4f50aceec1d56087",
+      "bytes": 17706,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/index.d.ts",
+      "sha256": "badcc9d59770b91987e962f8e3ddfa1e06671b0e4c5e2738bbd002255cad3f38",
+      "bytes": 669,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/index.js",
+      "sha256": "22b5ab1089b5c33049fda7774213bc442dcbb455b083c4b6250d9eaa3d3dca0e",
+      "bytes": 2382,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/max.d.ts",
+      "sha256": "6ada175c0c585e89569e8feb8ff6fc9fc443d7f9ca6340b456e0f94cbef559bf",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/max.js",
+      "sha256": "d163efcf7f2dab3aac090e475d23b70f55e17d7d9857b62b2b5376b04a01d78c",
+      "bytes": 135,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/md5.d.ts",
+      "sha256": "3d0c4240e03f66fc182842870b015a1621c8e1a512d3cf9f54335427ac0b0f26",
+      "bytes": 73,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/md5.js",
+      "sha256": "8a6f91e5417fb15267144cdccc2cc2d2fde34f4c75ef189fb7003e3da47a2657",
+      "bytes": 5852,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/native.d.ts",
+      "sha256": "70bcbc7c5e6c575eb4e289889c38915e2890bac342bc5b5200959e8cba158e7f",
+      "bytes": 139,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/native.js",
+      "sha256": "6fe54016411b3aa36f1c57df146e0177b2609dbac521375988cd1f5dd3c8d404",
+      "bytes": 216,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/nil.d.ts",
+      "sha256": "e56e4d95fad615c97eb0ae39c329a4cda9c0af178273a9173676cc9b14b58520",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/nil.js",
+      "sha256": "6565dd5b2084d594da0ed0d37f31499b6cdc55ca73ba6c46dd8417efcb558932",
+      "bytes": 135,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/package.json",
+      "sha256": "dbf8353f77358bc12169b7bb7301e1978d5b503e002ee927229a8993672818fc",
+      "bytes": 20,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/parse.d.ts",
+      "sha256": "73e8dfd5e7d2abc18bdb5c5873e64dbdd1082408dd1921cad6ff7130d8339334",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/parse.js",
+      "sha256": "59be9952d92d9939a08cd89d769336116716ea45148fb169010d9d00d0147d6f",
+      "bytes": 720,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/regex.d.ts",
+      "sha256": "f972c1a3ed268843b93ccca541c48a3265ced25031ce6bef2fe1f9de10c4d345",
+      "bytes": 57,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/regex.js",
+      "sha256": "2f77679506ef5d2770f7a5889fc724f9cb6ea265f2316654f8ba0d2fab200b67",
+      "bytes": 251,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/rng.d.ts",
+      "sha256": "43b8bf0182f6c141c27b92470c429aa455ea9613e7ff8ca6f157efb94ea16375",
+      "bytes": 43,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/rng.js",
+      "sha256": "f4e9b595f0c9d739ac6e6d0dddbaba19dfaf1ac468bbc8f6095c57c1cda34b57",
+      "bytes": 525,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/sha1.d.ts",
+      "sha256": "b3c0b2e75f331b8a2deaae04bd2695d59952cfe43e324a51e1e2ad41f74ce7c2",
+      "bytes": 75,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/sha1.js",
+      "sha256": "afb8823f62c6e55f592a415d3ab3f6e9997d5d38cbec8cfb077ae397e9c377da",
+      "bytes": 2431,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/stringify.d.ts",
+      "sha256": "fc820b2f0c21501f51f79b58a21d3fa7ae5659fc1812784dbfbb72af147659ee",
+      "bytes": 179,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/stringify.js",
+      "sha256": "154caa4a1bef53d3bb336c0451bd42c87b38bed56bbd32c51ff09d25664251cb",
+      "bytes": 1271,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/types.d.ts",
+      "sha256": "cff399d99c68e4fafdd5835d443a980622267a39ac6f3f59b9e3d60d60c4f133",
+      "bytes": 531,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/types.js",
+      "sha256": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
+      "bytes": 77,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/uuid-bin.d.ts",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/uuid-bin.js",
+      "sha256": "ceb9ce9ab227beb22625b874783f598f48ef70a117f306e2e7ba641c9237a316",
+      "bytes": 2256,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v1.d.ts",
+      "sha256": "4f041ef66167b5f9c73101e5fd8468774b09429932067926f9b2960cc3e4f99d",
+      "bytes": 484,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v1.js",
+      "sha256": "ab103eb50addc408f0e773ee1e112e61ff10e8bf4fff54a1ce6d58c03cb6809d",
+      "bytes": 2893,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v1ToV6.d.ts",
+      "sha256": "31501b8fc4279e78f6a05ca35e365e73c0b0c57d06dbe8faecb10c7254ce7714",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v1ToV6.js",
+      "sha256": "104bb70bb256d18d3a25fb392462296f0440a0f3e0dd6d3d5f6600eddb312692",
+      "bytes": 978,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v3.d.ts",
+      "sha256": "ff4e9db3eb1e95d7ba4b5765e4dc7f512b90fb3b588adfd5ca9b0d9d7a56a1ae",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v3.js",
+      "sha256": "8a2536068ae46c8de0bf92285ae2042907cc48036fe16221394960ff502d8a29",
+      "bytes": 637,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v35.d.ts",
+      "sha256": "7bc76e7d4bbe3764abaf054aed3a622c5cdbac694e474050d71ce9d4ab93ea4b",
+      "bytes": 509,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v35.js",
+      "sha256": "9691294997fec5c0ebefbabef0f81413932f23d49a89fb03d44ae98e8d27a155",
+      "bytes": 1744,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v4.d.ts",
+      "sha256": "f205fd03cd15ea054f7006b7ef8378ef29c315149da0726f4928d291e7dce7b9",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v4.js",
+      "sha256": "6b50a22ef711d3028fa7231543d10f44c7bc07cf55913e027f24aa153cc1ac5d",
+      "bytes": 1047,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v5.d.ts",
+      "sha256": "d683908557d53abeb1b94747e764b3bd6b6226273514b96a942340e9ce4b7be7",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v5.js",
+      "sha256": "3af0404ae46e84fb34b0e2ccedac1595f0a6f8f609572fb4304da377625ead6f",
+      "bytes": 640,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v6.d.ts",
+      "sha256": "7c6d5704e2f236fddaf8dbe9131d998a4f5132609ef795b78c3b63f46317f88a",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v6.js",
+      "sha256": "eb3c940e0c2de0c7cc9fdb7487fff7d5b041cb8cf4c2a20bc115385cafc27d2f",
+      "bytes": 786,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v6ToV1.d.ts",
+      "sha256": "d05bd4d28c12545827349b0ac3a79c50658d68147dad38d13e97e22353544496",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v6ToV1.js",
+      "sha256": "fde1e8251afa5b782b903bae7b17b410819c3e8421460b6fffeec399fc6cf086",
+      "bytes": 978,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v7.d.ts",
+      "sha256": "b6436d90a5487d9b3c3916b939f68e43f7eaca4b0bb305d897d5124180a122b9",
+      "bytes": 439,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/v7.js",
+      "sha256": "e9f3c349fb16ad9fa90fd5de40edb492ea0ee02d003fe0719d198f4dfcbd992f",
+      "bytes": 2339,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/validate.d.ts",
+      "sha256": "04ace6bedd6f59c30ea6df1f0f8d432c728c8bc5c5fd0c5c1c80242d3ab51977",
+      "bytes": 76,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/validate.js",
+      "sha256": "da5822aa41665cdf2ddd41dbef18fd9d78c48ec819c18a707a73c15c7f6254ea",
+      "bytes": 245,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/version.d.ts",
+      "sha256": "57a8a7772769c35ba7b4b1ba125f0812deec5c7102a0d04d9e15b1d22880c9e8",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs-browser/version.js",
+      "sha256": "850710c3f67fa6177066ba792ddaa865a98c83516ebb3a34f4ad269a5f3c0346",
+      "bytes": 316,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/index.d.ts",
+      "sha256": "badcc9d59770b91987e962f8e3ddfa1e06671b0e4c5e2738bbd002255cad3f38",
+      "bytes": 669,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/index.js",
+      "sha256": "22b5ab1089b5c33049fda7774213bc442dcbb455b083c4b6250d9eaa3d3dca0e",
+      "bytes": 2382,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/max.d.ts",
+      "sha256": "6ada175c0c585e89569e8feb8ff6fc9fc443d7f9ca6340b456e0f94cbef559bf",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/max.js",
+      "sha256": "d163efcf7f2dab3aac090e475d23b70f55e17d7d9857b62b2b5376b04a01d78c",
+      "bytes": 135,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/md5.d.ts",
+      "sha256": "6c5e48874d739800891173d98f8fa6d49762d46b412300cf78d875f20c19d4d1",
+      "bytes": 131,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/md5.js",
+      "sha256": "c390019956471f76354d75b61701a4710e096377b89cadef354fe6ba0ce8bee2",
+      "bytes": 393,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/native.d.ts",
+      "sha256": "8f8088eaf8cb36a3c0edeccbc8ba4032f2e36608b114a3e688d05d0bb9fe9167",
+      "bytes": 157,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/native.js",
+      "sha256": "951f4974e6f2ddeac9e02133b73c742e106f895e7efeac3e32cb36f630f23450",
+      "bytes": 168,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/nil.d.ts",
+      "sha256": "e56e4d95fad615c97eb0ae39c329a4cda9c0af178273a9173676cc9b14b58520",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/nil.js",
+      "sha256": "6565dd5b2084d594da0ed0d37f31499b6cdc55ca73ba6c46dd8417efcb558932",
+      "bytes": 135,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/package.json",
+      "sha256": "dbf8353f77358bc12169b7bb7301e1978d5b503e002ee927229a8993672818fc",
+      "bytes": 20,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/parse.d.ts",
+      "sha256": "73e8dfd5e7d2abc18bdb5c5873e64dbdd1082408dd1921cad6ff7130d8339334",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/parse.js",
+      "sha256": "59be9952d92d9939a08cd89d769336116716ea45148fb169010d9d00d0147d6f",
+      "bytes": 720,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/regex.d.ts",
+      "sha256": "f972c1a3ed268843b93ccca541c48a3265ced25031ce6bef2fe1f9de10c4d345",
+      "bytes": 57,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/regex.js",
+      "sha256": "2f77679506ef5d2770f7a5889fc724f9cb6ea265f2316654f8ba0d2fab200b67",
+      "bytes": 251,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/rng.d.ts",
+      "sha256": "43b8bf0182f6c141c27b92470c429aa455ea9613e7ff8ca6f157efb94ea16375",
+      "bytes": 43,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/rng.js",
+      "sha256": "8a1485ba1fe28d4d6ca5b41a30b522da73b3b9e566e8798de29a1fcd5e9d2ec2",
+      "bytes": 399,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/sha1.d.ts",
+      "sha256": "e61542c6f4b0164a579a57d2bddc684806d79d206c25bf2b1f04a9dfa8839d4a",
+      "bytes": 133,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/sha1.js",
+      "sha256": "82007a13729350dfeec44bdcbe299e5e9fd1ed7567e3d799f797bd84d0e5f4f7",
+      "bytes": 396,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/stringify.d.ts",
+      "sha256": "fc820b2f0c21501f51f79b58a21d3fa7ae5659fc1812784dbfbb72af147659ee",
+      "bytes": 179,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/stringify.js",
+      "sha256": "154caa4a1bef53d3bb336c0451bd42c87b38bed56bbd32c51ff09d25664251cb",
+      "bytes": 1271,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/types.d.ts",
+      "sha256": "cff399d99c68e4fafdd5835d443a980622267a39ac6f3f59b9e3d60d60c4f133",
+      "bytes": 531,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/types.js",
+      "sha256": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
+      "bytes": 77,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/uuid-bin.d.ts",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/uuid-bin.js",
+      "sha256": "ceb9ce9ab227beb22625b874783f598f48ef70a117f306e2e7ba641c9237a316",
+      "bytes": 2256,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v1.d.ts",
+      "sha256": "4f041ef66167b5f9c73101e5fd8468774b09429932067926f9b2960cc3e4f99d",
+      "bytes": 484,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v1.js",
+      "sha256": "ab103eb50addc408f0e773ee1e112e61ff10e8bf4fff54a1ce6d58c03cb6809d",
+      "bytes": 2893,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v1ToV6.d.ts",
+      "sha256": "31501b8fc4279e78f6a05ca35e365e73c0b0c57d06dbe8faecb10c7254ce7714",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v1ToV6.js",
+      "sha256": "104bb70bb256d18d3a25fb392462296f0440a0f3e0dd6d3d5f6600eddb312692",
+      "bytes": 978,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v3.d.ts",
+      "sha256": "ff4e9db3eb1e95d7ba4b5765e4dc7f512b90fb3b588adfd5ca9b0d9d7a56a1ae",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v3.js",
+      "sha256": "8a2536068ae46c8de0bf92285ae2042907cc48036fe16221394960ff502d8a29",
+      "bytes": 637,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v35.d.ts",
+      "sha256": "7bc76e7d4bbe3764abaf054aed3a622c5cdbac694e474050d71ce9d4ab93ea4b",
+      "bytes": 509,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v35.js",
+      "sha256": "9691294997fec5c0ebefbabef0f81413932f23d49a89fb03d44ae98e8d27a155",
+      "bytes": 1744,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v4.d.ts",
+      "sha256": "f205fd03cd15ea054f7006b7ef8378ef29c315149da0726f4928d291e7dce7b9",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v4.js",
+      "sha256": "6b50a22ef711d3028fa7231543d10f44c7bc07cf55913e027f24aa153cc1ac5d",
+      "bytes": 1047,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v5.d.ts",
+      "sha256": "d683908557d53abeb1b94747e764b3bd6b6226273514b96a942340e9ce4b7be7",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v5.js",
+      "sha256": "3af0404ae46e84fb34b0e2ccedac1595f0a6f8f609572fb4304da377625ead6f",
+      "bytes": 640,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v6.d.ts",
+      "sha256": "7c6d5704e2f236fddaf8dbe9131d998a4f5132609ef795b78c3b63f46317f88a",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v6.js",
+      "sha256": "eb3c940e0c2de0c7cc9fdb7487fff7d5b041cb8cf4c2a20bc115385cafc27d2f",
+      "bytes": 786,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v6ToV1.d.ts",
+      "sha256": "d05bd4d28c12545827349b0ac3a79c50658d68147dad38d13e97e22353544496",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v6ToV1.js",
+      "sha256": "fde1e8251afa5b782b903bae7b17b410819c3e8421460b6fffeec399fc6cf086",
+      "bytes": 978,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v7.d.ts",
+      "sha256": "b6436d90a5487d9b3c3916b939f68e43f7eaca4b0bb305d897d5124180a122b9",
+      "bytes": 439,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/v7.js",
+      "sha256": "e9f3c349fb16ad9fa90fd5de40edb492ea0ee02d003fe0719d198f4dfcbd992f",
+      "bytes": 2339,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/validate.d.ts",
+      "sha256": "04ace6bedd6f59c30ea6df1f0f8d432c728c8bc5c5fd0c5c1c80242d3ab51977",
+      "bytes": 76,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/validate.js",
+      "sha256": "da5822aa41665cdf2ddd41dbef18fd9d78c48ec819c18a707a73c15c7f6254ea",
+      "bytes": 245,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/version.d.ts",
+      "sha256": "57a8a7772769c35ba7b4b1ba125f0812deec5c7102a0d04d9e15b1d22880c9e8",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/cjs/version.js",
+      "sha256": "850710c3f67fa6177066ba792ddaa865a98c83516ebb3a34f4ad269a5f3c0346",
+      "bytes": 316,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/index.d.ts",
+      "sha256": "badcc9d59770b91987e962f8e3ddfa1e06671b0e4c5e2738bbd002255cad3f38",
+      "bytes": 669,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/index.js",
+      "sha256": "65e9fae8f22278e6c9ac5b016dbe1ead01b8014f66ce08a807741885d4bf01f1",
+      "bytes": 636,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/max.d.ts",
+      "sha256": "6ada175c0c585e89569e8feb8ff6fc9fc443d7f9ca6340b456e0f94cbef559bf",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/max.js",
+      "sha256": "8f81a7b2a5f8704ea1b4e8f83d36659856fdf3d122b2bd16fe1b5c47c97b6ffa",
+      "bytes": 55,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/md5.d.ts",
+      "sha256": "3d0c4240e03f66fc182842870b015a1621c8e1a512d3cf9f54335427ac0b0f26",
+      "bytes": 73,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/md5.js",
+      "sha256": "15784bb25da507dd4645984534ff773c6181ab58eb7d71023f538318c957eca3",
+      "bytes": 5772,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/native.d.ts",
+      "sha256": "70bcbc7c5e6c575eb4e289889c38915e2890bac342bc5b5200959e8cba158e7f",
+      "bytes": 139,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/native.js",
+      "sha256": "b6dfd1a72e81f1528c37a4ca8eb2e085d42c353dc098f610a18cd66358d8bb39",
+      "bytes": 136,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/nil.d.ts",
+      "sha256": "e56e4d95fad615c97eb0ae39c329a4cda9c0af178273a9173676cc9b14b58520",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/nil.js",
+      "sha256": "a6f8ac293df0b75af2946e5190d8f00336b826bb1340b96d669a09beb8885ff8",
+      "bytes": 55,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/parse.d.ts",
+      "sha256": "73e8dfd5e7d2abc18bdb5c5873e64dbdd1082408dd1921cad6ff7130d8339334",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/parse.js",
+      "sha256": "a383f50a691c05533a40bbb4a87f718daa050abbc96debc9715efdc74d8538b4",
+      "bytes": 612,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/regex.d.ts",
+      "sha256": "f972c1a3ed268843b93ccca541c48a3265ced25031ce6bef2fe1f9de10c4d345",
+      "bytes": 57,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/regex.js",
+      "sha256": "774bc4bc767a58458dfdd252430d96b71b3d380ac241b50df6cb757aaa1b4783",
+      "bytes": 171,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/rng.d.ts",
+      "sha256": "43b8bf0182f6c141c27b92470c429aa455ea9613e7ff8ca6f157efb94ea16375",
+      "bytes": 43,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/rng.js",
+      "sha256": "c77577812df80cdfd9401a90736a3f4fcf428bd85219ea0977d515949e2cfb18",
+      "bytes": 440,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/sha1.d.ts",
+      "sha256": "b3c0b2e75f331b8a2deaae04bd2695d59952cfe43e324a51e1e2ad41f74ce7c2",
+      "bytes": 75,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/sha1.js",
+      "sha256": "417afd0d7f9695f9b6facf84fbe17bd8e9cb1eed04893ecf1e0c241d13a622d2",
+      "bytes": 2351,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/stringify.d.ts",
+      "sha256": "fc820b2f0c21501f51f79b58a21d3fa7ae5659fc1812784dbfbb72af147659ee",
+      "bytes": 179,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/stringify.js",
+      "sha256": "bb592b599f2b00be6ca9fb2ac2fb7350abf3a6e6e274201cf6865c8c15e52b6a",
+      "bytes": 1093,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/types.d.ts",
+      "sha256": "cff399d99c68e4fafdd5835d443a980622267a39ac6f3f59b9e3d60d60c4f133",
+      "bytes": 531,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/types.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/uuid-bin.d.ts",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/uuid-bin.js",
+      "sha256": "daa130ca926ffac9d538d47e82c7b9bbbd894006ab8a90dead255c21c58233cb",
+      "bytes": 1959,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v1.d.ts",
+      "sha256": "4f041ef66167b5f9c73101e5fd8468774b09429932067926f9b2960cc3e4f99d",
+      "bytes": 484,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v1.js",
+      "sha256": "a3cd1c783a64f6e010af00593ac8e7e28c127a5e63266da4809b5687f1a081aa",
+      "bytes": 2683,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v1ToV6.d.ts",
+      "sha256": "31501b8fc4279e78f6a05ca35e365e73c0b0c57d06dbe8faecb10c7254ce7714",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v1ToV6.js",
+      "sha256": "f0a2d19ee0d4398607808fcfc3eebeb1ea7af08a0c17d71d42fc612f97241a3f",
+      "bytes": 842,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v3.d.ts",
+      "sha256": "ff4e9db3eb1e95d7ba4b5765e4dc7f512b90fb3b588adfd5ca9b0d9d7a56a1ae",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v3.js",
+      "sha256": "3b65ad31501886af057e13aeec03afedc54f1f85cc8d332b0eb89800b11fbce4",
+      "bytes": 259,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v35.d.ts",
+      "sha256": "7bc76e7d4bbe3764abaf054aed3a622c5cdbac694e474050d71ce9d4ab93ea4b",
+      "bytes": 509,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v35.js",
+      "sha256": "cd9bdff5aca247c93c0c7bfa3bddbd022076aebb8759ca00004dc980f38901d8",
+      "bytes": 1511,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v4.d.ts",
+      "sha256": "f205fd03cd15ea054f7006b7ef8378ef29c315149da0726f4928d291e7dce7b9",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v4.js",
+      "sha256": "467ed3f76fe8065eb46dd027c3e5c78501df95cdb99ff6ada1701fa3de024a3e",
+      "bytes": 883,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v5.d.ts",
+      "sha256": "d683908557d53abeb1b94747e764b3bd6b6226273514b96a942340e9ce4b7be7",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v5.js",
+      "sha256": "daaf09616ea3b145ccd6a1dfea190b65d546267a9916c5741e026d4290c61ae9",
+      "bytes": 262,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v6.d.ts",
+      "sha256": "7c6d5704e2f236fddaf8dbe9131d998a4f5132609ef795b78c3b63f46317f88a",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v6.js",
+      "sha256": "32f4c875353e043cb8d790f2d63d46e7b23d592fa3d5d09ace6afcff1dd44e03",
+      "bytes": 630,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v6ToV1.d.ts",
+      "sha256": "d05bd4d28c12545827349b0ac3a79c50658d68147dad38d13e97e22353544496",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v6ToV1.js",
+      "sha256": "78475a282beaea6e8c45e5f2586134929be2e21728f159fb8559df06d7288475",
+      "bytes": 842,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v7.d.ts",
+      "sha256": "b6436d90a5487d9b3c3916b939f68e43f7eaca4b0bb305d897d5124180a122b9",
+      "bytes": 439,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/v7.js",
+      "sha256": "38208cc85d447b13d7fc9e75377d4f82e17ad982334786396623c57c1406a257",
+      "bytes": 2129,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/validate.d.ts",
+      "sha256": "04ace6bedd6f59c30ea6df1f0f8d432c728c8bc5c5fd0c5c1c80242d3ab51977",
+      "bytes": 76,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/validate.js",
+      "sha256": "78ba6a91a3c2d219e3a6980d7704c0998e8152cabcaece0f5a04989025d0e60c",
+      "bytes": 142,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/version.d.ts",
+      "sha256": "57a8a7772769c35ba7b4b1ba125f0812deec5c7102a0d04d9e15b1d22880c9e8",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm-browser/version.js",
+      "sha256": "5a43d6eb8496806fd5e152f92edda603dbb1f77108045edcf034f22c9e320ce8",
+      "bytes": 208,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/bin/uuid",
+      "sha256": "a9dc67d05c3b08842280064e7e65fab9de3f4257b1dfd88e6e51d5afd967bdf4",
+      "bytes": 45,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/index.d.ts",
+      "sha256": "badcc9d59770b91987e962f8e3ddfa1e06671b0e4c5e2738bbd002255cad3f38",
+      "bytes": 669,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/index.js",
+      "sha256": "65e9fae8f22278e6c9ac5b016dbe1ead01b8014f66ce08a807741885d4bf01f1",
+      "bytes": 636,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/max.d.ts",
+      "sha256": "6ada175c0c585e89569e8feb8ff6fc9fc443d7f9ca6340b456e0f94cbef559bf",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/max.js",
+      "sha256": "8f81a7b2a5f8704ea1b4e8f83d36659856fdf3d122b2bd16fe1b5c47c97b6ffa",
+      "bytes": 55,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/md5.d.ts",
+      "sha256": "2286d2879906f2fe64438d039c9951f8709148b8bee35b485efe96783aaf38f6",
+      "bytes": 181,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/md5.js",
+      "sha256": "4638778ad2e2fb5b9d06d545adc24f1489789d9883fa1fb12ee50a06ee05e91c",
+      "bytes": 300,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/native.d.ts",
+      "sha256": "df16822806d73d5ec3570f50bd882a701d52042d99e29f2135a4d335a5df12fc",
+      "bytes": 182,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/native.js",
+      "sha256": "eae9051ed058565dfd3e6508405f7d3c280fb395dc77c71b15e251c1f9e6fad8",
+      "bytes": 68,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/nil.d.ts",
+      "sha256": "e56e4d95fad615c97eb0ae39c329a4cda9c0af178273a9173676cc9b14b58520",
+      "bytes": 89,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/nil.js",
+      "sha256": "a6f8ac293df0b75af2946e5190d8f00336b826bb1340b96d669a09beb8885ff8",
+      "bytes": 55,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/parse.d.ts",
+      "sha256": "73e8dfd5e7d2abc18bdb5c5873e64dbdd1082408dd1921cad6ff7130d8339334",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/parse.js",
+      "sha256": "a383f50a691c05533a40bbb4a87f718daa050abbc96debc9715efdc74d8538b4",
+      "bytes": 612,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/regex.d.ts",
+      "sha256": "f972c1a3ed268843b93ccca541c48a3265ced25031ce6bef2fe1f9de10c4d345",
+      "bytes": 57,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/regex.js",
+      "sha256": "774bc4bc767a58458dfdd252430d96b71b3d380ac241b50df6cb757aaa1b4783",
+      "bytes": 171,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/rng.d.ts",
+      "sha256": "43b8bf0182f6c141c27b92470c429aa455ea9613e7ff8ca6f157efb94ea16375",
+      "bytes": 43,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/rng.js",
+      "sha256": "60ce4fc657149e0b5d3c2c06dce4c92338691247e71e06430a5543d91914579e",
+      "bytes": 305,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/sha1.d.ts",
+      "sha256": "95a32839b0653a5fcf429ee872b22af538416435d0cbe6b1b5de63bd14076e39",
+      "bytes": 183,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/sha1.js",
+      "sha256": "c0c5b3c9150a2ae9c2e3b2eaaa13309d9d37981f1111e00a53fa1ab3bb449cbe",
+      "bytes": 303,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/stringify.d.ts",
+      "sha256": "fc820b2f0c21501f51f79b58a21d3fa7ae5659fc1812784dbfbb72af147659ee",
+      "bytes": 179,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/stringify.js",
+      "sha256": "bb592b599f2b00be6ca9fb2ac2fb7350abf3a6e6e274201cf6865c8c15e52b6a",
+      "bytes": 1093,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/types.d.ts",
+      "sha256": "cff399d99c68e4fafdd5835d443a980622267a39ac6f3f59b9e3d60d60c4f133",
+      "bytes": 531,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/types.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/uuid-bin.d.ts",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "bytes": 11,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/uuid-bin.js",
+      "sha256": "daa130ca926ffac9d538d47e82c7b9bbbd894006ab8a90dead255c21c58233cb",
+      "bytes": 1959,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v1.d.ts",
+      "sha256": "4f041ef66167b5f9c73101e5fd8468774b09429932067926f9b2960cc3e4f99d",
+      "bytes": 484,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v1.js",
+      "sha256": "a3cd1c783a64f6e010af00593ac8e7e28c127a5e63266da4809b5687f1a081aa",
+      "bytes": 2683,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v1ToV6.d.ts",
+      "sha256": "31501b8fc4279e78f6a05ca35e365e73c0b0c57d06dbe8faecb10c7254ce7714",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v1ToV6.js",
+      "sha256": "f0a2d19ee0d4398607808fcfc3eebeb1ea7af08a0c17d71d42fc612f97241a3f",
+      "bytes": 842,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v3.d.ts",
+      "sha256": "ff4e9db3eb1e95d7ba4b5765e4dc7f512b90fb3b588adfd5ca9b0d9d7a56a1ae",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v3.js",
+      "sha256": "3b65ad31501886af057e13aeec03afedc54f1f85cc8d332b0eb89800b11fbce4",
+      "bytes": 259,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v35.d.ts",
+      "sha256": "7bc76e7d4bbe3764abaf054aed3a622c5cdbac694e474050d71ce9d4ab93ea4b",
+      "bytes": 509,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v35.js",
+      "sha256": "cd9bdff5aca247c93c0c7bfa3bddbd022076aebb8759ca00004dc980f38901d8",
+      "bytes": 1511,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v4.d.ts",
+      "sha256": "f205fd03cd15ea054f7006b7ef8378ef29c315149da0726f4928d291e7dce7b9",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v4.js",
+      "sha256": "467ed3f76fe8065eb46dd027c3e5c78501df95cdb99ff6ada1701fa3de024a3e",
+      "bytes": 883,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v5.d.ts",
+      "sha256": "d683908557d53abeb1b94747e764b3bd6b6226273514b96a942340e9ce4b7be7",
+      "bytes": 419,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v5.js",
+      "sha256": "daaf09616ea3b145ccd6a1dfea190b65d546267a9916c5741e026d4290c61ae9",
+      "bytes": 262,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v6.d.ts",
+      "sha256": "7c6d5704e2f236fddaf8dbe9131d998a4f5132609ef795b78c3b63f46317f88a",
+      "bytes": 286,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v6.js",
+      "sha256": "32f4c875353e043cb8d790f2d63d46e7b23d592fa3d5d09ace6afcff1dd44e03",
+      "bytes": 630,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v6ToV1.d.ts",
+      "sha256": "d05bd4d28c12545827349b0ac3a79c50658d68147dad38d13e97e22353544496",
+      "bytes": 116,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v6ToV1.js",
+      "sha256": "78475a282beaea6e8c45e5f2586134929be2e21728f159fb8559df06d7288475",
+      "bytes": 842,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v7.d.ts",
+      "sha256": "b6436d90a5487d9b3c3916b939f68e43f7eaca4b0bb305d897d5124180a122b9",
+      "bytes": 439,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/v7.js",
+      "sha256": "38208cc85d447b13d7fc9e75377d4f82e17ad982334786396623c57c1406a257",
+      "bytes": 2129,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/validate.d.ts",
+      "sha256": "04ace6bedd6f59c30ea6df1f0f8d432c728c8bc5c5fd0c5c1c80242d3ab51977",
+      "bytes": 76,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/validate.js",
+      "sha256": "78ba6a91a3c2d219e3a6980d7704c0998e8152cabcaece0f5a04989025d0e60c",
+      "bytes": 142,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/version.d.ts",
+      "sha256": "57a8a7772769c35ba7b4b1ba125f0812deec5c7102a0d04d9e15b1d22880c9e8",
+      "bytes": 72,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/dist/esm/version.js",
+      "sha256": "5a43d6eb8496806fd5e152f92edda603dbb1f77108045edcf034f22c9e320ce8",
+      "bytes": 208,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/node_modules/uuid/package.json",
+      "sha256": "e5ebc4600db1bfcb5c00d8cc3430d869bdbe229c8d46b4bfac06ab2dfc180c39",
+      "bytes": 4252,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/package.json",
+      "sha256": "0d2e7f9f9d6d47089a5b4115bf2db62950c45d4eda14684020595567f8f41534",
+      "bytes": 390,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/prepared_statement.js",
+      "sha256": "6769b856853614139b276c2aa8a69f3386135800798c38811b4314f4eb87787a",
+      "bytes": 2019,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/query_result.js",
+      "sha256": "5e5372501da0613471d0b88369aef03103373c88e6083d87934782a00d1722fd",
+      "bytes": 8203,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/README.md",
+      "sha256": "e4b45191f6d2525934d1aa795390a6fbea08ac6595cb31465fa16aeda576f170",
+      "bytes": 794,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/connection.js",
+      "sha256": "c5282854a0cc2d86a431e44f3401d5c1281ac8e5598799951e24aeb810d444cb",
+      "bytes": 5160,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/database.js",
+      "sha256": "f3ee0cb53b057e70a2861ab59212e5bf766acb26604ee2ccc04742516ede2933",
+      "bytes": 2493,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/index.d.ts",
+      "sha256": "0672f62ee1d59b82366557579558257dde361683adc7524144824427ea780c3a",
+      "bytes": 7188,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/index.js",
+      "sha256": "53a009516e4b7598c07e8fb4980d58e5cbe53646aa182488a51a7ced91bc0836",
+      "bytes": 2202,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/lbug.js",
+      "sha256": "4ec46f649c45d781a65308aa0ae5638cdaeb8a13f3a6b574eda6612884241de9",
+      "bytes": 979,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/prepared_statement.js",
+      "sha256": "29c1f2ba1a5af69dd86c793476bbe8c1645fe07ef81a25914d7cd1c4e8b2c5e7",
+      "bytes": 1789,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
+    },
+    {
+      "path": "ladybug-wasm/nodejs/sync/query_result.js",
+      "sha256": "1d570000d86b35728b162a1f60f4c11469a5d328124a37162e24ca0ed314129a",
+      "bytes": 6177,
+      "license": "MIT",
+      "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+      "revision": "0.18.2"
     }
   ]
 }

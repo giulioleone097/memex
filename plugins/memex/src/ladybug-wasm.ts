@@ -8,15 +8,15 @@ import { readFile, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import { defaultVendorRoot } from "./embedder.js";
+import { defaultVendorRoot, loadVendorManifest } from "./embedder.js";
 import { MemexError } from "./errors.js";
-import type { LadybugConnection } from "./ladybug-backend.js";
-import type { CypherParam, CypherResult } from "./graph-index.js";
+import { LadybugCypherEngine, syncGraphToLadybug, type LadybugConnection } from "./ladybug-backend.js";
+import type { CypherParam, CypherResult, CypherTierResolution } from "./graph-index.js";
+import type { GraphNodeV1, GraphEdgeV1 } from "./graph-contracts.js";
 
-const GROUP = "ladybug-wasm";
-
-interface LadybugWasmManifestFile { path: string; sha256: string; bytes: number; }
-interface LadybugWasmManifest { entry: string; files: LadybugWasmManifestFile[]; }
+// Paths (relative to the shared vendor root) of the vendored nodejs variant.
+const WASM_ENTRY = "ladybug-wasm/nodejs/index.js";
+const WASM_BINARY = "ladybug-wasm/nodejs/lbug/lbug_wasm.wasm";
 
 interface LbugQueryResult {
   isSuccess(): boolean;
@@ -42,45 +42,40 @@ interface LbugModule {
 let cachedModule: LbugModule | undefined;
 let verifiedRoot: string | undefined;
 
-function groupRoot(vendorRoot: string): string {
-  return path.join(vendorRoot, GROUP);
-}
-
 async function sha256File(absolute: string): Promise<string> {
   return createHash("sha256").update(await readFile(absolute)).digest("hex");
 }
 
-async function verifyAssets(root: string): Promise<LadybugWasmManifest> {
-  let manifest: LadybugWasmManifest;
-  try {
-    manifest = JSON.parse(await readFile(path.join(root, "MANIFEST.json"), "utf8")) as LadybugWasmManifest;
-  } catch {
-    throw new MemexError("MODEL_ASSET_MISSING", "Ladybug wasm manifest is missing or invalid.");
-  }
-  if (!Array.isArray(manifest.files) || typeof manifest.entry !== "string") {
-    throw new MemexError("MODEL_ASSET_CORRUPT", "Ladybug wasm manifest is malformed.");
-  }
-  for (const file of manifest.files) {
-    const absolute = path.join(root, file.path);
+// Verifies the two integrity-critical vendored files (the CommonJS entry and the
+// wasm binary) against the shared vendor manifest before loading. The runtime
+// dependency files under node_modules are covered by the shared manifest (and the
+// vendor stray-file test) and fail loudly at require() if tampered with, so they
+// are not re-hashed on every open.
+async function verifyCriticalAssets(vendorRoot: string): Promise<void> {
+  const manifest = await loadVendorManifest(vendorRoot);
+  for (const relativePath of [WASM_ENTRY, WASM_BINARY]) {
+    const entry = manifest.assets.find((candidate) => candidate.path === relativePath);
+    if (entry?.sha256 === undefined) {
+      throw new MemexError("MODEL_ASSET_MISSING", `Ladybug wasm manifest has no entry for ${relativePath}.`);
+    }
+    const absolute = path.join(vendorRoot, relativePath);
     let size: number;
     try {
       size = (await stat(absolute)).size;
     } catch {
-      throw new MemexError("MODEL_ASSET_MISSING", `Ladybug wasm asset is missing: ${file.path}.`);
+      throw new MemexError("MODEL_ASSET_MISSING", `Ladybug wasm asset is missing: ${relativePath}.`);
     }
-    if (size !== file.bytes) throw new MemexError("MODEL_ASSET_CORRUPT", `Ladybug wasm asset size mismatch: ${file.path}.`);
-    if ((await sha256File(absolute)) !== file.sha256.toLowerCase()) {
-      throw new MemexError("MODEL_ASSET_CORRUPT", `Ladybug wasm asset checksum mismatch: ${file.path}.`);
+    if (size !== entry.bytes) throw new MemexError("MODEL_ASSET_CORRUPT", `Ladybug wasm asset size mismatch: ${relativePath}.`);
+    if ((await sha256File(absolute)) !== entry.sha256.toLowerCase()) {
+      throw new MemexError("MODEL_ASSET_CORRUPT", `Ladybug wasm asset checksum mismatch: ${relativePath}.`);
     }
   }
-  return manifest;
 }
 
 async function loadModule(vendorRoot: string): Promise<LbugModule> {
   if (cachedModule !== undefined && verifiedRoot === vendorRoot) return cachedModule;
-  const root = groupRoot(vendorRoot);
-  const manifest = await verifyAssets(root);
-  const entryPath = path.join(root, manifest.entry);
+  await verifyCriticalAssets(vendorRoot);
+  const entryPath = path.join(vendorRoot, WASM_ENTRY);
   let required: unknown;
   try {
     const require = createRequire(import.meta.url);
@@ -133,6 +128,27 @@ export async function openLadybugWasmConnection(options: OpenWasmOptions = {}): 
       await connection.close();
     },
   };
+}
+
+/**
+ * Builds the wasm Cypher tier: opens a connection, syncs the graph snapshot into
+ * it, and returns the CypherCapable engine. Throws on failure (the resolver
+ * catches and degrades to pure). `close()` releases the connection only; call
+ * shutdownLadybugWasm() at process teardown.
+ */
+export async function openWasmTier(
+  graph: { nodes: readonly GraphNodeV1[]; edges: readonly GraphEdgeV1[] },
+  databasePath?: string,
+): Promise<CypherTierResolution> {
+  const connection = await openLadybugWasmConnection(databasePath === undefined ? {} : { databasePath });
+  try {
+    await syncGraphToLadybug(connection, graph);
+  } catch (error) {
+    await connection.close().catch(() => undefined);
+    throw error;
+  }
+  const engine = new LadybugCypherEngine(connection);
+  return { cypher: engine, close: () => engine.close() };
 }
 
 /** Terminates the wasm module's worker thread. Idempotent; safe if never opened. */
