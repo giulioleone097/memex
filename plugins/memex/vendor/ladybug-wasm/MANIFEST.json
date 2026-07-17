@@ -1,0 +1,112 @@
+{
+  "package": "@ladybugdb/wasm-core",
+  "version": "0.18.2",
+  "variant": "nodejs",
+  "license": "MIT",
+  "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
+  "entry": "nodejs/index.js",
+  "generatedAt": "2026-07-17",
+  "totalBytes": 13896268,
+  "files": [
+    {
+      "path": "nodejs/README.md",
+      "sha256": "b80e984e7c0968e4fe1316e9d99595a99808e3f28934d0cff369bdb2b35e014a",
+      "bytes": 761
+    },
+    {
+      "path": "nodejs/connection.js",
+      "sha256": "185bda6492aed915dcd8612290052020f0b598e056a1772f6b3b982e8a99d1da",
+      "bytes": 5951
+    },
+    {
+      "path": "nodejs/database.js",
+      "sha256": "aa60882c76571809c7aabe75d10c6086acdaa8c1fe38f87e11ca48d8a44b1448",
+      "bytes": 3206
+    },
+    {
+      "path": "nodejs/dispatcher.js",
+      "sha256": "05cd8809faa119a2ebeebab64c8d8faa54f5e58fa3d0beb23a06ca13ae128288",
+      "bytes": 1674
+    },
+    {
+      "path": "nodejs/fs.js",
+      "sha256": "89b3883dfff0c257b4299b49be32e301c706d9359ad709f7e28f5b6e1c9316b9",
+      "bytes": 5589
+    },
+    {
+      "path": "nodejs/index.d.ts",
+      "sha256": "f12655a5a0775f709e74e26e24db3c801d10dedce72c2518a424b05a69c9e60f",
+      "bytes": 8388
+    },
+    {
+      "path": "nodejs/index.js",
+      "sha256": "570b3134e2598b85ca91281f438985ed155d5af4a67ae1f20cd62586e5c5207f",
+      "bytes": 2499
+    },
+    {
+      "path": "nodejs/lbug/lbug_wasm.js",
+      "sha256": "c1a164e1c9d68fb1c7576aad35577261a3cd148df9cb5d92e52dffc02d433cfe",
+      "bytes": 255918
+    },
+    {
+      "path": "nodejs/lbug/lbug_wasm.wasm",
+      "sha256": "18911607caa51182c2e73b27005c47f80c24b99dcc0fb442cf0ce984b03b613d",
+      "bytes": 13558799
+    },
+    {
+      "path": "nodejs/lbug_wasm_worker.js",
+      "sha256": "3e1e879a7345c0de80f248cb9e1e5cb98da466354c6b35bdbfbc14364cfad871",
+      "bytes": 16479
+    },
+    {
+      "path": "nodejs/prepared_statement.js",
+      "sha256": "6769b856853614139b276c2aa8a69f3386135800798c38811b4314f4eb87787a",
+      "bytes": 2019
+    },
+    {
+      "path": "nodejs/query_result.js",
+      "sha256": "5e5372501da0613471d0b88369aef03103373c88e6083d87934782a00d1722fd",
+      "bytes": 8203
+    },
+    {
+      "path": "nodejs/sync/README.md",
+      "sha256": "e4b45191f6d2525934d1aa795390a6fbea08ac6595cb31465fa16aeda576f170",
+      "bytes": 794
+    },
+    {
+      "path": "nodejs/sync/connection.js",
+      "sha256": "c5282854a0cc2d86a431e44f3401d5c1281ac8e5598799951e24aeb810d444cb",
+      "bytes": 5160
+    },
+    {
+      "path": "nodejs/sync/database.js",
+      "sha256": "f3ee0cb53b057e70a2861ab59212e5bf766acb26604ee2ccc04742516ede2933",
+      "bytes": 2493
+    },
+    {
+      "path": "nodejs/sync/index.d.ts",
+      "sha256": "0672f62ee1d59b82366557579558257dde361683adc7524144824427ea780c3a",
+      "bytes": 7188
+    },
+    {
+      "path": "nodejs/sync/index.js",
+      "sha256": "53a009516e4b7598c07e8fb4980d58e5cbe53646aa182488a51a7ced91bc0836",
+      "bytes": 2202
+    },
+    {
+      "path": "nodejs/sync/lbug.js",
+      "sha256": "4ec46f649c45d781a65308aa0ae5638cdaeb8a13f3a6b574eda6612884241de9",
+      "bytes": 979
+    },
+    {
+      "path": "nodejs/sync/prepared_statement.js",
+      "sha256": "29c1f2ba1a5af69dd86c793476bbe8c1645fe07ef81a25914d7cd1c4e8b2c5e7",
+      "bytes": 1789
+    },
+    {
+      "path": "nodejs/sync/query_result.js",
+      "sha256": "1d570000d86b35728b162a1f60f4c11469a5d328124a37162e24ca0ed314129a",
+      "bytes": 6177
+    }
+  ]
+}
