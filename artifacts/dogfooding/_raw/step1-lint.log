@@ -1,0 +1,6 @@
+
+> openwiki-dual-host-plugin@0.1.0 lint
+> eslint .
+
+EXIT:124
+EXIT:0

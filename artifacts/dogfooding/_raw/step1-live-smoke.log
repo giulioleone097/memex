@@ -1,0 +1,62 @@
+▶ OpenWiki plugin clients
+  ✔ honors a caller-provided process timeout (11.918458ms)
+  ✔ executes exact Codex and Claude lifecycle commands through real fixture processes (1909.039209ms)
+  ✖ installs, lists, and removes the plugin with the real Codex client in an isolated home (90744.164084ms)
+  ✖ validates, installs, lists, and removes the plugin with the real Claude client in an isolated home (91880.062333ms)
+  ✔ runs both installed caches after their disposable marketplace source is removed (17815.886084ms)
+✖ OpenWiki plugin clients (202362.012ms)
+ℹ tests 5
+ℹ suites 1
+ℹ pass 3
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 202463.025875
+
+✖ failing tests:
+
+test at plugins/openwiki/tests/e2e/plugin-clients.e2e.test.mjs:315:3
+✖ installs, lists, and removes the plugin with the real Codex client in an isolated home (90744.164084ms)
+  AssertionError [ERR_ASSERTION]: {"ok":false,"action":"install","error":{"code":"CLIENT_TIMEOUT","message":"codex did not exit within 90000ms.","client":"codex","argv":["plugin","add","openwiki@openwiki-local","--json"],"timeoutMs":90000,"stderrBytes":0},"commands":[]}
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/giulioleone/Documents/OpenWiki%20Plugin/plugins/openwiki/tests/e2e/plugin-clients.e2e.test.mjs:329:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at plugins/openwiki/tests/e2e/plugin-clients.e2e.test.mjs:349:3
+✖ validates, installs, lists, and removes the plugin with the real Claude client in an isolated home (91880.062333ms)
+  AssertionError [ERR_ASSERTION]: {"ok":false,"action":"install","error":{"code":"CLIENT_TIMEOUT","message":"claude did not exit within 90000ms.","client":"claude","argv":["plugin","install","openwiki@openwiki-local","--scope","user"],"timeoutMs":90000,"stderrBytes":0},"commands":[]}
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/giulioleone/Documents/OpenWiki%20Plugin/plugins/openwiki/tests/e2e/plugin-clients.e2e.test.mjs:369:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+EXIT:1
