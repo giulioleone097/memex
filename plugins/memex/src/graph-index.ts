@@ -584,3 +584,103 @@ function nonNegativeInteger(value: unknown): value is number { return typeof val
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
+
+// ---------------------------------------------------------------------------
+// Cypher capability (additive LadybugDB layer).
+//
+// The pure-TS GraphIndexPort above is the untouched backbone. LadybugDB, when
+// available, adds an arbitrary-Cypher query surface synced from the same shards.
+// A "tier" describes Cypher availability: native and wasm provide Cypher; pure
+// means port-only (no Cypher) and degrades honestly.
+// ---------------------------------------------------------------------------
+
+/** A scalar Cypher parameter value. */
+export type CypherScalar = string | number | boolean | null;
+
+/**
+ * A Cypher parameter: a scalar, a list of scalars, or a list of row objects
+ * (used for bulk `UNWIND $rows` loads). Nested lists beyond this are not needed.
+ */
+export type CypherParam = CypherScalar | ReadonlyArray<CypherScalar> | ReadonlyArray<Record<string, CypherScalar>>;
+
+/** The result of a read-only Cypher query. */
+export interface CypherResult {
+  columns: string[];
+  rows: ReadonlyArray<Record<string, unknown>>;
+  truncated: boolean;
+}
+
+/** Capability implemented by LadybugDB-backed tiers only. */
+export interface CypherCapable {
+  cypher(query: string, params?: Record<string, CypherParam>): Promise<CypherResult>;
+}
+
+export type GraphCypherTier = "native" | "wasm" | "pure";
+
+export interface GraphCypherSelection {
+  tier: GraphCypherTier;
+  reason: string;
+  /** Present iff the selected tier is native or wasm. */
+  cypher?: CypherCapable;
+  close(): Promise<void>;
+}
+
+/** A resolved Ladybug tier, produced by an injected `tryNative`/`tryWasm` factory. */
+export interface CypherTierResolution {
+  cypher: CypherCapable;
+  close(): Promise<void>;
+}
+
+export interface OpenGraphCypherOptions {
+  /** Defaults to `resolveBackendPreference()`. */
+  preference?: GraphCypherTier | "auto";
+  tryNative?: () => Promise<CypherTierResolution | null>;
+  tryWasm?: () => Promise<CypherTierResolution | null>;
+}
+
+/** Reads MEMEX_GRAPH_BACKEND; returns "auto" for missing/invalid values. */
+export function resolveBackendPreference(env: Record<string, string | undefined> = process.env): GraphCypherTier | "auto" {
+  const raw = (env.MEMEX_GRAPH_BACKEND ?? "").trim().toLowerCase();
+  return raw === "native" || raw === "wasm" || raw === "pure" ? raw : "auto";
+}
+
+const noopClose = async (): Promise<void> => {};
+
+/**
+ * Resolves the Cypher tier: native → wasm → pure (auto), or the requested tier
+ * with a pure fallback. Never throws; a tier factory that returns null or throws
+ * degrades to the next candidate, ending at the always-available pure tier.
+ */
+export async function openGraphCypher(opts: OpenGraphCypherOptions = {}): Promise<GraphCypherSelection> {
+  const preference = opts.preference ?? resolveBackendPreference();
+  const reasons: string[] = [];
+
+  const attempt = async (tier: "native" | "wasm", fn?: () => Promise<CypherTierResolution | null>): Promise<GraphCypherSelection | null> => {
+    if (!fn) {
+      reasons.push(`${tier}: not wired`);
+      return null;
+    }
+    try {
+      const resolved = await fn();
+      if (!resolved) {
+        reasons.push(`${tier}: unavailable`);
+        return null;
+      }
+      return { tier, reason: `${tier} Cypher backend active`, cypher: resolved.cypher, close: () => resolved.close() };
+    } catch (error) {
+      reasons.push(`${tier}: ${(error as Error).message}`);
+      return null;
+    }
+  };
+
+  const pureSelection = (): GraphCypherSelection => ({
+    tier: "pure",
+    reason: reasons.length > 0 ? `pure (no Cypher — ${reasons.join("; ")})` : "pure (no Cypher backend requested)",
+    close: noopClose,
+  });
+
+  if (preference === "pure") return pureSelection();
+  if (preference === "native") return (await attempt("native", opts.tryNative)) ?? pureSelection();
+  if (preference === "wasm") return (await attempt("wasm", opts.tryWasm)) ?? pureSelection();
+  return (await attempt("native", opts.tryNative)) ?? (await attempt("wasm", opts.tryWasm)) ?? pureSelection();
+}

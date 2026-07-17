@@ -510,3 +510,48 @@ function nonNegativeInteger(value) { return typeof value === "number" && Number.
 function isRecord(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
 }
+/** Reads MEMEX_GRAPH_BACKEND; returns "auto" for missing/invalid values. */
+export function resolveBackendPreference(env = process.env) {
+    const raw = (env.MEMEX_GRAPH_BACKEND ?? "").trim().toLowerCase();
+    return raw === "native" || raw === "wasm" || raw === "pure" ? raw : "auto";
+}
+const noopClose = async () => { };
+/**
+ * Resolves the Cypher tier: native → wasm → pure (auto), or the requested tier
+ * with a pure fallback. Never throws; a tier factory that returns null or throws
+ * degrades to the next candidate, ending at the always-available pure tier.
+ */
+export async function openGraphCypher(opts = {}) {
+    const preference = opts.preference ?? resolveBackendPreference();
+    const reasons = [];
+    const attempt = async (tier, fn) => {
+        if (!fn) {
+            reasons.push(`${tier}: not wired`);
+            return null;
+        }
+        try {
+            const resolved = await fn();
+            if (!resolved) {
+                reasons.push(`${tier}: unavailable`);
+                return null;
+            }
+            return { tier, reason: `${tier} Cypher backend active`, cypher: resolved.cypher, close: () => resolved.close() };
+        }
+        catch (error) {
+            reasons.push(`${tier}: ${error.message}`);
+            return null;
+        }
+    };
+    const pureSelection = () => ({
+        tier: "pure",
+        reason: reasons.length > 0 ? `pure (no Cypher — ${reasons.join("; ")})` : "pure (no Cypher backend requested)",
+        close: noopClose,
+    });
+    if (preference === "pure")
+        return pureSelection();
+    if (preference === "native")
+        return (await attempt("native", opts.tryNative)) ?? pureSelection();
+    if (preference === "wasm")
+        return (await attempt("wasm", opts.tryWasm)) ?? pureSelection();
+    return (await attempt("native", opts.tryNative)) ?? (await attempt("wasm", opts.tryWasm)) ?? pureSelection();
+}

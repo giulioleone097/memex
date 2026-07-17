@@ -60,3 +60,47 @@ export interface GraphArchitectureSummary {
 }
 export declare function writeGraphIndexGeneration(generationRoot: string, generation: string, graph: CodeGraphV1): Promise<GraphIndexManifest>;
 export declare function openGraphIndexGeneration(generationRoot: string, expectedGeneration: string, recovered: boolean): Promise<GraphIndexPort>;
+/** A scalar Cypher parameter value. */
+export type CypherScalar = string | number | boolean | null;
+/**
+ * A Cypher parameter: a scalar, a list of scalars, or a list of row objects
+ * (used for bulk `UNWIND $rows` loads). Nested lists beyond this are not needed.
+ */
+export type CypherParam = CypherScalar | ReadonlyArray<CypherScalar> | ReadonlyArray<Record<string, CypherScalar>>;
+/** The result of a read-only Cypher query. */
+export interface CypherResult {
+    columns: string[];
+    rows: ReadonlyArray<Record<string, unknown>>;
+    truncated: boolean;
+}
+/** Capability implemented by LadybugDB-backed tiers only. */
+export interface CypherCapable {
+    cypher(query: string, params?: Record<string, CypherParam>): Promise<CypherResult>;
+}
+export type GraphCypherTier = "native" | "wasm" | "pure";
+export interface GraphCypherSelection {
+    tier: GraphCypherTier;
+    reason: string;
+    /** Present iff the selected tier is native or wasm. */
+    cypher?: CypherCapable;
+    close(): Promise<void>;
+}
+/** A resolved Ladybug tier, produced by an injected `tryNative`/`tryWasm` factory. */
+export interface CypherTierResolution {
+    cypher: CypherCapable;
+    close(): Promise<void>;
+}
+export interface OpenGraphCypherOptions {
+    /** Defaults to `resolveBackendPreference()`. */
+    preference?: GraphCypherTier | "auto";
+    tryNative?: () => Promise<CypherTierResolution | null>;
+    tryWasm?: () => Promise<CypherTierResolution | null>;
+}
+/** Reads MEMEX_GRAPH_BACKEND; returns "auto" for missing/invalid values. */
+export declare function resolveBackendPreference(env?: Record<string, string | undefined>): GraphCypherTier | "auto";
+/**
+ * Resolves the Cypher tier: native → wasm → pure (auto), or the requested tier
+ * with a pure fallback. Never throws; a tier factory that returns null or throws
+ * degrades to the next candidate, ending at the always-available pure tier.
+ */
+export declare function openGraphCypher(opts?: OpenGraphCypherOptions): Promise<GraphCypherSelection>;
