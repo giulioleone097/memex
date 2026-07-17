@@ -16,6 +16,9 @@ export const MEMEX_ERROR_CODES = [
     "EMBEDDING_FAILURE",
     "INDEX_INCOMPATIBLE",
     "MIGRATION_CONFLICT",
+    "GRAPH_CYPHER_READONLY",
+    "GRAPH_CYPHER_UNAVAILABLE",
+    "GRAPH_CYPHER_FAILED",
 ];
 export class MemexError extends Error {
     code;
