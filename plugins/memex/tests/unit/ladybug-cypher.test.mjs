@@ -79,6 +79,12 @@ test("isReadOnlyCypher allows reads, blocks mutations", () => {
     "MATCH (n:Node) WHERE n.summary = 'we CREATE things here' RETURN n", // keyword only inside a string literal
     "MATCH (n:Node) /* keep only calls */ WHERE n.kind = 'symbol' RETURN n", // real block comment
     "MATCH (n:Node) RETURN n.name AS c ; ",           // a lone trailing semicolon is fine
+    "WITH 1 AS x RETURN x",                            // WITH leading clause
+    "UNWIND [1,2,3] AS x RETURN x",                    // UNWIND leading clause
+    "OPTIONAL MATCH (a)-[e:Edge]->(b) RETURN b",       // OPTIONAL leading clause
+    "EXPLAIN MATCH (n:Node) RETURN n",                 // read-plan inspection stays allowed
+    "PROFILE MATCH (n:Node) RETURN count(n)",          // profiling a read stays allowed
+    "return 1 + 1 as answer",                          // bare RETURN, lowercase
   ]) assert.equal(isReadOnlyCypher(ok), true, ok);
 
   for (const bad of [
@@ -101,5 +107,12 @@ test("isReadOnlyCypher allows reads, blocks mutations", () => {
     "MATCH (n:Node) WITH '/*' AS c, n CREATE (m:Node {id:'NOSEMI2'}) RETURN '*/' AS z",
     // Multi-statement even without the comment trick.
     "MATCH (n) RETURN n ; DROP TABLE Node",
+    // Non-read leading statements (DDL/catalog/extension) — blocked by the leading-clause allowlist.
+    "COMMENT ON TABLE Node IS 'pwned'",   // Kùzu catalog write (cycle-2 confirmed bypass)
+    "ANALYZE",                             // statistics collection, non-read
+    "UNINSTALL httpfs",                    // extension management, parity with INSTALL
+    "EXPLAIN CREATE (:Node {id:'x'})",     // EXPLAIN prefix does not launder a trailing mutation
+    "PROFILE MERGE (n)",
+    "USE db",                              // catalog/attach navigation
   ]) assert.equal(isReadOnlyCypher(bad), false, bad);
 });

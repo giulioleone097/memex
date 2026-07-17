@@ -114,8 +114,17 @@ export function rowToEdge(row) {
 // (INSTALL / LOAD / ATTACH) — none permitted on the read-only public surface.
 const FORBIDDEN_KEYWORDS = new Set([
     "CREATE", "MERGE", "SET", "DELETE", "REMOVE", "DROP", "ALTER", "RENAME",
-    "COPY", "LOAD", "INSTALL", "ATTACH", "DETACH", "EXPORT", "IMPORT", "USE",
-    "CALL", "MACRO", "BEGIN", "COMMIT", "ROLLBACK", "CHECKPOINT", "TRANSACTION",
+    "COPY", "LOAD", "INSTALL", "UNINSTALL", "ATTACH", "DETACH", "EXPORT", "IMPORT",
+    "USE", "CALL", "MACRO", "COMMENT", "ANALYZE", "FORCE", "UPDATE",
+    "BEGIN", "COMMIT", "ROLLBACK", "CHECKPOINT", "TRANSACTION",
+]);
+// The statement must begin with one of these read clauses. This is an allowlist
+// (fail-safe): a new DDL/side-effecting statement verb introduced by a future
+// engine version is rejected by default rather than slipping through a denylist
+// gap. EXPLAIN/PROFILE only prefix a query — a trailing mutation keyword is still
+// caught by the denylist over bare tokens.
+const ALLOWED_LEADING_CLAUSES = new Set([
+    "MATCH", "OPTIONAL", "RETURN", "UNWIND", "WITH", "EXPLAIN", "PROFILE",
 ]);
 const isWordStart = (ch) => /[A-Za-z_]/.test(ch);
 const isWordChar = (ch) => /[A-Za-z0-9_]/.test(ch);
@@ -228,6 +237,9 @@ function scanCypher(query) {
 export function isReadOnlyCypher(query) {
     const scan = scanCypher(query);
     if (scan.multiStatement)
+        return false;
+    const leading = scan.bareWords[0];
+    if (leading === undefined || !ALLOWED_LEADING_CLAUSES.has(leading))
         return false;
     for (const word of scan.bareWords) {
         if (FORBIDDEN_KEYWORDS.has(word))

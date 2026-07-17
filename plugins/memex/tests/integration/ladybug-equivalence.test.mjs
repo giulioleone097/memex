@@ -82,6 +82,9 @@ test("read-only guard blocks the comment/string-confusion bypasses against the r
     "RETURN '/*' AS a ; COPY (LOAD FROM '/etc/passwd' RETURN column0) TO '/tmp/exfil.csv' ; RETURN '*/' AS b",
     "MATCH (n:Node) WITH '/*' AS c, n CREATE (m:Node {id:'NOSEMI2'}) RETURN '*/' AS z",
     "MATCH (n) RETURN n ; INSTALL httpfs",
+    "COMMENT ON TABLE Node IS 'pwned'",   // Kùzu catalog write (cycle-2 confirmed bypass)
+    "UNINSTALL httpfs",
+    "ANALYZE",
   ];
   const tier = await openWasmTier(graph);
   try {
