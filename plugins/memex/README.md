@@ -64,10 +64,10 @@ Code mode stores the private graph under `~/.memex/data/<workspace-id>/graph/`. 
 The graph CLI grammar is:
 
 ```text
-node "<plugin-root>/dist/cli.js" graph --mode code --root <repository> --action <build|status|query|context|impact|changes|map> [flags] --json
+node "<plugin-root>/dist/cli.js" graph --mode code --root <repository> --action <build|status|query|context|impact|changes|map|path|explain|communities|report|cypher> [flags] --json
 ```
 
-Seven actions are available:
+The available actions are:
 
 - `build`: initial or incremental private-index refresh; `--force` is the only action-specific flag and requests a clean rebuild.
 - `status`: report schema, counts, diagnostics, Git fingerprint, scanner version, and freshness.
@@ -76,10 +76,36 @@ Seven actions are available:
 - `impact`: bounded traversal; requires `--target`, accepts `--direction inbound|outbound|both` and `--depth 1..5`.
 - `changes`: map a Git diff or working-tree delta; accepts optional `--base <git-ref>`.
 - `map`: return compact modules, entry points, hubs, cycles, and cross-module flows.
+- `path`: shortest semantic path between two nodes; requires `--from` and `--to`.
+- `explain`: an evidence bundle for a node; requires `--target`.
+- `communities`: label-propagation clusters over the semantic graph.
+- `report`: render the architecture report page.
+- `cypher`: run a read-only Cypher query over the derived LadybugDB graph; requires `--query "<cypher>"`. Only read patterns (`MATCH`/`RETURN`/`WITH`/`UNWIND`/`OPTIONAL MATCH`) are permitted; mutations are rejected.
 
 Query-like actions accept bounded `--limit 1..100`; the runtime defaults are compact. The workflow runs graph `status` first, refreshes only when missing/stale and authorized, then prefers `map`, `query`, `context`, `impact`, or `changes` before any targeted source read. Results disclose exact, resolved, or heuristic confidence, diagnostics, unresolved edges, and truncation; a healthy index does not prove complete semantic coverage.
 
 MCP hosts use the same graph contract: JSON-RPC `initialize`, `notifications/initialized`, `tools/list`, then `tools/call` for the graph operation advertised by `tools/list`. Arguments mirror the CLI action and flags. The tool name is discovered from the configured server; it is not hard-coded in this documentation.
+
+### Cypher tiers (LadybugDB)
+
+`cypher` is served by an in-process property-graph database (LadybugDB), synced
+from the same shard-backed graph. It resolves a backend tier, selectable with
+the `MEMEX_GRAPH_BACKEND` environment variable (`auto` | `native` | `wasm` | `pure`,
+default `auto`):
+
+- **native** — the optional `@ladybugdb/core` prebuilt binary (fastest). It is
+  not a declared dependency; install it to enable the turbo tier:
+  `npm i @ladybugdb/core` in the plugin directory.
+- **wasm** — the vendored `@ladybugdb/wasm-core` build. Self-sufficient (no
+  install, no network) and the default when native is absent; this is what makes
+  Cypher work out of the box.
+- **pure** — no Cypher. The existing `query`/`context`/`impact`/`path` actions
+  still work on the built-in graph, but `cypher` returns a typed
+  `GRAPH_CYPHER_UNAVAILABLE` error.
+
+`auto` prefers native, then wasm, then degrades to pure. `memex doctor` reports
+the active tier under the `graph-cypher` check. The database is derived and
+rebuilt from the shards on each run, so deleting it is always safe.
 
 ## Migrating from OpenWiki
 
