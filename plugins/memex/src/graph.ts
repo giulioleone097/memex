@@ -17,7 +17,9 @@ import {
 } from "./graph-contracts.js";
 import { entityLimit, matchTargets, responseLimit, type GraphResult, type ImpactResult } from "./graph-query.js";
 import { changedRepositoryEvidence, currentGitFingerprint, enumerateRepositoryMetadata, openGraphIndex, probeGraphStorage, readEnrichmentShard, readGraphShard, readManifest, readRepositoryFile, readStoredGraph, repositoryMetadataFingerprint, resolveGraphStorage, resolveRepositorySourceIds, writeGraph, type GraphShard } from "./graph-store.js";
-import type { GraphIndexPort } from "./graph-index.js";
+import { openGraphCypher, type GraphIndexPort, type GraphCypherTier, type CypherParam } from "./graph-index.js";
+import { openWasmTier } from "./ladybug-wasm.js";
+import { openNativeTier } from "./ladybug-native.js";
 import { scanSourceFile } from "./graph-scan.js";
 import {
   computeCommunities,
@@ -393,4 +395,62 @@ export async function explainGraphNode(options: TargetGraphOptions): Promise<Gra
     citingPages,
     diagnostics: context.diagnostics,
   };
+}
+
+export interface GraphCypherEnvelope {
+  schemaVersion: 1;
+  action: "cypher";
+  root: string;
+  tier: GraphCypherTier;
+  columns: string[];
+  rows: ReadonlyArray<Record<string, unknown>>;
+  truncated: boolean;
+  diagnostics: GraphDiagnosticV1[];
+}
+
+export interface GraphCypherOptions extends GraphOperationBase {
+  query: string;
+  params?: Record<string, CypherParam>;
+  preference?: GraphCypherTier | "auto";
+}
+
+// Runs a read-only Cypher query against the derived LadybugDB graph. The graph
+// is loaded from the shard-backed index (openGraphIndex, the non-deprecated
+// query path) and synced into the selected tier (native → wasm), rebuilt fresh
+// per call. On the pure tier (no Cypher) this fails with a typed, actionable
+// error rather than silently returning nothing.
+export async function cypherGraph(options: GraphCypherOptions): Promise<GraphCypherEnvelope> {
+  const resolved = await resolveGraphStorage(options.root, options.homeDir);
+  const index = await openGraphIndex(resolved.storage);
+  const [nodes, edges] = await Promise.all([index.allNodes(), index.allEdges()]);
+  const selection = await openGraphCypher({
+    ...(options.preference === undefined ? {} : { preference: options.preference }),
+    tryNative: () => openNativeTier({ nodes, edges }),
+    tryWasm: () => openWasmTier({ nodes, edges }),
+  });
+  try {
+    if (selection.cypher === undefined) {
+      throw new MemexError(
+        "GRAPH_CYPHER_UNAVAILABLE",
+        `Cypher requires the LadybugDB backend but the active tier is "${selection.tier}" (${selection.reason}). `
+          + "Install @ladybugdb/core for the native tier, or run `memex doctor` to check the vendored wasm assets.",
+      );
+    }
+    const result = await selection.cypher.cypher(options.query, options.params);
+    const max = entityLimit(options.limit);
+    const rows = result.rows.slice(0, max);
+    const value: GraphCypherEnvelope = {
+      schemaVersion: 1,
+      action: "cypher",
+      root: resolved.repositoryRoot,
+      tier: selection.tier,
+      columns: result.columns,
+      rows,
+      truncated: result.truncated || result.rows.length > max,
+      diagnostics: [],
+    };
+    return boundedEnvelope(value, options.responseByteLimit);
+  } finally {
+    await selection.close();
+  }
 }

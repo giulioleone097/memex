@@ -1,6 +1,7 @@
 import { type CodeGraphV1, type GraphDiagnosticV1, type GraphEdgeV1, type GraphNodeV1 } from "./graph-contracts.js";
 import { type ImpactResult } from "./graph-query.js";
 import { type GraphShard } from "./graph-store.js";
+import { type GraphCypherTier, type CypherParam } from "./graph-index.js";
 import { type CommunitySummaryV1 } from "./analysis-store.js";
 export interface GraphOperationBase {
     root: string;
@@ -195,3 +196,19 @@ export interface GraphExplainEnvelope {
     diagnostics: GraphDiagnosticV1[];
 }
 export declare function explainGraphNode(options: TargetGraphOptions): Promise<GraphExplainEnvelope>;
+export interface GraphCypherEnvelope {
+    schemaVersion: 1;
+    action: "cypher";
+    root: string;
+    tier: GraphCypherTier;
+    columns: string[];
+    rows: ReadonlyArray<Record<string, unknown>>;
+    truncated: boolean;
+    diagnostics: GraphDiagnosticV1[];
+}
+export interface GraphCypherOptions extends GraphOperationBase {
+    query: string;
+    params?: Record<string, CypherParam>;
+    preference?: GraphCypherTier | "auto";
+}
+export declare function cypherGraph(options: GraphCypherOptions): Promise<GraphCypherEnvelope>;

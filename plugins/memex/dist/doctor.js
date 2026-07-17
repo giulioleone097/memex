@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { defaultVendorRoot, verifyAllVendorAssets } from "./embedder.js";
 import { MemexError } from "./errors.js";
+import { ladybugWasmAvailable } from "./ladybug-wasm.js";
+import { ladybugNativeAvailable } from "./ladybug-native.js";
 import { TOMBSTONE_FILE_NAME } from "./migrate.js";
 import { legacyStorageRoot } from "./paths.js";
 import { containsSensitive } from "./redact.js";
@@ -22,6 +24,7 @@ export const DOCTOR_CHECK_IDS = [
     "retention",
     "secret-leakage",
     "vendor-assets",
+    "graph-cypher",
     "legacy-storage",
 ];
 const execFileAsync = promisify(execFile);
@@ -46,6 +49,7 @@ export async function runDoctor(options) {
             checkRetention(options.location),
             checkSecretLeakage(options.location),
             checkVendorAssets(options.vendorRoot ?? defaultVendorRoot()),
+            checkGraphCypher(options.vendorRoot ?? defaultVendorRoot()),
             checkLegacyStorage(options.homeDir),
         ])),
     ];
@@ -220,6 +224,22 @@ async function checkVendorAssets(vendorRoot) {
         const reason = error instanceof MemexError ? error.message : "Vendor asset verification failed unexpectedly.";
         return fail("vendor-assets", `${reason} Vector search/ask will be unavailable and write/graph build will proceed with embedding skipped until the vendored model assets are restored.`);
     }
+}
+// Reports the active graph Cypher tier. Native (opt-in @ladybugdb/core) is
+// preferred; the vendored wasm tier is the self-sufficient default. Pure-only
+// (no Cypher) is a "warning": query/context/impact still work on the pure-TS
+// port, but the `graph cypher` surface is unavailable until the vendored wasm
+// assets are restored.
+async function checkGraphCypher(vendorRoot) {
+    const native = ladybugNativeAvailable();
+    const wasm = await ladybugWasmAvailable(vendorRoot);
+    if (native) {
+        return pass("graph-cypher", `Cypher tier: native (@ladybugdb/core) active${wasm ? "; vendored wasm available as fallback" : ""}.`);
+    }
+    if (wasm) {
+        return pass("graph-cypher", "Cypher tier: vendored wasm active (install @ladybugdb/core to enable the native turbo tier).");
+    }
+    return warning("graph-cypher", "Cypher tier: pure only — `graph cypher` is unavailable because the vendored LadybugDB wasm assets are missing or corrupt.");
 }
 // Reports "warning", not "fail": an un-migrated legacy root does not break
 // any current operation (the runtime never reads or writes `~/.openwiki`

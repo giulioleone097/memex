@@ -3,6 +3,7 @@ import { TextDecoder } from "node:util";
 
 import { MEMEX_OPERATIONS, dispatch, type MemexOperation } from "./adapter.js";
 import { MAX_ENVELOPE_BYTES } from "./contracts.js";
+import { shutdownLadybugWasm } from "./ladybug-wasm.js";
 
 const CURRENT_PROTOCOL = "2025-11-25";
 const SUPPORTED_PROTOCOLS = new Set([CURRENT_PROTOCOL, "2025-06-18"]);
@@ -38,7 +39,7 @@ const tools: readonly ToolDefinition[] = [
   tool("doctor", "Run local runtime diagnostics.", commonMode({ root }, []), [true, false, false, false]),
   tool("schedule", "Set, list, or remove local schedule intent.", scheduleSchema(), [false, true, true, false]),
   tool("purge", "Purge selected local Memex data.", commonMode({ root, scope: { type: "string", enum: ["raw", "schedules", "personal-wiki", "all"] } }, ["scope"]), [false, true, true, false]),
-  tool("graph", "Build or query the native bounded code graph.", graphSchema(), [false, true, true, false]),
+  tool("graph", "Build, query, or run read-only Cypher (action: cypher) over the native bounded code graph via the LadybugDB tier.", graphSchema(), [false, true, true, false]),
   tool("migrate", "Migrate a legacy storage root from the plugin's prior distribution to the current data root, if present.", object({}, []), [false, true, true, false]),
 ];
 
@@ -75,6 +76,7 @@ function graphSchema(): JsonRecord {
       object({ action: { const: "explain" }, root, target: { type: "string", minLength: 1 }, limit }, ["action", "root", "target"]),
       object({ action: { const: "communities" }, root, limit }, ["action", "root"]),
       object({ action: { const: "report" }, root }, ["action", "root"]),
+      object({ action: { const: "cypher" }, root, query: { type: "string", minLength: 1 }, params: { type: "object", additionalProperties: true }, preference: { type: "string", enum: ["auto", "native", "wasm", "pure"] }, limit }, ["action", "root", "query"]),
     ],
   };
 }
@@ -230,6 +232,9 @@ stdin.on("end", () => {
     const line = decodeFrame();
     if (line !== undefined) queue = queue.then(() => handle(line));
   }
+  // Terminate the LadybugDB wasm worker (if a Cypher call started it) after the
+  // queue drains, so the server process exits cleanly when stdin closes.
+  queue = queue.then(() => shutdownLadybugWasm()).catch(() => undefined);
 });
 
 function decodeFrame(): string | undefined {

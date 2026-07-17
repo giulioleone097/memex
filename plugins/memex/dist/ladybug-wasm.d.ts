@@ -24,5 +24,11 @@ export declare function openWasmTier(graph: {
     nodes: readonly GraphNodeV1[];
     edges: readonly GraphEdgeV1[];
 }, databasePath?: string): Promise<CypherTierResolution>;
+/**
+ * Reports whether the vendored wasm Cypher tier is usable, verifying the two
+ * integrity-critical files without loading the module (no worker is spawned) —
+ * safe for the doctor check.
+ */
+export declare function ladybugWasmAvailable(vendorRoot?: string): Promise<boolean>;
 /** Terminates the wasm module's worker thread. Idempotent; safe if never opened. */
 export declare function shutdownLadybugWasm(): Promise<void>;

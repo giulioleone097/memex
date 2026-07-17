@@ -51,7 +51,7 @@ export const MEMEX_OPERATIONS = [
 
 export type MemexOperation = (typeof MEMEX_OPERATIONS)[number];
 type InputRecord = Record<string, unknown>;
-type GraphAction = "build" | "status" | "query" | "context" | "impact" | "changes" | "map" | "path" | "explain" | "communities" | "report";
+type GraphAction = "build" | "status" | "query" | "context" | "impact" | "changes" | "map" | "path" | "explain" | "communities" | "report" | "cypher";
 
 const GRAPH_ACTIONS: readonly GraphAction[] = [
   "build",
@@ -65,6 +65,7 @@ const GRAPH_ACTIONS: readonly GraphAction[] = [
   "explain",
   "communities",
   "report",
+  "cypher",
 ];
 const MODES: readonly WikiMode[] = ["code", "personal"];
 const WIKI_COMMANDS: readonly WikiCommand[] = ["init", "update", "ingest"];
@@ -337,10 +338,25 @@ async function dispatchGraph(input: InputRecord): Promise<unknown> {
     return publicGraphResult("communities", root, await graph.listGraphCommunities({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
   }
   if (action === "report") {
-    assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to", "limit"]);
+    assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to", "limit", "params", "preference"]);
     return publicGraphResult("report", root, await graph.renderGraphReport({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT }), limit);
   }
-  assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to"]);
+  if (action === "cypher") {
+    assertAbsent(input, ["force", "target", "base", "direction", "depth", "from", "to"]);
+    if (query === undefined) throw invalid("Graph cypher requires query.");
+    const params = has(input, "params") ? readRecord(input.params, "Graph cypher params must be an object.") : undefined;
+    const preference = has(input, "preference") ? readEnum(input, "preference", ["auto", "native", "wasm", "pure"] as const) : undefined;
+    return publicGraphResult("cypher", root, await graph.cypherGraph({
+      root,
+      homeDir: os.homedir(),
+      responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT,
+      query,
+      ...(limit === undefined ? {} : { limit }),
+      ...(params === undefined ? {} : { params }),
+      ...(preference === undefined ? {} : { preference }),
+    }), limit);
+  }
+  assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to", "params", "preference"]);
   return publicGraphResult("map", root, await graph.getArchitectureMap({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
 }
 
@@ -392,6 +408,8 @@ function graphPublicFields(action: GraphAction): readonly string[] {
       return ["schemaVersion", "action", "root", "communities", "stale", "generation", "generatedAt", "truncated"];
     case "report":
       return ["schemaVersion", "action", "root", "page", "written", "communityCount", "godNodeCount", "surprisingConnectionCount", "ambiguousEdgeCount", "coverageRatio", "generation", "generatedAt"];
+    case "cypher":
+      return ["schemaVersion", "action", "root", "tier", "columns", "rows", "truncated", "diagnostics"];
   }
 }
 
@@ -407,6 +425,7 @@ interface GraphOperations {
   explainGraphNode(options: InputRecord): Promise<unknown>;
   listGraphCommunities(options: InputRecord): Promise<unknown>;
   renderGraphReport(options: InputRecord): Promise<unknown>;
+  cypherGraph(options: InputRecord): Promise<unknown>;
 }
 
 async function loadGraph(): Promise<GraphOperations> {
@@ -424,6 +443,7 @@ async function loadGraph(): Promise<GraphOperations> {
     explainGraphNode: readAsyncFunction(module, "explainGraphNode"),
     listGraphCommunities: readAsyncFunction(module, "listGraphCommunities"),
     renderGraphReport: readAsyncFunction(module, "renderGraphReport"),
+    cypherGraph: readAsyncFunction(module, "cypherGraph"),
   };
 }
 

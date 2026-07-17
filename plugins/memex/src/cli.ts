@@ -11,6 +11,7 @@ import {
 } from "./adapter.js";
 import { MAX_ENVELOPE_BYTES } from "./contracts.js";
 import { MemexError } from "./errors.js";
+import { shutdownLadybugWasm } from "./ladybug-wasm.js";
 
 type FlagValue = string | true;
 type ParsedFlags = Record<string, FlagValue>;
@@ -45,6 +46,7 @@ const VALUE_FLAGS = new Set([
   "depth",
   "from",
   "to",
+  "preference",
 ]);
 const BOOLEAN_FLAGS = new Set(["stdin", "force", "json", "pretty", "enabled", "disabled"]);
 
@@ -260,5 +262,8 @@ async function runProcessCli(argv: readonly string[]): Promise<number> {
 
 if (import.meta.url === new URL(process.argv[1] ?? "", "file:").href) {
   const exitCode = await runProcessCli(process.argv.slice(2));
+  // Terminate the LadybugDB wasm worker thread (if a Cypher command started it)
+  // so this one-shot process exits cleanly. No-op when the wasm tier was unused.
+  await shutdownLadybugWasm();
   process.exitCode = exitCode;
 }

@@ -116,6 +116,20 @@ export async function openWasmTier(graph, databasePath) {
     const engine = new LadybugCypherEngine(connection);
     return { cypher: engine, close: () => engine.close() };
 }
+/**
+ * Reports whether the vendored wasm Cypher tier is usable, verifying the two
+ * integrity-critical files without loading the module (no worker is spawned) —
+ * safe for the doctor check.
+ */
+export async function ladybugWasmAvailable(vendorRoot = defaultVendorRoot()) {
+    try {
+        await verifyCriticalAssets(vendorRoot);
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
 /** Terminates the wasm module's worker thread. Idempotent; safe if never opened. */
 export async function shutdownLadybugWasm() {
     const mod = cachedModule;

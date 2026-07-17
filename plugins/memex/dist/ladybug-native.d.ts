@@ -6,6 +6,11 @@ export interface OpenNativeOptions {
     databasePath?: string;
 }
 /**
+ * Reports whether the optional native `@ladybugdb/core` dependency is resolvable
+ * for this platform, without loading the addon. Safe for the doctor check.
+ */
+export declare function ladybugNativeAvailable(): boolean;
+/**
  * Opens a native LadybugConnection, or returns null when `@ladybugdb/core` is
  * not installed / has no prebuilt binary for this platform (the expected,
  * non-exceptional case for the opt-in tier).

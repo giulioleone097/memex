@@ -239,6 +239,7 @@ describe("schedule, doctor, and purge operations", () => {
     assert.equal(result.checks.some((check) => check.id === "retention"), true);
     assert.equal(result.checks.some((check) => check.id === "secret-leakage"), true);
     assert.equal(result.checks.some((check) => check.id === "legacy-storage"), true);
+    assert.equal(result.checks.some((check) => check.id === "graph-cypher" && check.message.toLowerCase().includes("cypher tier")), true);
     assert.deepEqual(after, before);
   });
 
