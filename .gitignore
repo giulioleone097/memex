@@ -6,6 +6,11 @@
 # vendored asset, not an installed dependency.
 !plugins/memex/vendor/ort/node_modules/
 !plugins/memex/vendor/ort/node_modules/**
+# Exception: vendored, pure-JS runtime dependencies of the LadybugDB wasm
+# nodejs variant (threads, uuid, tiny-worker + transitives). Checked-in
+# vendored assets so the wasm graph tier resolves them with no install step.
+!plugins/memex/vendor/ladybug-wasm/nodejs/node_modules/
+!plugins/memex/vendor/ladybug-wasm/nodejs/node_modules/**
 **/coverage/
 .DS_Store
 **/.DS_Store

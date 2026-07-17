@@ -6,7 +6,7 @@
   "upstream": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.18.2.tgz",
   "entry": "nodejs/index.js",
   "generatedAt": "2026-07-17",
-  "totalBytes": 13896268,
+  "totalBytes": 13896658,
   "files": [
     {
       "path": "nodejs/README.md",
@@ -57,6 +57,11 @@
       "path": "nodejs/lbug_wasm_worker.js",
       "sha256": "3e1e879a7345c0de80f248cb9e1e5cb98da466354c6b35bdbfbc14364cfad871",
       "bytes": 16479
+    },
+    {
+      "path": "nodejs/package.json",
+      "sha256": "0d2e7f9f9d6d47089a5b4115bf2db62950c45d4eda14684020595567f8f41534",
+      "bytes": 390
     },
     {
       "path": "nodejs/prepared_statement.js",

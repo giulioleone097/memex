@@ -1,0 +1,6 @@
+{
+  "name": "ladybug-wasm-nodejs-vendored",
+  "private": true,
+  "type": "commonjs",
+  "comment": "Marks the vendored @ladybugdb/wasm-core nodejs variant as CommonJS. The upstream package root is CommonJS (no type field); this file restores that module system for the copied nodejs/ subtree, which would otherwise inherit type:module from plugins/memex/package.json and break require()."
+}
