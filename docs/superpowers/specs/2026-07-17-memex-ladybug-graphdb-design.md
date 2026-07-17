@@ -1,7 +1,28 @@
 # Memex — LadybugDB Graph Backend
 
-Status: Approved (2026-07-17)
+Status: Approved (2026-07-17), refined 2026-07-17 (evidence-driven — see below)
 Supersedes/extends: `2026-07-14-memex-prd.md` (§11 soft-degrade, §16 vendor facts), `2026-07-14-memex-master-plan.md`
+
+## 0. Design refinement (2026-07-17, evidence-driven)
+
+Reading the real code showed `GraphIndexPort` is an 11-method, tuned interface
+(`node`, `edge`, `rankedCandidates` with text scoring, `inbound`, `outbound`,
+`changedPathSeeds`, `architectureSummary`, `allNodes`, `allEdges`, `metrics`,
+`status`; `GraphAdjacency = {edges, total, truncated}`). Fully re-implementing
+all of it in Cypher would be high-risk (behavioural divergence in ranking /
+architecture summarisation) for no benefit — the pure-TS port is already
+on-disk-bucketed, fast, and covered by 308 tests.
+
+**Refinement:** LadybugDB is an **additive `CypherCapable` layer**, not a
+replacement of the tuned port. The pure-TS `GraphIndexPort` stays the untouched
+backbone for all existing consumers; LadybugDB adds the real Cypher power
+surface (arbitrary declarative queries, the actual "massima potenza" ask),
+synced from the same shards and exposed via CLI + MCP. The native/wasm/pure
+"tiers" describe **Cypher availability**: native and wasm provide Cypher; pure
+means no Cypher (port-only) and degrades honestly. This is the smallest strong
+change that delivers the goal with zero regression risk. All other sections
+below hold; where they say "GraphIndexPort backend / drop-in replacement", read
+"additive CypherCapable layer selected by tier".
 
 ## 1. Goal
 

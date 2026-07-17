@@ -8,6 +8,34 @@
 
 **Tech Stack:** TypeScript (ESM, NodeNext), Node ≥20, `@ladybugdb/wasm-core@0.18.2` (MIT, vendored), `@ladybugdb/core@0.18.2` (MIT, optionalDependency), node:test + tsx, existing vendor chunk/assemble machinery in `plugins/memex/src/embedder.ts`.
 
+## Design refinement (2026-07-17, evidence-driven — governs all tasks)
+
+The real `GraphIndexPort` has 11 tuned methods (`node`, `edge`,
+`rankedCandidates`, `inbound`, `outbound`, `changedPathSeeds`,
+`architectureSummary`, `allNodes`, `allEdges`, `metrics`, `status`) and
+`GraphAdjacency = { edges: GraphEdgeV1[]; total: number; truncated: boolean }`
+(no `nodes` array). LadybugDB is therefore an **additive `CypherCapable` layer**,
+NOT a `GraphIndexPort` replacement:
+
+- The pure-TS `GraphIndexPort` is untouched and remains the backbone.
+- `LadybugCypherEngine implements CypherCapable` (only) wraps a `LadybugConnection`.
+- The resolver is `openGraphCypher(opts)` returning
+  `GraphCypherSelection { tier: "native"|"wasm"|"pure"; reason: string; cypher?: CypherCapable; close(): Promise<void> }`.
+  `pure` ⇒ `cypher === undefined` (honest degrade); native/wasm provide Cypher.
+- Sync source is `readStoredGraph(storage): Promise<CodeGraphV1>` (graph-store.ts:156).
+- Task 1 produces `openGraphCypher`/`resolveBackendPreference` (not a full-port
+  `openGraphBackend`). Task 3 produces `LadybugCypherEngine` (CypherCapable) +
+  `syncGraphToLadybug`, NOT a `LadybugGraphBackend implements GraphIndexPort`.
+  The `rowToNode`/`rowToEdge` mappers in Task 2 remain (used by the equivalence
+  oracle and by result shaping), but the port-method mapping code is dropped.
+- Equivalence oracle (Task 6): a Cypher query's answer must match the pure-TS
+  port on overlapping questions (e.g. outbound neighbours of a node, node count).
+
+Where later task bodies still say `openGraphBackend` / `LadybugGraphBackend` /
+`GraphBackendSelection`, read `openGraphCypher` / `LadybugCypherEngine` /
+`GraphCypherSelection`. The DDL/sync/guard/vendor/wasm/native/CLI/MCP steps are
+unchanged.
+
 ## Global Constraints
 
 - Node ≥ 20; ESM with NodeNext resolution; no `any`, no unsafe casts, strict TS.
