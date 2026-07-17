@@ -15,7 +15,8 @@
 - Source of truth = content-addressed shards. The Ladybug DB is derived and rebuildable; deleting it must be safe.
 - Soft-degrade downward only: a higher tier that fails to load/sync falls through to the next; graph reads/writes never block.
 - Pure-TS path and all existing `GraphIndexPort` consumers stay behaviourally unchanged; all pre-existing tests (308 at HEAD `b3ba58a`) stay green.
-- Vendored files committed as chunks < 95 MB each (GitHub 100 MB hard limit); Git LFS is NOT used.
+- Vendored WASM is the `nodejs/` variant only (~13 MB; largest file 12.9 MB) — committed as-is, NO chunking needed; Git LFS is NOT used. (Spike-verified: full package is 95.7 MB across all variants, but only nodejs is required.)
+- The Ladybug WASM module spawns a Node worker thread that keeps the event loop alive; the wasm connection's `close()` MUST call the module-level `close()` export so one-shot CLI commands exit cleanly. INT64 values return as boxed `Number` (`Number(v)` coerces).
 - Package pins: `@ladybugdb/wasm-core` and `@ladybugdb/core` at exactly `0.18.2`.
 - Ladybug WASM nodejs API (verified 2026-07-17): `require("@ladybugdb/wasm-core/nodejs")` → `{ Database, Connection, init, getVersion }`; `new Database(path?)` (`":memory:"`/`""` = in-memory, disk path = persistent via NODEFS); `new Connection(db)`; `await conn.query(cypher): Promise<QueryResult>`; `await conn.prepare(cypher)` + `await conn.execute(ps, params)`; `QueryResult.getAllObjects(): Promise<Record<string,unknown>[]>`, `.getColumnNames(): Promise<string[]>`, `.getNumTuples()`, `.isSuccess()`, `.getErrorMessage()`, `.close?`; `await conn.close()`.
 - Reuse before new code: MANIFEST/part-assembly logic lives in `embedder.ts` (`loadVendorManifest`, `verifyVendorEntry`, `VendorManifestEntry`, `VendorManifestPart`); extend, do not duplicate.
@@ -509,17 +510,19 @@ git commit -m "feat(memex): add LadybugGraphBackend mapping GraphIndexPort to Cy
 
 - [ ] **Step 1: Acquire and place the vendored nodejs assets (mechanical, run once)**
 
-Run (network + disk; heavy — expect minutes on this filesystem):
-```bash
-cd "$(mktemp -d)" && npm pack @ladybugdb/wasm-core@0.18.2 >/dev/null 2>&1 && tar xzf ladybugdb-wasm-core-0.18.2.tgz
-# Inspect the nodejs variant layout and sizes:
-ls -lAR package/nodejs
-```
-Copy ONLY the `nodejs/` variant files (index.js, the `.wasm`, and any worker/glue js it requires) into `plugins/memex/vendor/ladybug-wasm/`. For every copied file ≥ 90 MB, split into `<name>.partNN` chunks of ≤ 90 MB (`split -b 90m`) and DO NOT commit the whole file. Record SHAs.
+The spike already installed the package at
+`<scratchpad>/lbug-spike/node_modules/@ladybugdb/wasm-core/`. Copy the ENTIRE
+`nodejs/` directory tree (index.js, connection.js, database.js, dispatcher.js,
+fs.js, prepared_statement.js, query_result.js, lbug_wasm_worker.js, the `lbug/`
+subdir with `lbug_wasm.js` + `lbug_wasm.wasm`, and the `sync/` subdir) into
+`plugins/memex/vendor/ladybug-wasm/nodejs/`. Total ~13 MB; **no file exceeds
+13 MB so NO chunking is required — commit every file as-is.** If the scratchpad
+copy is gone, re-fetch: `cd "$(mktemp -d)" && npm pack @ladybugdb/wasm-core@0.18.2 && tar xzf *.tgz && cp -R package/nodejs <repo>/plugins/memex/vendor/ladybug-wasm/nodejs`.
+Compute SHA-256 for each file for the MANIFEST group.
 
 - [ ] **Step 2: Write the MANIFEST group + failing assemble test**
 
-Add to `plugins/memex/vendor/MANIFEST.json` `assets` array a group whose entries reuse the existing `VendorManifestEntry` shape: unsplit files carry `path` + `sha256` + `bytes`; the split `.wasm` carries `path` (logical), `assembledSha256`, and `parts: [{path, sha256, bytes}]`. Use snake_case `assembled_sha256` to match the real manifest parser.
+Add to `plugins/memex/vendor/MANIFEST.json` `assets` array a `ladybug-wasm` group whose entries reuse the existing `VendorManifestEntry` shape: every ladybug file is unsplit, so each entry carries `path` (relative to the group root, e.g. `nodejs/index.js`, `nodejs/lbug/lbug_wasm.wasm`) + `sha256` + `bytes`. (The `parts`/`assembled_sha256` split path stays supported by the shared helper for future large assets but is unused here.)
 
 ```js
 // plugins/memex/tests/integration/ladybug-vendor.test.mjs
@@ -657,13 +660,13 @@ export async function openLadybugWasmConnection(opts: OpenWasmOptions = {}): Pro
         const [columns, rows] = await Promise.all([raw.getColumnNames(), raw.getAllObjects()]);
         return { columns, rows, truncated: false };
       },
-      async close() { await conn.close(); },
+      async close() { await conn.close(); if (mod.close) await mod.close(); },
     };
   } catch { return null; }
 }
 ```
 
-Note: confirm against the vendored `nodejs/index.js` whether raw string queries with parameters use `prepare`+`execute` (as typed) or a `query(cypher, params)` overload; adjust the `params ? ... : ...` branch accordingly. Keep the `null`-on-failure contract intact.
+Note (spike-verified): raw string queries use `conn.query(cypher)`; parameterized queries use `conn.prepare(cypher)` then `conn.execute(ps, params)`, and list params (`$rows` with an array of objects) work. `close()` MUST call the module-level `mod.close()` after `conn.close()` — otherwise the worker thread keeps the Node process alive and one-shot CLI commands hang. Add `close?(): Promise<void>` to the `LbugModule` type. For the persistent MCP server, keep the backend open for the process lifetime and close it on shutdown (do not close per query). Keep the `null`-on-failure contract intact.
 
 - [ ] **Step 4: Build and run test to verify it passes**
 

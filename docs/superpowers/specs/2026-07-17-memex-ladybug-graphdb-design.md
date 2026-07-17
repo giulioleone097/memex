@@ -21,13 +21,20 @@ LadybugDB (`@ladybugdb/*` v0.18.2, MIT, published 2026-07-15) is the current,
 maintained successor to KuzuDB (`kuzu`/`kuzu-wasm` are now deprecated —
 "Package no longer supported").
 
-- **`@ladybugdb/wasm-core@0.18.2`** — MIT, unpacked 95.7 MB, `installScript:false`
-  (no compile). Ships a dedicated Node.js entrypoint:
+- **`@ladybugdb/wasm-core@0.18.2`** — MIT, `installScript:false` (no compile).
+  Ships a dedicated Node.js entrypoint:
   `exports["./nodejs"].require = "./nodejs/index.js"`; built/tested on Node
-  20.20.0. README explicitly documents a `nodejs` example. Three WASM variants
-  (default single-thread using Emscripten FS; multithread; etc.). Node
-  persistence via Emscripten NODEFS (browser variants use in-memory / IDBFS).
-  Runtime deps: `threads`, `tiny-worker`, `uuid`.
+  20.20.0. The full package (95.7 MB unpacked) bundles browser default +
+  multithreaded + nodejs + sync variants; **only the `nodejs/` variant is needed
+  and it is ~13 MB** (largest file `nodejs/lbug/lbug_wasm.wasm` = 12.9 MB).
+  Node persistence via Emscripten NODEFS. Runtime deps: `threads`,
+  `tiny-worker`, `uuid`. The Node worker thread stays alive until the module-
+  level `close()` export is called — required for clean process exit.
+  **Spike-verified 2026-07-17 (Node 25, darwin-arm64): 12/12 checks green** —
+  require+init, in-memory DB, DDL, `getAllObjects`/`getColumnNames`,
+  `prepare`+`execute` scalar params, `UNWIND $rows` list params, edge
+  UNWIND+MATCH insert, and on-disk persistence (write→close→reopen→read).
+  INT64 values return as boxed `Number` objects (`Number(v)` coerces correctly).
 - **`@ladybugdb/core@0.18.2`** — MIT, JS wrapper (0.1 MB) + prebuilt native
   binaries via `optionalDependencies`: `@ladybugdb/core-{linux-x64, linux-arm64,
   darwin-x64, darwin-arm64, win32-x64}`. Platform packages are prebuilt
@@ -128,18 +135,22 @@ addressed IDs, so results are directly comparable to the pure-TS backend.
 
 ## 8. Vendoring (WASM — self-sufficient)
 
-- Vendor the **`nodejs`** variant assets (`.wasm` + JS glue) of
-  `@ladybugdb/wasm-core@0.18.2` under `plugins/memex/assets/ladybug-wasm/`,
-  **chunked <95 MB with an `assembled_sha256` manifest**, reusing the **existing
-  embedding/tokenizer chunk-and-assemble machinery** (no new packaging code).
-- Loader assembles chunks into a cached file under `~/.memex` and instantiates
-  via the `./nodejs` entrypoint.
+- Vendor **only the `nodejs/` variant** directory tree of
+  `@ladybugdb/wasm-core@0.18.2` under `plugins/memex/vendor/ladybug-wasm/nodejs/`
+  (~13 MB total; largest file 12.9 MB). **No chunking is required** — every file
+  is under the GitHub 50 MB warning threshold, so files are committed as-is.
+- On first use, the loader **materializes the vendored dir into a cache under
+  `~/.memex/cache/ladybug-wasm/<version>/` and verifies SHA-256 per file**
+  (protects against iCloud dataless eviction of the in-repo copy and against
+  corruption), then `require()`s `<cache>/nodejs/index.js`. The MANIFEST group
+  reuses the existing `VendorManifestEntry` shape (`path` + `sha256` + `bytes`);
+  the general part-assembly machinery in `embedder.ts` is extracted to a shared
+  helper but the ladybug entries are unsplit.
 - Record pinned version, file list, and SHAs in **PRD §16 (vendor facts)**, same
   governance as the embedding model. MIT attribution recorded.
 - **Git LFS is deliberately NOT used** — it needs a network remote, which would
   break the self-sufficient clone and is inconsistent with the already-committed
-  embedding assets. Large files are committed as chunks (<95 MB each, under the
-  GitHub 100 MB hard limit).
+  embedding assets.
 
 ## 9. Native tier (opt-in turbo)
 
@@ -166,9 +177,10 @@ addressed IDs, so results are directly comparable to the pure-TS backend.
 
 ## 11. Risks & limitations (stated honestly)
 
-- **Repo weight**: +~96 MB vendored WASM (→ ~238 MB vendored total with
-  embeddings). Heavier clone; in the iCloud-synced dev environment this adds I/O
-  pressure (known env issue). Mitigation: chunked files, not one 90 MB blob.
+- **Repo weight**: +~13 MB vendored WASM (nodejs variant only; → ~155 MB
+  vendored total with embeddings). The earlier ~96 MB estimate was the full
+  multi-variant package; the spike showed only the ~13 MB nodejs variant is
+  needed. Cache materialization mitigates iCloud dataless-eviction stalls.
 - WASM single-thread default variant is slower than native — acceptable, native
   is the opt-in turbo.
 - Ladybug is pre-1.0 (0.x): API churn risk. Pinned version + vendoring insulate
