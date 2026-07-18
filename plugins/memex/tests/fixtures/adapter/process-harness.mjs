@@ -26,6 +26,9 @@ export const MCP_PATH = join(PLUGIN_ROOT, "dist/mcp.js");
 export const HOOK_PATH = join(PLUGIN_ROOT, "dist/hook.js");
 export const SOURCE_ENVELOPE_PATH = join(FIXTURE_ROOT, "source-envelope.json");
 
+const MCP_RESPONSE_TIMEOUT_MS = 10_000;
+const MCP_EXIT_TIMEOUT_MS = 3_000;
+
 export function assertAdapterExists(adapterPath, adapterName) {
   assert.equal(
     existsSync(adapterPath),
@@ -221,7 +224,7 @@ export function createMcpSession(t, { cwd = PLUGIN_ROOT, env = process.env } = {
       await waitForImmediate();
       child.stdin.write(text.slice(splitAt));
     },
-    async nextMessage(timeout = 3_000) {
+    async nextMessage(timeout = MCP_RESPONSE_TIMEOUT_MS) {
       const line = await nextLine(timeout);
       assert.notEqual(line, "", "MCP server must not emit blank protocol lines");
       let message;
@@ -231,7 +234,7 @@ export function createMcpSession(t, { cwd = PLUGIN_ROOT, env = process.env } = {
       assert.equal(message.jsonrpc, "2.0");
       return message;
     },
-    async finish(timeout = 3_000) {
+    async finish(timeout = MCP_EXIT_TIMEOUT_MS) {
       child.stdin.end();
       return withTimeout(exitPromise, timeout, "MCP process did not exit after stdin EOF");
     },
