@@ -158,7 +158,6 @@ Run focused packaging validation from the marketplace repository root:
 
 ```bash
 node --test plugins/memex/tests/packaging/structure.test.mjs
-python3 "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/memex
 claude plugin validate --strict plugins/memex
 claude plugin validate --strict .
 ```

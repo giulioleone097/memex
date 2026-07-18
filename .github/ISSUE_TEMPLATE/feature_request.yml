@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a focused improvement to Memex.
+title: "[Feature]: "
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete agent-memory problem should Memex solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior, not an implementation preference.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Privacy and compatibility boundaries
+      description: Note any local-first, provenance, Codex, Claude Code, CLI, or MCP constraints.

@@ -8,6 +8,9 @@ import { readState } from "./state.js";
 const execFileAsync = promisify(execFile);
 const MAX_INPUT_BYTES = 128 * 1024;
 const MAX_CONTEXT_CHARS = 300;
+// SessionStart runs while the host and other plugin checks may be cold-starting.
+// Keep discovery bounded, but allow Git to respond under normal machine load.
+const GIT_ROOT_TIMEOUT_MS = 3_000;
 const FRESH_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface HookInput {
@@ -54,7 +57,7 @@ async function nearestGitRoot(cwd: string): Promise<string | undefined> {
   try {
     const { stdout: result } = await execFileAsync("git", ["-C", cwd, "rev-parse", "--show-toplevel"], {
       encoding: "utf8",
-      timeout: 1_000,
+      timeout: GIT_ROOT_TIMEOUT_MS,
       maxBuffer: 64 * 1024,
       windowsHide: true,
     });

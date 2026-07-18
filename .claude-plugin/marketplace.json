@@ -16,9 +16,13 @@
       "license": "MIT",
       "category": "Productivity",
       "tags": [
+        "memex",
         "wiki",
         "documentation",
-        "knowledge-base"
+        "knowledge-base",
+        "knowledge-graph",
+        "local-first",
+        "agents"
       ],
       "strict": true
     }

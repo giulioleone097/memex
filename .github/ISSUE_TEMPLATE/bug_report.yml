@@ -1,0 +1,45 @@
+name: Bug report
+description: Report reproducible incorrect behavior in Memex.
+title: "[Bug]: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include secrets, private source code, or personal Memex data. Report security issues privately according to SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Memex version
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Host
+      options:
+        - Codex
+        - Claude Code
+        - CLI or MCP directly
+        - Both Codex and Claude Code
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest safe sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Include doctor/status output only after removing private paths and data.

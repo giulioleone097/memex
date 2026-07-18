@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic credentials used only to prove redaction and packaging checks"
+regexTarget = "match"
+regexes = [
+  '''sk-test-memex-secret-1234567890''',
+  '''sk-1234567890abcdefghijklmnopqrstuv''',
+  '''xoxb-123456789012-123456789012-abcdefghijklmnop''',
+  '''xoxb-123456789012-123456789012-doctorsecretvalue''',
+]

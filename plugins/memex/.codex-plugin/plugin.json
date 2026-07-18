@@ -11,7 +11,11 @@
     "wiki",
     "documentation",
     "knowledge-base",
-    "agents"
+    "knowledge-graph",
+    "local-first",
+    "agents",
+    "codex",
+    "claude-code"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",

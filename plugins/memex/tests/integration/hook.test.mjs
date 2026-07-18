@@ -34,7 +34,6 @@ function runHook({ cwd, home, source = "startup", extra = {} }) {
   return runNodeAdapter(HOOK_PATH, [], {
     env: makeIsolatedEnvironment(home),
     input: `${JSON.stringify(input)}\n`,
-    timeout: 5_000,
   });
 }
 
