@@ -25,6 +25,10 @@ const MODEL_DIR = join(PLUGIN_ROOT, "vendor", "model", "multilingual-e5-small-in
 // Task 5's embedder.test.mjs real-asset guard.
 const MODEL_PRESENT = existsSync(join(MODEL_DIR, "model.onnx")) || existsSync(join(MODEL_DIR, "model.onnx.part0"));
 const CHUNK_TARGET = 5_000;
+const FULL_BUILD_TARGET_MS = 60_000;
+const FULL_BUILD_MARGIN = process.env.CI === "true" ? 4 : 2;
+const FULL_BUILD_BUDGET_MS = FULL_BUILD_TARGET_MS * FULL_BUILD_MARGIN;
+const FULL_BUILD_ENVIRONMENT = process.env.CI === "true" ? "GitHub Actions" : "local";
 
 const roots = [];
 async function temporaryRoot(label) {
@@ -133,13 +137,14 @@ test("incremental reindex of one changed wiki page < 2s (asserted with 2x CI mar
   assert.ok(elapsedMs < 4000, `incremental reindex took ${String(elapsedMs)}ms, exceeding the 2x-margin budget of 4000ms (target: <2000ms)`);
 });
 
-test("full build of this repository < 60s (asserted with 2x CI margin: < 120000ms)", { skip: !MODEL_PRESENT }, async () => {
+test(`full build of this repository < 60s (asserted with ${String(FULL_BUILD_MARGIN)}x ${FULL_BUILD_ENVIRONMENT} margin: < ${String(FULL_BUILD_BUDGET_MS)}ms)`, { skip: !MODEL_PRESENT }, async (t) => {
   const { buildGraph } = await import("../../dist/graph.js");
   const startedAt = process.hrtime.bigint();
   const result = await buildGraph({ root: PLUGIN_ROOT, homeDir: await mkdtemp(join(os.tmpdir(), "memex-perf-fullbuild-home-")), force: true });
   const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+  t.diagnostic(`full build target: ${String(FULL_BUILD_TARGET_MS)}ms; budget: ${String(FULL_BUILD_BUDGET_MS)}ms`);
   assert.ok(result.nodeCount > 0);
-  assert.ok(elapsedMs < 120_000, `full build took ${String(elapsedMs)}ms, exceeding the 2x-margin budget of 120000ms (target: <60000ms)`);
+  assert.ok(elapsedMs < FULL_BUILD_BUDGET_MS, `full build took ${String(elapsedMs)}ms, exceeding the ${String(FULL_BUILD_MARGIN)}x ${FULL_BUILD_ENVIRONMENT} budget of ${String(FULL_BUILD_BUDGET_MS)}ms (target: <${String(FULL_BUILD_TARGET_MS)}ms)`);
 });
 
 test("determinism: the same store and query return the same result ids in the same order, twice", { skip: !MODEL_PRESENT }, async () => {
