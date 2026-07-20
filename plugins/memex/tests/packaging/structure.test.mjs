@@ -92,12 +92,13 @@ function assertRelativePluginPath(value, label) {
 
 describe("native plugin packaging", () => {
   test("Codex and Claude manifests expose the same plugin identity without speculative components", async () => {
+    const packageMetadata = await readJson(resolve(PLUGIN_ROOT, "package.json"));
     const codex = await readJson(resolve(PLUGIN_ROOT, ".codex-plugin/plugin.json"));
     const claude = await readJson(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"));
 
     for (const manifest of [codex, claude]) {
       assert.equal(manifest.name, "memex");
-      assert.equal(manifest.version, "0.2.0");
+      assert.equal(manifest.version, packageMetadata.version);
       assert.equal(manifest.author?.name, "Giulio Leone");
       assert.equal(manifest.license, "MIT");
       assert.equal(manifest.skills, "./skills/");
@@ -140,6 +141,7 @@ describe("native plugin packaging", () => {
   });
 
   test("repository marketplaces use host-native local source shapes", async () => {
+    const packageMetadata = await readJson(resolve(PLUGIN_ROOT, "package.json"));
     const codex = await readJson(
       resolve(REPOSITORY_ROOT, ".agents/plugins/marketplace.json"),
     );
@@ -155,9 +157,10 @@ describe("native plugin packaging", () => {
       source: "local",
       path: "./plugins/memex",
     });
+    assert.equal(codex.plugins[0].version, packageMetadata.version);
     assert.equal(claude.plugins[0].source, "./plugins/memex");
     assert.equal(claude.owner?.name, "Giulio Leone");
-    assert.equal(claude.plugins[0].version, "0.2.0");
+    assert.equal(claude.plugins[0].version, packageMetadata.version);
     assert.equal(claude.plugins[0].strict, true);
   });
 
@@ -344,8 +347,8 @@ describe("native plugin packaging", () => {
       ...SKILL_NAMES.map((name) => `skills/${name}/SKILL.md`),
     ];
     for (const directory of ["src", "dist"]) {
-      const entries = await readdir(resolve(PLUGIN_ROOT, directory), { recursive: true });
-      files.push(...entries.map((entry) => join(directory, entry)));
+      const entries = await walkFiles(resolve(PLUGIN_ROOT, directory));
+      files.push(...entries.map((entry) => relative(PLUGIN_ROOT, entry)));
     }
 
     for (const file of files) {
