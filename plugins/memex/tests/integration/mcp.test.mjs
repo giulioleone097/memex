@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import {
+  mkdirSync,
+  readFileSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { before, describe, test } from "node:test";
 import { setImmediate as waitForImmediate } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
 
 import {
   MCP_PATH,
@@ -18,11 +25,16 @@ const CURRENT_PROTOCOL = "2025-11-25";
 const SUPPORTED_PROTOCOLS = [CURRENT_PROTOCOL, "2025-06-18"];
 const MAX_ENVELOPE_BYTES = 2 * 1024 * 1024;
 const MAX_MCP_FRAME_BYTES = MAX_ENVELOPE_BYTES + 64 * 1024;
+const DASHBOARD_RESOURCE_URI = "ui://memex/dashboard.html";
+const PLUGIN_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPOSITORY_ROOT = resolve(PLUGIN_ROOT, "../..");
+const PACKAGE_VERSION = JSON.parse(readFileSync(join(PLUGIN_ROOT, "package.json"), "utf8")).version;
 const TOOL_NAMES = [
   "init",
   "status",
   "context",
   "search",
+  "retrieval_health",
   "ask",
   "read",
   "write",
@@ -35,14 +47,16 @@ const TOOL_NAMES = [
   "purge",
   "graph",
   "migrate",
+  "render_memex_dashboard",
 ];
 
 const STABLE_ANNOTATIONS = {
   init: [false, false, true, false],
   status: [true, false, false, false],
   context: [true, false, false, false],
-  search: [true, false, false, false],
-  ask: [true, false, false, false],
+  search: [false, false, true, false],
+  retrieval_health: [true, false, true, false],
+  ask: [false, false, true, false],
   read: [true, false, false, false],
   write: [false, true, true, false],
   enrich: [false, true, true, false],
@@ -68,9 +82,12 @@ async function initialize(session, id, protocolVersion = CURRENT_PROTOCOL) {
   const response = await session.nextMessage();
   assert.equal(response.id, id);
   assert.equal(response.error, undefined);
-  assert.deepEqual(response.result.capabilities, { tools: { listChanged: false } });
+  assert.deepEqual(response.result.capabilities, {
+    tools: { listChanged: false },
+    resources: { subscribe: false, listChanged: false },
+  });
   assert.equal(typeof response.result.serverInfo.name, "string");
-  assert.equal(typeof response.result.serverInfo.version, "string");
+  assert.equal(response.result.serverInfo.version, PACKAGE_VERSION);
   return response;
 }
 
@@ -101,7 +118,9 @@ function parseToolEnvelope(response, isError) {
     response.result.content.map(({ type }) => type),
     ["text"],
   );
-  return JSON.parse(response.result.content[0].text);
+  const envelope = JSON.parse(response.result.content[0].text);
+  assert.equal(Object.hasOwn(response.result, "structuredContent"), false);
+  return envelope;
 }
 
 function assertClosedStructuralObjects(schema, location = "inputSchema") {
@@ -152,22 +171,22 @@ function graphBranches(tool) {
 function assertGraphSchema(tool) {
   const branches = graphBranches(tool);
   const expected = {
-    build: { properties: ["action", "force", "root"], required: ["action", "root"] },
-    status: { properties: ["action", "root"], required: ["action", "root"] },
-    query: { properties: ["action", "limit", "query", "root"], required: ["action", "query", "root"] },
-    context: { properties: ["action", "limit", "root", "target"], required: ["action", "root", "target"] },
+    build: { properties: ["action", "force", "mode", "root"], required: ["action", "root"] },
+    status: { properties: ["action", "mode", "root"], required: ["action", "root"] },
+    query: { properties: ["action", "limit", "mode", "query", "root"], required: ["action", "query", "root"] },
+    context: { properties: ["action", "limit", "mode", "root", "target"], required: ["action", "root", "target"] },
     impact: {
-      properties: ["action", "depth", "direction", "limit", "root", "target"],
+      properties: ["action", "depth", "direction", "limit", "mode", "root", "target"],
       required: ["action", "root", "target"],
     },
-    changes: { properties: ["action", "base", "limit", "root"], required: ["action", "root"] },
-    map: { properties: ["action", "limit", "root"], required: ["action", "root"] },
-    path: { properties: ["action", "from", "limit", "root", "to"], required: ["action", "root", "from", "to"] },
-    explain: { properties: ["action", "limit", "root", "target"], required: ["action", "root", "target"] },
-    communities: { properties: ["action", "limit", "root"], required: ["action", "root"] },
-    report: { properties: ["action", "root"], required: ["action", "root"] },
+    changes: { properties: ["action", "base", "limit", "mode", "root"], required: ["action", "root"] },
+    map: { properties: ["action", "limit", "mode", "root"], required: ["action", "root"] },
+    path: { properties: ["action", "from", "limit", "mode", "root", "to"], required: ["action", "root", "from", "to"] },
+    explain: { properties: ["action", "limit", "mode", "root", "target"], required: ["action", "root", "target"] },
+    communities: { properties: ["action", "limit", "mode", "root"], required: ["action", "root"] },
+    report: { properties: ["action", "mode", "root"], required: ["action", "root"] },
     cypher: {
-      properties: ["action", "limit", "params", "preference", "query", "root"],
+      properties: ["action", "limit", "mode", "params", "preference", "query", "root"],
       required: ["action", "query", "root"],
     },
   };
@@ -177,6 +196,7 @@ function assertGraphSchema(tool) {
     const branch = branches.get(action);
     assert.equal(branch.type, "object");
     assert.equal(branch.additionalProperties, false);
+    assert.deepEqual(branch.properties.mode, { const: "code" });
     assert.deepEqual(Object.keys(branch.properties).sort(), contract.properties);
     assert.deepEqual([...branch.required].sort(), [...contract.required].sort());
   }
@@ -205,6 +225,23 @@ function assertGraphCommon(data, action, root) {
 }
 
 describe("MCP stdio adapter", () => {
+  test("MCP version matches package, host manifests, and marketplace", async (t) => {
+    const versions = [
+      JSON.parse(readFileSync(join(PLUGIN_ROOT, ".codex-plugin/plugin.json"), "utf8")).version,
+      JSON.parse(readFileSync(join(PLUGIN_ROOT, ".claude-plugin/plugin.json"), "utf8")).version,
+      JSON.parse(readFileSync(join(REPOSITORY_ROOT, ".agents/plugins/marketplace.json"), "utf8")).plugins[0].version,
+      JSON.parse(readFileSync(join(REPOSITORY_ROOT, ".claude-plugin/marketplace.json"), "utf8")).plugins[0].version,
+    ];
+    assert.deepEqual(versions, Array(4).fill(PACKAGE_VERSION));
+
+    const sandbox = makeTemporaryRoot(t, "mcp version parity");
+    const home = join(sandbox, "home");
+    mkdirSync(home);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    await initialize(session, 1);
+    assert.equal((await session.finish()).code, 0);
+  });
+
   test("MCP negotiates both supported protocol versions and falls back to the current version", async (t) => {
     const sandbox = makeTemporaryRoot(t, "mcp versions");
     const home = join(sandbox, "home");
@@ -242,6 +279,61 @@ describe("MCP stdio adapter", () => {
     const ready = await request(session, 5, "tools/list", {});
     assert.equal(ready.error, undefined);
     assert.ok(Array.isArray(ready.result.tools));
+    assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP accepts standard optional params for ping and paginated list requests", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp optional params");
+    const home = join(sandbox, "home");
+    mkdirSync(home);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+
+    assert.deepEqual((await request(session, 1, "ping")).result, {});
+    assert.deepEqual((await request(session, 2, "ping", null)).result, {});
+    assert.deepEqual((await request(session, 3, "ping", {})).result, {});
+    assert.deepEqual((await request(session, 4, "ping", {
+      _meta: { progressToken: "ping", "example.com/trace": { id: 1 } },
+    })).result, {});
+    await makeReady(session, 5);
+
+    for (const [id, params] of [
+      [6, undefined],
+      [7, null],
+      [8, { cursor: "opaque-cursor", _meta: { progressToken: "tools", extension: true } }],
+    ]) {
+      const listedTools = await request(session, id, "tools/list", params);
+      assert.equal(listedTools.error, undefined);
+      assert.deepEqual(listedTools.result.tools.map(({ name }) => name), TOOL_NAMES);
+    }
+    session.sendRaw('{"jsonrpc":"2.0","id":9,"method":"tools/list","params":{"_meta":{"progressToken":0}}}\n');
+    const codexToolsList = await session.nextMessage();
+    assert.equal(codexToolsList.id, 9);
+    assert.equal(codexToolsList.error, undefined);
+    assert.deepEqual(codexToolsList.result.tools.map(({ name }) => name), TOOL_NAMES);
+
+    for (const [id, params] of [
+      [10, undefined],
+      [11, null],
+      [12, { cursor: "opaque-cursor", _meta: { progressToken: 1, extension: true } }],
+    ]) {
+      const listedResources = await request(session, id, "resources/list", params);
+      assert.equal(listedResources.error, undefined);
+      assert.equal(listedResources.result.resources.length, 1);
+      assert.equal(listedResources.result.resources[0].uri, DASHBOARD_RESOURCE_URI);
+    }
+
+    const invalidRequests = [
+      [13, "ping", { cursor: "not-allowed" }],
+      [14, "ping", { _meta: null }],
+      [15, "tools/list", { cursor: 42 }],
+      [16, "tools/list", { _meta: [] }],
+      [17, "tools/list", { _meta: { progressToken: false } }],
+      [18, "resources/list", { unknown: true }],
+    ];
+    for (const [id, method, params] of invalidRequests) {
+      const invalidParams = await request(session, id, method, params);
+      assert.equal(invalidParams.error.code, -32602);
+    }
     assert.equal((await session.finish()).code, 0);
   });
 
@@ -287,7 +379,7 @@ describe("MCP stdio adapter", () => {
     }
   });
 
-  test("MCP tools/list exposes exactly sixteen closed schemas and native graph action branches", async (t) => {
+  test("MCP tools/list exposes exactly eighteen closed schemas and native graph action branches", async (t) => {
     const sandbox = makeTemporaryRoot(t, "mcp inventory");
     const home = join(sandbox, "home");
     mkdirSync(home);
@@ -317,6 +409,35 @@ describe("MCP stdio adapter", () => {
       }
     }
     assertGraphSchema(tools.find(({ name }) => name === "graph"));
+    const ask = tools.find(({ name }) => name === "ask");
+    assert.deepEqual(ask.inputSchema.properties.mode, { const: "code" });
+    assert.deepEqual([...ask.inputSchema.required].sort(), ["mode", "query", "root"]);
+    const check = tools.find(({ name }) => name === "check");
+    assert.deepEqual(check.inputSchema.properties.phase.enum, ["preflight", "strict"]);
+    assert.equal(check.inputSchema.required.includes("phase"), false);
+    const finalize = tools.find(({ name }) => name === "finalize");
+    const expectedTimestampSchema = {
+      type: "string",
+      format: "date-time",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+    };
+    assert.deepEqual(finalize.inputSchema.properties.startedAt, expectedTimestampSchema);
+    assert.deepEqual(finalize.inputSchema.properties.completedAt, expectedTimestampSchema);
+    assert.equal(finalize.inputSchema.required.includes("startedAt"), true);
+    assert.equal(finalize.inputSchema.required.includes("completedAt"), false);
+
+    const canonicalTimestamp = new RegExp(expectedTimestampSchema.pattern, "u");
+    assert.equal(canonicalTimestamp.test("2026-07-18T12:34:56.789Z"), true);
+    for (const invalidTimestamp of [
+      "2026-07-18T12:34:56Z",
+      "2026-07-18T12:34:56.78Z",
+      "2026-07-18T12:34:56.7890Z",
+      "2026-07-18T12:34:56.789+00:00",
+      "2026-07-18 12:34:56.789Z",
+      "2026-07-18T12:34:56.789z",
+    ]) {
+      assert.equal(canonicalTimestamp.test(invalidTimestamp), false, invalidTimestamp);
+    }
     assert.equal((await session.finish()).code, 0);
   });
 
@@ -342,6 +463,87 @@ describe("MCP stdio adapter", () => {
     const failure = parseToolEnvelope(missing, true);
     assert.equal(failure.ok, false);
     assert.equal(failure.error.code, "NOT_FOUND");
+    assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP status, check, and doctor leave legacy v1 state byte- and mtime-identical", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp legacy state readers");
+    const home = join(sandbox, "home");
+    const repository = join(sandbox, "repository");
+    mkdirSync(home);
+    initializeGitRepository(repository);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    await makeReady(session);
+    const initialized = parseToolEnvelope(await request(session, 2, "tools/call", {
+      name: "init",
+      arguments: { mode: "code", root: repository },
+    }), false).data;
+    const statePath = join(repository, "memex", ".last-update.json");
+    writeFileSync(statePath, `${JSON.stringify(initialized.state, null, 2)}\n`, "utf8");
+    const fixedMtime = new Date("2026-07-11T09:00:00.000Z");
+    utimesSync(statePath, fixedMtime, fixedMtime);
+    const expectedBytes = readFileSync(statePath);
+    const expectedMtime = statSync(statePath).mtimeMs;
+
+    let id = 3;
+    for (const operation of ["status", "check", "doctor"]) {
+      const envelope = parseToolEnvelope(await request(session, id, "tools/call", {
+        name: operation,
+        arguments: { mode: "code", root: repository },
+      }), false);
+      assert.equal(envelope.ok, true);
+      assert.deepEqual(readFileSync(statePath), expectedBytes, operation);
+      assert.equal(statSync(statePath).mtimeMs, expectedMtime, operation);
+      id += 1;
+    }
+
+    parseToolEnvelope(await request(session, id, "tools/call", {
+      name: "init",
+      arguments: { mode: "code", root: repository },
+    }), false);
+    assert.equal(JSON.parse(readFileSync(statePath, "utf8")).schemaVersion, 2);
+    assert.equal((await session.finish()).code, 0);
+  });
+
+  test("MCP finalize returns INVALID_ARGUMENT for timestamps on unchanged and changed content", async (t) => {
+    const sandbox = makeTemporaryRoot(t, "mcp finalize timestamps");
+    const home = join(sandbox, "home");
+    const repository = join(sandbox, "repository");
+    mkdirSync(home);
+    initializeGitRepository(repository);
+    const session = createMcpSession(t, { env: makeIsolatedEnvironment(home) });
+    await makeReady(session);
+    parseToolEnvelope(await request(session, 2, "tools/call", {
+      name: "init",
+      arguments: { mode: "code", root: repository },
+    }), false);
+    const base = {
+      mode: "code",
+      root: repository,
+      command: "update",
+      runId: "invalid-time",
+      summary: "Invalid time",
+    };
+    const unchanged = parseToolEnvelope(await request(session, 3, "tools/call", {
+      name: "finalize",
+      arguments: {
+        ...base,
+        startedAt: "2026-07-11T10:20:30Z",
+        completedAt: "2026-07-11T10:20:30.000Z",
+      },
+    }), true);
+    assert.equal(unchanged.error.code, "INVALID_ARGUMENT");
+
+    writeFileSync(join(repository, "memex", "architecture.md"), "# Architecture\nChanged.\n", "utf8");
+    const changed = parseToolEnvelope(await request(session, 4, "tools/call", {
+      name: "finalize",
+      arguments: {
+        ...base,
+        startedAt: "2026-07-11T10:20:30.000Z",
+        completedAt: "2026-02-30T10:20:30.000Z",
+      },
+    }), true);
+    assert.equal(changed.error.code, "INVALID_ARGUMENT");
     assert.equal((await session.finish()).code, 0);
   });
 
@@ -425,10 +627,13 @@ describe("MCP stdio adapter", () => {
     assert.ok(Array.isArray(impact.edges));
     assert.ok(Array.isArray(impact.diagnostics));
 
-    for (const [id, argumentsValue] of [
-      [4, { root: repository, action: "query", limit: 101, query: "add" }],
-      [5, { root: repository, action: "status", query: "add" }],
-      [6, { root: repository, action: "status", provider: "gitnexus" }],
+    for (const [id, argumentsValue, expectedMessage] of [
+      [4, { root: repository, action: "query", limit: 101, query: "add" }, "Argument limit must be an integer between 1 and 100."],
+      [5, { root: repository, action: "status", query: "add" }, "Argument query is incompatible with this operation."],
+      [6, { root: repository, action: "status", provider: "gitnexus" }, "Unknown argument: provider."],
+      [14, { root: repository, action: "cypher", query: "RETURN 1", params: [] }, "Graph cypher params must be an object."],
+      [15, { root: repository, action: "cypher", query: "RETURN 1", preference: "remote" }, "Argument preference is invalid."],
+      [16, { root: repository, action: "status", preference: "auto" }, "Argument preference is incompatible with this operation."],
     ]) {
       const invalid = await request(session, id, "tools/call", {
         name: "graph",
@@ -437,6 +642,7 @@ describe("MCP stdio adapter", () => {
       const failure = parseToolEnvelope(invalid, true);
       assert.equal(failure.ok, false);
       assert.equal(failure.error.code, "INVALID_ARGUMENT");
+      assert.equal(failure.error.message, expectedMessage);
     }
 
     const reportResponse = await request(session, 7, "tools/call", {

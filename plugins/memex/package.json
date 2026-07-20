@@ -1,27 +1,20 @@
 {
   "name": "memex-dual-host-plugin",
-  "version": "0.2.0",
+  "version": "0.3.3",
   "private": true,
   "description": "Dependency-free deterministic runtime shared by the Memex Codex and Claude Code plugin surfaces: a self-sufficient agentic wiki with a unified code, concept, and wiki graph plus local embeddings.",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/giulioleone097/memex.git",
-    "directory": "plugins/memex"
-  },
-  "homepage": "https://github.com/giulioleone097/memex#readme",
-  "bugs": {
-    "url": "https://github.com/giulioleone097/memex/issues"
-  },
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-ui.mjs",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "lint": "eslint .",
-    "test": "node tests/run-all.mjs",
+    "test": "node --test",
+    "memexbench": "node scripts/memexbench.mjs",
+    "memexbench:check": "node scripts/memexbench.mjs --check",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

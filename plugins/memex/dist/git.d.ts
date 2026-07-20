@@ -16,4 +16,11 @@ export interface GitContext {
     changedPaths: string[];
     previousHead?: string;
 }
+/**
+ * Resolve a host-independent logical repository scope from the canonical
+ * origin remote.  Missing, local-path, or malformed remotes fail closed to an
+ * explicit unscoped value; the absolute workspace path is never an identity
+ * input or a returned value.
+ */
+export declare function resolveRepositoryScope(root: string): Promise<string>;
 export declare function collectGitContext(root: string, previousHead?: string): Promise<GitContext>;

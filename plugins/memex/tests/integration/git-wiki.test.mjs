@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { afterEach, describe, test } from "node:test";
 
 import { MemexError } from "../../dist/errors.js";
-import { collectGitContext } from "../../dist/git.js";
+import { collectGitContext, resolveRepositoryScope } from "../../dist/git.js";
 import { checkWiki, initializeWiki } from "../../dist/wiki.js";
 
 const execFileAsync = promisify(execFile);
@@ -92,6 +92,27 @@ describe("git-wiki", () => {
       assert.equal(error.message.includes(repository), false);
       return true;
     });
+  });
+
+  test("git-wiki: resolves a credential-free canonical repository scope across HTTPS and SSH origins", async () => {
+    const repository = await makeTemporaryRoot("git-scope");
+    await runGit(repository, ["init", "--initial-branch=main"]);
+    await runGit(repository, ["remote", "add", "origin", "https://alice:top-secret@GitHub.COM/Org/Repo.git?access_token=query-secret"]);
+
+    const httpsScope = await resolveRepositoryScope(repository);
+    assert.equal(httpsScope, "git:github.com/Org/Repo");
+    assert.equal(httpsScope.includes("alice"), false);
+    assert.equal(httpsScope.includes("top-secret"), false);
+    assert.equal(httpsScope.includes("query-secret"), false);
+
+    await runGit(repository, ["remote", "set-url", "origin", "git@github.com:Org/Repo.git"]);
+    assert.equal(await resolveRepositoryScope(repository), httpsScope, "HTTPS and SCP-style SSH origins must share one scope");
+
+    await runGit(repository, ["remote", "set-url", "origin", "ssh://git@GITHUB.com/Org/Repo.git?ignored=ssh-secret"]);
+    assert.equal(await resolveRepositoryScope(repository), httpsScope, "SSH URL origins must share the sanitized HTTPS scope");
+
+    await runGit(repository, ["remote", "remove", "origin"]);
+    assert.equal(await resolveRepositoryScope(repository), "memex:unscoped", "missing origin must not fall back to the workspace path");
   });
 
   test("git-wiki: succeeds with an explicit no-commits marker on an unborn-HEAD repository (DF-H1)", async () => {

@@ -6,9 +6,9 @@ import { type WikiMode, type WikiCommand } from "./contracts.js";
 import { runDoctor } from "./doctor.js";
 import { defaultVendorRoot, loadEmbedder, loadVendorManifest } from "./embedder.js";
 import { MemexError, type MemexJsonFailure, type MemexJsonResult } from "./errors.js";
-import { collectGitContext } from "./git.js";
+import { collectGitContext, resolveRepositoryScope } from "./git.js";
 import { getGraphStatus } from "./graph.js";
-import { openGraphIndex, probeGraphStorage, resolveGraphStorage } from "./graph-store.js";
+import { openGraphIndex, probeGraphStorage } from "./graph-store.js";
 import type { GraphIndexPort } from "./graph-index.js";
 import { openLexicalIndex } from "./lexical-index.js";
 import { runMigration } from "./migrate.js";
@@ -22,6 +22,7 @@ import { listSchedules, removeSchedule, setSchedule } from "./schedules.js";
 import { ingestSource, listSources, purgeData } from "./sources.js";
 import { readState } from "./state.js";
 import { openVectorStore } from "./vector-store.js";
+import { readRetrievalHealth } from "./retrieval-health.js";
 import {
   checkWiki,
   finalizeRun,
@@ -35,6 +36,7 @@ export const MEMEX_OPERATIONS = [
   "status",
   "context",
   "search",
+  "retrieval_health",
   "ask",
   "read",
   "write",
@@ -98,6 +100,12 @@ async function openLexicalAndVector(location: WikiLocation, wantsVector: boolean
   return { lexicalIndex, embedder, vectorStore };
 }
 
+async function retrievalProjectScope(location: WikiLocation): Promise<string> {
+  return location.mode === "code" && location.workspaceRoot !== undefined
+    ? resolveRepositoryScope(location.workspaceRoot)
+    : "memex:personal";
+}
+
 // `search`'s graph signal is one of three optional inputs — absent when not
 // yet built, degrading the implicit default rather than erroring.
 async function openGraphIndexIfAvailable(location: WikiLocation): Promise<GraphIndexPort | undefined> {
@@ -105,8 +113,9 @@ async function openGraphIndexIfAvailable(location: WikiLocation): Promise<GraphI
   const homeDir = hostHomeDir();
   const status = await getGraphStatus({ root: location.workspaceRoot, homeDir });
   if (!status.available) return undefined;
-  const resolved = await resolveGraphStorage(location.workspaceRoot, homeDir);
-  return openGraphIndex(resolved.storage);
+  const probed = await probeGraphStorage(location.workspaceRoot, homeDir);
+  if (!probed.initialized) return undefined;
+  return openGraphIndex(probed.storage);
 }
 
 export interface DispatchRequest {
@@ -161,14 +170,21 @@ async function dispatchUnsafe(request: DispatchRequest): Promise<unknown> {
       const explicit = requested !== undefined;
       const wantsVector = explicit ? requested.includes("vector") : true;
       const wantsGraph = explicit ? requested.includes("graph") : true;
-      const lexicalAndVector = await openLexicalAndVector(location, wantsVector);
+      const [lexicalAndVector, projectScope] = await Promise.all([
+        openLexicalAndVector(location, wantsVector),
+        retrievalProjectScope(location),
+      ]);
       const graphIndex = wantsGraph ? await openGraphIndexIfAvailable(location) : undefined;
       if (explicit && requested.includes("graph") && graphIndex === undefined) {
         throw new MemexError("NOT_INITIALIZED", "Graph retrieval requires a built graph index; run graph build first.");
       }
       const signals: RetrievalSignal[] = explicit ? requested : ["lexical", "vector", ...(graphIndex === undefined ? [] : (["graph"] as const))];
-      const ports: RetrievalPorts = { ...lexicalAndVector, ...(graphIndex === undefined ? {} : { graphIndex }) };
+      const ports: RetrievalPorts = { ...lexicalAndVector, evidenceIdentity: { projectScope }, ...(graphIndex === undefined ? {} : { graphIndex }) };
       return retrieveSearch({ text: readRequiredString(input, "query"), limit: readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20, signals }, ports);
+    }
+    case "retrieval_health": {
+      const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
+      return readRetrievalHealth(location, { projectScope: await retrievalProjectScope(location) });
     }
     case "ask": {
       const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "query", "limit", "signals"]));
@@ -178,17 +194,19 @@ async function dispatchUnsafe(request: DispatchRequest): Promise<unknown> {
       const requested = readOptionalSignals(input);
       const wantsVector = requested === undefined ? true : requested.includes("vector");
       const homeDir = hostHomeDir();
-      const [lexicalAndVector, status] = await Promise.all([
+      const [lexicalAndVector, status, projectScope] = await Promise.all([
         openLexicalAndVector(location, wantsVector),
         getGraphStatus({ root: location.workspaceRoot, homeDir }),
+        retrievalProjectScope(location),
       ]);
       if (!status.available) throw new MemexError("NOT_INITIALIZED", "Ask requires a built graph index; run graph build first.");
-      const resolved = await resolveGraphStorage(location.workspaceRoot, homeDir);
-      const graphIndex = await openGraphIndex(resolved.storage);
+      const probed = await probeGraphStorage(location.workspaceRoot, homeDir);
+      if (!probed.initialized) throw new MemexError("NOT_INITIALIZED", "Ask requires a built graph index; run graph build first.");
+      const graphIndex = await openGraphIndex(probed.storage);
       return retrieveAsk(
         readRequiredString(input, "query"),
         readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20,
-        { ...lexicalAndVector, graphIndex },
+        { ...lexicalAndVector, graphIndex, evidenceIdentity: { projectScope } },
         { stale: !status.fresh },
         requested,
       );
@@ -363,8 +381,7 @@ async function dispatchGraph(input: InputRecord): Promise<unknown> {
 async function tryOpenGraphIndexForCheck(workspaceRoot: string, homeDir: string): Promise<GraphIndexPort | undefined> {
   const probe = await probeGraphStorage(workspaceRoot, homeDir);
   if (!probe.initialized) return undefined;
-  const resolved = await resolveGraphStorage(workspaceRoot, homeDir);
-  return openGraphIndex(resolved.storage);
+  return openGraphIndex(probe.storage);
 }
 
 function publicGraphResult(action: GraphAction, requestedRoot: string, value: unknown, limit: number | undefined): InputRecord {

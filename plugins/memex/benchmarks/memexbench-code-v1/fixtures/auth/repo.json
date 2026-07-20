@@ -1,0 +1,24 @@
+{
+  "schema": "memexbench.fixture.v1",
+  "fixtureId": "auth",
+  "name": "Aurora Auth",
+  "revision": "auth-2025-06-18",
+  "documents": [
+    {"id":"auth-token","category":"exact","citation":"src/token.ts#L14-L23","title":"Token verifier","text":"verifyAccessToken validates the signed access token and returns the subject claims.","kind":"code","updatedAt":"2025-06-18T10:00:00Z","nodeId":"auth.verifyAccessToken"},
+    {"id":"auth-policy","category":"semantic","citation":"src/policy.ts#L1-L12","title":"Authorization policy","text":"Authorization policy combines tenant scope, role grants, and token claims before allowing an action.","kind":"code","updatedAt":"2025-05-19T10:00:00Z","nodeId":"auth.policy"},
+    {"id":"auth-impact","category":"impact","citation":"docs/auth-impact.md#L1-L8","title":"Auth impact map","text":"A token claim change affects the API gateway, session refresh, and audit event projection.","kind":"wiki","updatedAt":"2025-06-02T10:00:00Z","nodeId":"auth.impact"},
+    {"id":"auth-history","category":"temporal","citation":"docs/auth-history.md#L1-L8","title":"Auth history","text":"The June 2025 auth migration moved refresh-token rotation into the gateway and retired the old cookie path.","kind":"wiki","updatedAt":"2025-06-19T10:00:00Z","nodeId":"auth.history","stale":true},
+    {"id":"auth-change","category":"change","citation":"CHANGELOG.md#L11-L16","title":"Auth change","text":"The latest release rejects expired access tokens before role evaluation and emits an audit reason.","kind":"wiki","updatedAt":"2025-06-22T10:00:00Z","nodeId":"auth.change"},
+    {"id":"auth-decision","category":"decision","citation":"decisions/auth.md#L1-L8","title":"Auth decision record","text":"Decision: authorization remains deny-by-default and token verification stays independent from policy evaluation.","kind":"wiki","updatedAt":"2025-06-04T10:00:00Z","nodeId":"auth.decision"},
+    {"id":"auth-global","category":"global","citation":"README.md#L1-L8","title":"Auth repository overview","text":"Aurora Auth is a TypeScript service for signed tokens, tenant-aware authorization, and auditable sessions.","kind":"wiki","updatedAt":"2025-04-02T10:00:00Z","nodeId":"auth.readme"}
+  ],
+  "edges": [
+    {"from":"auth.verifyAccessToken","to":"auth.policy","type":"calls","resolved":true},
+    {"from":"auth.policy","to":"auth.impact","type":"affects","resolved":true},
+    {"from":"auth.impact","to":"auth.history","type":"documents","resolved":true},
+    {"from":"auth.history","to":"auth.change","type":"supersedes","resolved":true},
+    {"from":"auth.change","to":"auth.decision","type":"records","resolved":true},
+    {"from":"auth.decision","to":"auth.unknown","type":"mentions","resolved":false}
+  ],
+  "update": {"id":"auth-update","citation":"src/session.ts#L30-L36","text":"refreshSession rotates the token before persisting the authenticated session.","kind":"code"}
+}

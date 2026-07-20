@@ -1,0 +1,224 @@
+{"id":"q001","fixture":"catalog","split":"train","category":"exact","query":"findProductBySku normalizes input SKU and returns matching product record","topK":5}
+{"id":"q002","fixture":"catalog","split":"test","category":"exact","query":"lookup the catalog product by SKU","topK":5}
+{"id":"q003","fixture":"catalog","split":"train","category":"exact","query":"where is SKU lookup implemented","topK":5}
+{"id":"q004","fixture":"catalog","split":"test","category":"exact","query":"catalog API for product identity","topK":5}
+{"id":"q005","fixture":"catalog","split":"dev","category":"exact","query":"exact function for normalized SKU","topK":5}
+{"id":"q006","fixture":"catalog","split":"test","category":"exact","query":"find the product record by identifier","topK":5}
+{"id":"q007","fixture":"catalog","split":"train","category":"exact","query":"catalog boundary lookup symbol","topK":5}
+{"id":"q008","fixture":"catalog","split":"test","category":"exact","query":"product lookup API","topK":5}
+{"id":"q009","fixture":"catalog","split":"train","category":"semantic","query":"catalog boundary owns product identity and active inventory","topK":5}
+{"id":"q010","fixture":"catalog","split":"dev","category":"semantic","query":"meaning of catalog ownership","topK":5}
+{"id":"q011","fixture":"catalog","split":"train","category":"semantic","query":"where product normalization belongs","topK":5}
+{"id":"q012","fixture":"catalog","split":"test","category":"semantic","query":"inventory boundary architecture","topK":5}
+{"id":"q013","fixture":"catalog","split":"train","category":"semantic","query":"concept behind catalog records","topK":5}
+{"id":"q014","fixture":"catalog","split":"test","category":"semantic","query":"catalog identity and active products","topK":5}
+{"id":"q015","fixture":"catalog","split":"dev","category":"semantic","query":"semantic overview of catalog module","topK":5}
+{"id":"q016","fixture":"catalog","split":"test","category":"semantic","query":"what owns inventory identity","topK":5}
+{"id":"q017","fixture":"catalog","split":"train","category":"impact","query":"changing SKU normalization affects checkout inventory summaries and import adapter","topK":5}
+{"id":"q018","fixture":"catalog","split":"test","category":"impact","query":"what depends on catalog normalization","topK":5}
+{"id":"q019","fixture":"catalog","split":"train","category":"impact","query":"catalog change impact analysis","topK":5}
+{"id":"q020","fixture":"catalog","split":"dev","category":"impact","query":"downstream callers affected by SKU changes","topK":5}
+{"id":"q021","fixture":"catalog","split":"train","category":"impact","query":"impact of product identity change","topK":5}
+{"id":"q022","fixture":"catalog","split":"test","category":"impact","query":"catalog dependencies to update","topK":5}
+{"id":"q023","fixture":"catalog","split":"train","category":"impact","query":"which components consume catalog lookup","topK":5}
+{"id":"q024","fixture":"catalog","split":"test","category":"impact","query":"catalog blast radius","topK":5}
+{"id":"q025","fixture":"catalog","split":"dev","category":"temporal","query":"June 2025 catalog migration retained boundary normalization and removed legacy GPS entries","topK":5}
+{"id":"q026","fixture":"catalog","split":"test","category":"temporal","query":"catalog history around June 2025","topK":5}
+{"id":"q027","fixture":"catalog","split":"train","category":"temporal","query":"what changed in the catalog migration","topK":5}
+{"id":"q028","fixture":"catalog","split":"test","category":"temporal","query":"latest catalog migration timeline","topK":5}
+{"id":"q029","fixture":"catalog","split":"train","category":"temporal","query":"when were legacy GPS entries removed","topK":5}
+{"id":"q030","fixture":"catalog","split":"dev","category":"temporal","query":"historical catalog decision","topK":5}
+{"id":"q031","fixture":"catalog","split":"train","category":"temporal","query":"catalog changes over time","topK":5}
+{"id":"q032","fixture":"catalog","split":"test","category":"temporal","query":"prior catalog release","topK":5}
+{"id":"q033","fixture":"catalog","split":"train","category":"change","query":"version 2 excludes inactive products while preserving stable SKU lookup","topK":5}
+{"id":"q034","fixture":"catalog","split":"test","category":"change","query":"latest catalog release change","topK":5}
+{"id":"q035","fixture":"catalog","split":"dev","category":"change","query":"what changed in inventory summaries","topK":5}
+{"id":"q036","fixture":"catalog","split":"test","category":"change","query":"catalog changelog inactive products","topK":5}
+{"id":"q037","fixture":"catalog","split":"train","category":"change","query":"new behavior for active inventory","topK":5}
+{"id":"q038","fixture":"catalog","split":"test","category":"change","query":"catalog version 2 update","topK":5}
+{"id":"q039","fixture":"catalog","split":"train","category":"change","query":"recent catalog implementation change","topK":5}
+{"id":"q040","fixture":"catalog","split":"dev","category":"change","query":"change from the latest catalog release","topK":5}
+{"id":"q041","fixture":"catalog","split":"train","category":"decision","query":"keep SKU normalization at the public catalog boundary","topK":5}
+{"id":"q042","fixture":"catalog","split":"test","category":"decision","query":"catalog architecture decision about SKU identity","topK":5}
+{"id":"q043","fixture":"catalog","split":"train","category":"decision","query":"why normalize SKU at the boundary","topK":5}
+{"id":"q044","fixture":"catalog","split":"test","category":"decision","query":"catalog decision record","topK":5}
+{"id":"q045","fixture":"catalog","split":"dev","category":"decision","query":"chosen catalog ownership policy","topK":5}
+{"id":"q046","fixture":"catalog","split":"test","category":"decision","query":"decision for every caller identity","topK":5}
+{"id":"q047","fixture":"catalog","split":"train","category":"decision","query":"catalog design rationale","topK":5}
+{"id":"q048","fixture":"catalog","split":"test","category":"decision","query":"approved SKU normalization approach","topK":5}
+{"id":"q049","fixture":"catalog","split":"train","category":"global","query":"Northstar Catalog repository overview","topK":5}
+{"id":"q050","fixture":"catalog","split":"dev","category":"global","query":"what is this catalog repository","topK":5}
+{"id":"q051","fixture":"catalog","split":"train","category":"global","query":"catalog project summary","topK":5}
+{"id":"q052","fixture":"catalog","split":"test","category":"global","query":"repository for product lookup and inventory","topK":5}
+{"id":"q053","fixture":"catalog","split":"train","category":"global","query":"global catalog architecture","topK":5}
+{"id":"q054","fixture":"catalog","split":"test","category":"global","query":"describe Northstar Catalog","topK":5}
+{"id":"q055","fixture":"catalog","split":"dev","category":"global","query":"catalog codebase purpose","topK":5}
+{"id":"q056","fixture":"catalog","split":"test","category":"global","query":"catalog README overview","topK":5}
+{"id":"q057","fixture":"auth","split":"train","category":"exact","query":"verifyAccessToken validates signed access token and returns subject claims","topK":5}
+{"id":"q058","fixture":"auth","split":"test","category":"exact","query":"where is access token verification","topK":5}
+{"id":"q059","fixture":"auth","split":"train","category":"exact","query":"auth token verifier API","topK":5}
+{"id":"q060","fixture":"auth","split":"dev","category":"exact","query":"exact function for signed token","topK":5}
+{"id":"q061","fixture":"auth","split":"train","category":"exact","query":"lookup subject claims from token","topK":5}
+{"id":"q062","fixture":"auth","split":"test","category":"exact","query":"token validation implementation","topK":5}
+{"id":"q063","fixture":"auth","split":"train","category":"exact","query":"verify access token symbol","topK":5}
+{"id":"q064","fixture":"auth","split":"test","category":"exact","query":"auth API token verification","topK":5}
+{"id":"q065","fixture":"auth","split":"dev","category":"semantic","query":"authorization policy combines tenant scope role grants and token claims","topK":5}
+{"id":"q066","fixture":"auth","split":"test","category":"semantic","query":"meaning of auth policy","topK":5}
+{"id":"q067","fixture":"auth","split":"train","category":"semantic","query":"how authorization grants are combined","topK":5}
+{"id":"q068","fixture":"auth","split":"test","category":"semantic","query":"tenant-aware access architecture","topK":5}
+{"id":"q069","fixture":"auth","split":"train","category":"semantic","query":"concept behind deny policy","topK":5}
+{"id":"q070","fixture":"auth","split":"dev","category":"semantic","query":"auth policy and token claims","topK":5}
+{"id":"q071","fixture":"auth","split":"train","category":"semantic","query":"semantic overview of authorization","topK":5}
+{"id":"q072","fixture":"auth","split":"test","category":"semantic","query":"what owns access decisions","topK":5}
+{"id":"q073","fixture":"auth","split":"train","category":"impact","query":"a token claim change affects API gateway session refresh and audit projection","topK":5}
+{"id":"q074","fixture":"auth","split":"test","category":"impact","query":"what depends on auth token claims","topK":5}
+{"id":"q075","fixture":"auth","split":"dev","category":"impact","query":"auth claim change impact","topK":5}
+{"id":"q076","fixture":"auth","split":"test","category":"impact","query":"downstream systems affected by authorization","topK":5}
+{"id":"q077","fixture":"auth","split":"train","category":"impact","query":"impact of token verifier change","topK":5}
+{"id":"q078","fixture":"auth","split":"test","category":"impact","query":"auth blast radius","topK":5}
+{"id":"q079","fixture":"auth","split":"train","category":"impact","query":"which components consume auth claims","topK":5}
+{"id":"q080","fixture":"auth","split":"dev","category":"impact","query":"authorization dependency map","topK":5}
+{"id":"q081","fixture":"auth","split":"train","category":"temporal","query":"June 2025 auth migration moved refresh token rotation into gateway","topK":5}
+{"id":"q082","fixture":"auth","split":"test","category":"temporal","query":"auth migration history June 2025","topK":5}
+{"id":"q083","fixture":"auth","split":"train","category":"temporal","query":"what changed in auth over time","topK":5}
+{"id":"q084","fixture":"auth","split":"test","category":"temporal","query":"when was old cookie path retired","topK":5}
+{"id":"q085","fixture":"auth","split":"dev","category":"temporal","query":"historical authorization migration","topK":5}
+{"id":"q086","fixture":"auth","split":"test","category":"temporal","query":"latest auth timeline","topK":5}
+{"id":"q087","fixture":"auth","split":"train","category":"temporal","query":"prior token release","topK":5}
+{"id":"q088","fixture":"auth","split":"test","category":"temporal","query":"auth changes over time","topK":5}
+{"id":"q089","fixture":"auth","split":"train","category":"change","query":"latest release rejects expired access tokens before role evaluation","topK":5}
+{"id":"q090","fixture":"auth","split":"dev","category":"change","query":"auth changelog expired token behavior","topK":5}
+{"id":"q091","fixture":"auth","split":"train","category":"change","query":"what changed in token handling","topK":5}
+{"id":"q092","fixture":"auth","split":"test","category":"change","query":"recent authorization implementation change","topK":5}
+{"id":"q093","fixture":"auth","split":"train","category":"change","query":"new audit reason for expired tokens","topK":5}
+{"id":"q094","fixture":"auth","split":"test","category":"change","query":"auth release update","topK":5}
+{"id":"q095","fixture":"auth","split":"dev","category":"change","query":"change to access token validation","topK":5}
+{"id":"q096","fixture":"auth","split":"test","category":"change","query":"latest auth version behavior","topK":5}
+{"id":"q097","fixture":"auth","split":"train","category":"decision","query":"authorization remains deny by default and token verification stays independent","topK":5}
+{"id":"q098","fixture":"auth","split":"test","category":"decision","query":"auth architecture decision","topK":5}
+{"id":"q099","fixture":"auth","split":"train","category":"decision","query":"why deny by default","topK":5}
+{"id":"q100","fixture":"auth","split":"dev","category":"decision","query":"token policy design rationale","topK":5}
+{"id":"q101","fixture":"auth","split":"train","category":"decision","query":"chosen authorization boundary","topK":5}
+{"id":"q102","fixture":"auth","split":"test","category":"decision","query":"auth decision record","topK":5}
+{"id":"q103","fixture":"auth","split":"train","category":"decision","query":"approved token verification approach","topK":5}
+{"id":"q104","fixture":"auth","split":"test","category":"decision","query":"decision for policy evaluation","topK":5}
+{"id":"q105","fixture":"auth","split":"dev","category":"global","query":"Aurora Auth repository overview","topK":5}
+{"id":"q106","fixture":"auth","split":"test","category":"global","query":"what is this auth repository","topK":5}
+{"id":"q107","fixture":"auth","split":"train","category":"global","query":"auth service project summary","topK":5}
+{"id":"q108","fixture":"auth","split":"test","category":"global","query":"repository for signed tokens and sessions","topK":5}
+{"id":"q109","fixture":"auth","split":"train","category":"global","query":"global authorization architecture","topK":5}
+{"id":"q110","fixture":"auth","split":"dev","category":"global","query":"describe Aurora Auth","topK":5}
+{"id":"q111","fixture":"auth","split":"train","category":"global","query":"auth codebase purpose","topK":5}
+{"id":"q112","fixture":"auth","split":"test","category":"global","query":"auth README overview","topK":5}
+{"id":"q113","fixture":"payments","split":"train","category":"exact","query":"createCharge validates idempotency key and records pending payment","topK":5}
+{"id":"q114","fixture":"payments","split":"test","category":"exact","query":"where is charge creation implemented","topK":5}
+{"id":"q115","fixture":"payments","split":"dev","category":"exact","query":"payments charge command API","topK":5}
+{"id":"q116","fixture":"payments","split":"test","category":"exact","query":"exact function for idempotent charge","topK":5}
+{"id":"q117","fixture":"payments","split":"train","category":"exact","query":"create a pending payment","topK":5}
+{"id":"q118","fixture":"payments","split":"test","category":"exact","query":"charge boundary symbol","topK":5}
+{"id":"q119","fixture":"payments","split":"train","category":"exact","query":"payment creation implementation","topK":5}
+{"id":"q120","fixture":"payments","split":"dev","category":"exact","query":"payments API idempotency","topK":5}
+{"id":"q121","fixture":"payments","split":"train","category":"semantic","query":"payment ledger is append only record of authorization capture refund settlement","topK":5}
+{"id":"q122","fixture":"payments","split":"test","category":"semantic","query":"meaning of payment ledger","topK":5}
+{"id":"q123","fixture":"payments","split":"train","category":"semantic","query":"payments event architecture","topK":5}
+{"id":"q124","fixture":"payments","split":"test","category":"semantic","query":"concept behind append only ledger","topK":5}
+{"id":"q125","fixture":"payments","split":"dev","category":"semantic","query":"how settlement records work","topK":5}
+{"id":"q126","fixture":"payments","split":"test","category":"semantic","query":"semantic overview of payment history","topK":5}
+{"id":"q127","fixture":"payments","split":"train","category":"semantic","query":"ledger ownership in payments","topK":5}
+{"id":"q128","fixture":"payments","split":"test","category":"semantic","query":"payment event model","topK":5}
+{"id":"q129","fixture":"payments","split":"train","category":"impact","query":"changing capture retries affects charge worker ledger projections merchant notifications","topK":5}
+{"id":"q130","fixture":"payments","split":"dev","category":"impact","query":"what depends on capture retries","topK":5}
+{"id":"q131","fixture":"payments","split":"train","category":"impact","query":"payments retry impact analysis","topK":5}
+{"id":"q132","fixture":"payments","split":"test","category":"impact","query":"downstream payment components affected","topK":5}
+{"id":"q133","fixture":"payments","split":"train","category":"impact","query":"impact of charge worker change","topK":5}
+{"id":"q134","fixture":"payments","split":"test","category":"impact","query":"payments blast radius","topK":5}
+{"id":"q135","fixture":"payments","split":"dev","category":"impact","query":"which consumers use capture outcomes","topK":5}
+{"id":"q136","fixture":"payments","split":"test","category":"impact","query":"payment dependency map","topK":5}
+{"id":"q137","fixture":"payments","split":"train","category":"temporal","query":"June 2025 payments migration introduced idempotent capture retries","topK":5}
+{"id":"q138","fixture":"payments","split":"test","category":"temporal","query":"payments history June 2025","topK":5}
+{"id":"q139","fixture":"payments","split":"train","category":"temporal","query":"what changed in payment migration","topK":5}
+{"id":"q140","fixture":"payments","split":"dev","category":"temporal","query":"when synchronous callback retired","topK":5}
+{"id":"q141","fixture":"payments","split":"train","category":"temporal","query":"historical capture behavior","topK":5}
+{"id":"q142","fixture":"payments","split":"test","category":"temporal","query":"latest payments timeline","topK":5}
+{"id":"q143","fixture":"payments","split":"train","category":"temporal","query":"prior payments release","topK":5}
+{"id":"q144","fixture":"payments","split":"test","category":"temporal","query":"payments changes over time","topK":5}
+{"id":"q145","fixture":"payments","split":"dev","category":"change","query":"latest release stores retry outcomes in ledger and duplicate captures are safe no ops","topK":5}
+{"id":"q146","fixture":"payments","split":"test","category":"change","query":"payments changelog duplicate capture","topK":5}
+{"id":"q147","fixture":"payments","split":"train","category":"change","query":"what changed in retry behavior","topK":5}
+{"id":"q148","fixture":"payments","split":"test","category":"change","query":"recent payments implementation change","topK":5}
+{"id":"q149","fixture":"payments","split":"train","category":"change","query":"new idempotency behavior","topK":5}
+{"id":"q150","fixture":"payments","split":"dev","category":"change","query":"payments release update","topK":5}
+{"id":"q151","fixture":"payments","split":"train","category":"change","query":"change to ledger outcomes","topK":5}
+{"id":"q152","fixture":"payments","split":"test","category":"change","query":"latest payment version","topK":5}
+{"id":"q153","fixture":"payments","split":"train","category":"decision","query":"idempotency is enforced at charge boundary and ledger writes remain append only","topK":5}
+{"id":"q154","fixture":"payments","split":"test","category":"decision","query":"payments architecture decision","topK":5}
+{"id":"q155","fixture":"payments","split":"dev","category":"decision","query":"why enforce idempotency at charge","topK":5}
+{"id":"q156","fixture":"payments","split":"test","category":"decision","query":"payment decision record","topK":5}
+{"id":"q157","fixture":"payments","split":"train","category":"decision","query":"chosen ledger recovery policy","topK":5}
+{"id":"q158","fixture":"payments","split":"test","category":"decision","query":"approved capture design","topK":5}
+{"id":"q159","fixture":"payments","split":"train","category":"decision","query":"decision for duplicate requests","topK":5}
+{"id":"q160","fixture":"payments","split":"dev","category":"decision","query":"payments design rationale","topK":5}
+{"id":"q161","fixture":"payments","split":"train","category":"global","query":"Beacon Payments repository overview","topK":5}
+{"id":"q162","fixture":"payments","split":"test","category":"global","query":"what is this payments repository","topK":5}
+{"id":"q163","fixture":"payments","split":"train","category":"global","query":"payments service project summary","topK":5}
+{"id":"q164","fixture":"payments","split":"test","category":"global","query":"repository for idempotent charges and settlement","topK":5}
+{"id":"q165","fixture":"payments","split":"dev","category":"global","query":"global payments architecture","topK":5}
+{"id":"q166","fixture":"payments","split":"test","category":"global","query":"describe Beacon Payments","topK":5}
+{"id":"q167","fixture":"payments","split":"train","category":"global","query":"payments codebase purpose","topK":5}
+{"id":"q168","fixture":"payments","split":"test","category":"global","query":"payments README overview","topK":5}
+{"id":"q169","fixture":"graph","split":"train","category":"exact","query":"buildGraph scans repository symbols and persists nodes and typed edges","topK":5}
+{"id":"q170","fixture":"graph","split":"dev","category":"exact","query":"where is graph building implemented","topK":5}
+{"id":"q171","fixture":"graph","split":"train","category":"exact","query":"graph builder API","topK":5}
+{"id":"q172","fixture":"graph","split":"test","category":"exact","query":"exact function for repository indexing","topK":5}
+{"id":"q173","fixture":"graph","split":"train","category":"exact","query":"build graph symbol","topK":5}
+{"id":"q174","fixture":"graph","split":"test","category":"exact","query":"typed edge persistence implementation","topK":5}
+{"id":"q175","fixture":"graph","split":"dev","category":"exact","query":"graph build command","topK":5}
+{"id":"q176","fixture":"graph","split":"test","category":"exact","query":"index graph nodes","topK":5}
+{"id":"q177","fixture":"graph","split":"train","category":"semantic","query":"graph retrieval expands lexical and vector seeds through confidence weighted neighbors","topK":5}
+{"id":"q178","fixture":"graph","split":"test","category":"semantic","query":"meaning of graph retrieval","topK":5}
+{"id":"q179","fixture":"graph","split":"train","category":"semantic","query":"how graph proximity ranking works","topK":5}
+{"id":"q180","fixture":"graph","split":"dev","category":"semantic","query":"concept behind confidence weighted traversal","topK":5}
+{"id":"q181","fixture":"graph","split":"train","category":"semantic","query":"retrieval expansion architecture","topK":5}
+{"id":"q182","fixture":"graph","split":"test","category":"semantic","query":"semantic overview of graph search","topK":5}
+{"id":"q183","fixture":"graph","split":"train","category":"semantic","query":"what graph signal contributes","topK":5}
+{"id":"q184","fixture":"graph","split":"test","category":"semantic","query":"graph neighbor ranking","topK":5}
+{"id":"q185","fixture":"graph","split":"dev","category":"impact","query":"changing edge confidence affects impact analysis related context and hybrid ordering","topK":5}
+{"id":"q186","fixture":"graph","split":"test","category":"impact","query":"what depends on edge confidence","topK":5}
+{"id":"q187","fixture":"graph","split":"train","category":"impact","query":"graph change impact analysis","topK":5}
+{"id":"q188","fixture":"graph","split":"test","category":"impact","query":"downstream retrieval components affected","topK":5}
+{"id":"q189","fixture":"graph","split":"train","category":"impact","query":"impact of confidence weights","topK":5}
+{"id":"q190","fixture":"graph","split":"dev","category":"impact","query":"graph blast radius","topK":5}
+{"id":"q191","fixture":"graph","split":"train","category":"impact","query":"which features consume graph edges","topK":5}
+{"id":"q192","fixture":"graph","split":"test","category":"impact","query":"graph dependency map","topK":5}
+{"id":"q193","fixture":"graph","split":"train","category":"temporal","query":"June 2025 graph migration added unresolved edge reporting","topK":5}
+{"id":"q194","fixture":"graph","split":"test","category":"temporal","query":"graph history June 2025","topK":5}
+{"id":"q195","fixture":"graph","split":"dev","category":"temporal","query":"what changed in graph migration","topK":5}
+{"id":"q196","fixture":"graph","split":"test","category":"temporal","query":"when stale manifests were preserved","topK":5}
+{"id":"q197","fixture":"graph","split":"train","category":"temporal","query":"historical graph generation behavior","topK":5}
+{"id":"q198","fixture":"graph","split":"test","category":"temporal","query":"latest graph timeline","topK":5}
+{"id":"q199","fixture":"graph","split":"train","category":"temporal","query":"prior graph release","topK":5}
+{"id":"q200","fixture":"graph","split":"dev","category":"temporal","query":"graph changes over time","topK":5}
+{"id":"q201","fixture":"graph","split":"train","category":"change","query":"latest release makes graph builds incremental and reports stale manifests","topK":5}
+{"id":"q202","fixture":"graph","split":"test","category":"change","query":"graph changelog incremental build","topK":5}
+{"id":"q203","fixture":"graph","split":"train","category":"change","query":"what changed in graph indexing","topK":5}
+{"id":"q204","fixture":"graph","split":"test","category":"change","query":"recent graph implementation change","topK":5}
+{"id":"q205","fixture":"graph","split":"dev","category":"change","query":"new stale report behavior","topK":5}
+{"id":"q206","fixture":"graph","split":"test","category":"change","query":"graph release update","topK":5}
+{"id":"q207","fixture":"graph","split":"train","category":"change","query":"change to graph build","topK":5}
+{"id":"q208","fixture":"graph","split":"test","category":"change","query":"latest graph version","topK":5}
+{"id":"q209","fixture":"graph","split":"train","category":"decision","query":"unresolved edges are surfaced as metrics and never silently treated as resolved","topK":5}
+{"id":"q210","fixture":"graph","split":"dev","category":"decision","query":"graph architecture decision","topK":5}
+{"id":"q211","fixture":"graph","split":"train","category":"decision","query":"why unresolved edges stay visible","topK":5}
+{"id":"q212","fixture":"graph","split":"test","category":"decision","query":"graph decision record","topK":5}
+{"id":"q213","fixture":"graph","split":"train","category":"decision","query":"chosen confidence policy","topK":5}
+{"id":"q214","fixture":"graph","split":"test","category":"decision","query":"approved graph integrity approach","topK":5}
+{"id":"q215","fixture":"graph","split":"dev","category":"decision","query":"decision for missing relationships","topK":5}
+{"id":"q216","fixture":"graph","split":"test","category":"decision","query":"graph design rationale","topK":5}
+{"id":"q217","fixture":"graph","split":"train","category":"global","query":"Orbit Graph Tools repository overview","topK":5}
+{"id":"q218","fixture":"graph","split":"test","category":"global","query":"what is this graph repository","topK":5}
+{"id":"q219","fixture":"graph","split":"train","category":"global","query":"graph tools project summary","topK":5}
+{"id":"q220","fixture":"graph","split":"dev","category":"global","query":"repository for deterministic indexing and traversal","topK":5}
+{"id":"q221","fixture":"graph","split":"train","category":"global","query":"global graph architecture","topK":5}
+{"id":"q222","fixture":"graph","split":"test","category":"global","query":"describe Orbit Graph Tools","topK":5}
+{"id":"q223","fixture":"graph","split":"train","category":"global","query":"graph codebase purpose","topK":5}
+{"id":"q224","fixture":"graph","split":"test","category":"global","query":"graph README overview","topK":5}

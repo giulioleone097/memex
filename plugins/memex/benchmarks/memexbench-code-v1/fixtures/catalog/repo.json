@@ -1,0 +1,24 @@
+{
+  "schema": "memexbench.fixture.v1",
+  "fixtureId": "catalog",
+  "name": "Northstar Catalog",
+  "revision": "catalog-2025-06-18",
+  "documents": [
+    {"id":"catalog-api","category":"exact","citation":"src/catalog.mjs#L10-L18","title":"Catalog lookup API","text":"findProductBySku normalizes an input SKU and returns the matching product record.","kind":"code","updatedAt":"2025-06-18T09:00:00Z","nodeId":"catalog.findProductBySku"},
+    {"id":"catalog-boundary","category":"semantic","citation":"src/catalog.mjs#L1-L9","title":"Catalog boundary","text":"The catalog boundary owns product identity, SKU normalization, and active inventory records.","kind":"code","updatedAt":"2025-05-22T09:00:00Z","nodeId":"catalog.module"},
+    {"id":"catalog-impact","category":"impact","citation":"docs/catalog-impact.md#L1-L8","title":"Catalog impact map","text":"Changing SKU normalization affects checkout lookup, inventory summaries, and the import adapter.","kind":"wiki","updatedAt":"2025-06-01T09:00:00Z","nodeId":"catalog.impact"},
+    {"id":"catalog-history","category":"temporal","citation":"docs/catalog-history.md#L1-L7","title":"Catalog history","text":"The June 2025 catalog migration retained boundary normalization and removed legacy GPS entries.","kind":"wiki","updatedAt":"2025-06-20T09:00:00Z","nodeId":"catalog.history"},
+    {"id":"catalog-change","category":"change","citation":"CHANGELOG.md#L4-L9","title":"Catalog change","text":"Version 2 changes inventory summaries to exclude inactive products while preserving stable SKU lookup.","kind":"wiki","updatedAt":"2025-06-21T09:00:00Z","nodeId":"catalog.change"},
+    {"id":"catalog-decision","category":"decision","citation":"decisions/catalog.md#L1-L8","title":"Catalog decision record","text":"Decision: keep SKU normalization at the public catalog boundary so every caller receives the same identity.","kind":"wiki","updatedAt":"2025-06-03T09:00:00Z","nodeId":"catalog.decision"},
+    {"id":"catalog-global","category":"global","citation":"README.md#L1-L8","title":"Catalog repository overview","text":"Northstar Catalog is a small JavaScript repository for product lookup, active inventory, and migration-safe summaries.","kind":"wiki","updatedAt":"2025-04-01T09:00:00Z","nodeId":"catalog.readme","duplicateOf":"catalog-boundary"}
+  ],
+  "edges": [
+    {"from":"catalog.findProductBySku","to":"catalog.module","type":"member-of","resolved":true},
+    {"from":"catalog.module","to":"catalog.impact","type":"affects","resolved":true},
+    {"from":"catalog.impact","to":"catalog.history","type":"documents","resolved":true},
+    {"from":"catalog.history","to":"catalog.change","type":"supersedes","resolved":true},
+    {"from":"catalog.change","to":"catalog.decision","type":"records","resolved":true},
+    {"from":"catalog.decision","to":"catalog.missing","type":"mentions","resolved":false}
+  ],
+  "update": {"id":"catalog-update","citation":"src/catalog.mjs#L20-L25","text":"summarizeCatalog computes active inventory totals after a catalog update.","kind":"code"}
+}

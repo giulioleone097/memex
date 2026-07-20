@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { realpath } from "node:fs/promises";
+import { UNSCOPED_PROJECT_SCOPE } from "./evidence-identity.js";
 import { MemexError } from "./errors.js";
 export const GIT_COMMAND_TIMEOUT_MS = 15_000;
 export const GIT_OUTPUT_LIMIT_BYTES = 1024 * 1024;
@@ -11,6 +12,24 @@ export const GIT_OUTPUT_LIMIT_BYTES = 1024 * 1024;
 // (see the `previousHead` format check below), so this constant does not need a
 // SHA-256 repository variant.
 const EMPTY_TREE_HASH = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+/**
+ * Resolve a host-independent logical repository scope from the canonical
+ * origin remote.  Missing, local-path, or malformed remotes fail closed to an
+ * explicit unscoped value; the absolute workspace path is never an identity
+ * input or a returned value.
+ */
+export async function resolveRepositoryScope(root) {
+    try {
+        const canonicalInput = await realpath(root);
+        const budget = { used: 0 };
+        const repositoryRoot = await runGit(canonicalInput, ["rev-parse", "--show-toplevel"], budget);
+        const remote = await runGit(repositoryRoot, ["remote", "get-url", "origin"], budget);
+        return canonicalRepositoryRemote(remote) ?? UNSCOPED_PROJECT_SCOPE;
+    }
+    catch {
+        return UNSCOPED_PROJECT_SCOPE;
+    }
+}
 export async function collectGitContext(root, previousHead) {
     if (previousHead !== undefined &&
         !/^[a-f0-9]{40}$/iu.test(previousHead)) {
@@ -183,4 +202,46 @@ function runGit(cwd, args, budget) {
             resolve(Buffer.concat(stdout).toString("utf8").trim());
         });
     });
+}
+function canonicalRepositoryRemote(input) {
+    const remote = input.trim();
+    if (remote.length === 0 || remote.includes("\0") || remote.startsWith("/") || remote.startsWith("./") || remote.startsWith("../") || /^[A-Za-z]:[\\/]/u.test(remote))
+        return undefined;
+    if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//u.test(remote)) {
+        try {
+            const url = new URL(remote);
+            if (!["git:", "http:", "https:", "ssh:"].includes(url.protocol) || url.hostname.length === 0)
+                return undefined;
+            const host = canonicalRemoteHost(url.hostname, url.port);
+            const repositoryPath = canonicalRemotePath(url.pathname);
+            return repositoryPath === undefined ? undefined : `git:${host}/${repositoryPath}`;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    // Git's SCP-like SSH syntax: [user@]host:owner/repository.git.  User info is
+    // deliberately discarded and query/fragment suffixes are never retained.
+    const scp = /^(?:[^@/:]+@)?([^/:]+):(.+)$/u.exec(remote);
+    if (scp === null)
+        return undefined;
+    const host = scp[1];
+    const remotePath = scp[2];
+    if (host === undefined || remotePath === undefined)
+        return undefined;
+    const repositoryPath = canonicalRemotePath(remotePath.split(/[?#]/u, 1)[0] ?? "");
+    return repositoryPath === undefined ? undefined : `git:${canonicalRemoteHost(host, "")}/${repositoryPath}`;
+}
+function canonicalRemoteHost(hostname, port) {
+    const host = hostname.toLowerCase();
+    return port.length === 0 ? host : `${host}:${port}`;
+}
+function canonicalRemotePath(value) {
+    const path = value.replaceAll("\\", "/").replace(/^\/+|\/+$/gu, "").replace(/\.git$/iu, "");
+    if (path.length === 0)
+        return undefined;
+    const segments = path.split("/");
+    if (segments.some((segment) => segment.length === 0 || segment === "." || segment === ".." || segment.includes("\0")))
+        return undefined;
+    return segments.join("/");
 }
