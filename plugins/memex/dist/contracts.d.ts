@@ -20,14 +20,25 @@ export interface WikiStateV1 {
     updatedAt: string;
     contentHash: string;
     lastGitHead?: string;
-    lastRun: {
-        id: string;
-        command: WikiCommand;
-        startedAt: string;
-        completedAt: string;
-        changed: boolean;
-        summary: string;
-    };
+    lastRun: WikiRunState;
+}
+export interface WikiRunState {
+    id: string;
+    command: WikiCommand;
+    startedAt: string;
+    completedAt: string;
+    changed: boolean;
+    summary: string;
+}
+/** Portable on-disk state. Runtime identity is rebound from the resolved location. */
+export interface WikiStateFileV2 {
+    schemaVersion: 2;
+    mode: WikiMode;
+    createdAt: string;
+    updatedAt: string;
+    contentHash: string;
+    lastGitHead?: string;
+    lastRun: WikiRunState;
 }
 export type SourceMetadataValue = string | number | boolean | null;
 export interface SourceEnvelopeV1 {
@@ -74,5 +85,7 @@ export interface EnrichEnvelopeV1 {
     }>;
 }
 export declare function parseWikiState(input: unknown): WikiStateV1;
+export declare function parseWikiStateFileV2(input: unknown): WikiStateFileV2;
 export declare function parseSourceEnvelope(input: unknown): SourceEnvelopeV1;
 export declare function parseEnrichEnvelope(input: unknown): EnrichEnvelopeV1;
+export declare function parseCanonicalTimestamp(value: unknown, label: string): string;

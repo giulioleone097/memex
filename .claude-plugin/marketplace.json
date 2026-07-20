@@ -9,20 +9,16 @@
       "name": "memex",
       "source": "./plugins/memex",
       "description": "Maintain a self-sufficient agentic wiki with a unified code, concept, and wiki graph plus local embeddings, from Codex and Claude Code.",
-      "version": "0.2.0",
+      "version": "0.3.3",
       "author": {
         "name": "Giulio Leone"
       },
       "license": "MIT",
       "category": "Productivity",
       "tags": [
-        "memex",
         "wiki",
         "documentation",
-        "knowledge-base",
-        "knowledge-graph",
-        "local-first",
-        "agents"
+        "knowledge-base"
       ],
       "strict": true
     }

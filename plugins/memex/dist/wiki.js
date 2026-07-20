@@ -4,10 +4,13 @@ import { mkdir, open, readdir, readFile, realpath, } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { atomicWriteFile, withWikiLock } from "./atomic.js";
+import { parseCanonicalTimestamp, } from "./contracts.js";
 import { MemexError } from "./errors.js";
+import { inspectInstructionBlocks, syncInstructionBlocks, } from "./instruction-blocks.js";
 import { reindexWikiPage } from "./reindex.js";
+import { parseGraphReportGeneration } from "./report.js";
 import { resolveConfinedMarkdownPath, resolveWikiLocation, } from "./paths.js";
-import { readState, tryReadState, writeState } from "./state.js";
+import { readState, readStateForWrite, tryReadStateForWrite, writeState, } from "./state.js";
 export const REQUIRED_WIKI_PAGES = [
     "quickstart.md",
     "architecture.md",
@@ -41,11 +44,17 @@ export async function initializeWiki(options) {
             await atomicWriteFile(destination, template);
             createdPages.push(page);
         }
-        const existingState = await tryReadState(location);
-        if (existingState && createdPages.length === 0) {
+        const instructionFiles = location.workspaceRoot === undefined
+            ? []
+            : (await syncInstructionBlocks(location.workspaceRoot)).changedFiles;
+        const existingState = await tryReadStateForWrite(location);
+        if (existingState &&
+            createdPages.length === 0 &&
+            instructionFiles.length === 0) {
             return {
                 changed: false,
                 createdPages,
+                instructionFiles,
                 location,
                 state: existingState,
             };
@@ -70,7 +79,9 @@ export async function initializeWiki(options) {
                 completedAt: now,
                 changed: true,
                 summary: existingState
-                    ? "Restored missing standard wiki pages."
+                    ? createdPages.length > 0
+                        ? "Restored missing standard wiki pages and Memex instructions."
+                        : "Refreshed Memex instruction blocks."
                     : "Initialized Memex standard pages.",
             },
         };
@@ -78,6 +89,7 @@ export async function initializeWiki(options) {
         return {
             changed: true,
             createdPages,
+            instructionFiles,
             location,
             state,
         };
@@ -104,13 +116,14 @@ export async function writePage(location, page, content) {
     await reindexWikiPage(location, page, content);
 }
 export async function finalizeRun(options) {
+    const startedAt = parseCanonicalTimestamp(options.startedAt, "Finalize startedAt");
+    const completedAt = parseCanonicalTimestamp(options.completedAt ?? new Date().toISOString(), "Finalize completedAt");
     return withWikiLock(options.location.wikiRoot, async () => {
-        const current = await readState(options.location);
+        const current = await readStateForWrite(options.location);
         const contentHash = await createWikiContentHash(options.location);
         if (contentHash === current.contentHash) {
             return { changed: false, state: current };
         }
-        const completedAt = options.completedAt ?? new Date().toISOString();
         const lastGitHead = options.lastGitHead ?? current.lastGitHead;
         const next = {
             ...current,
@@ -120,7 +133,7 @@ export async function finalizeRun(options) {
             lastRun: {
                 id: options.runId,
                 command: options.command,
-                startedAt: options.startedAt,
+                startedAt,
                 completedAt,
                 changed: true,
                 summary: options.summary,
@@ -131,6 +144,7 @@ export async function finalizeRun(options) {
     });
 }
 export async function checkWiki(location, options = {}) {
+    const phase = options.phase ?? "strict";
     const issues = [];
     let state = null;
     try {
@@ -155,6 +169,7 @@ export async function checkWiki(location, options = {}) {
         }
     }
     let pages = [];
+    const pageContents = new Map();
     try {
         pages = await listMarkdownPages(location);
     }
@@ -171,6 +186,7 @@ export async function checkWiki(location, options = {}) {
     }
     for (const page of pages) {
         const content = (await readPage(location, page)).content;
+        pageContents.set(page, content);
         for (const target of findMarkdownLinks(content)) {
             const resolvedTarget = resolveLinkedPage(page, target);
             if (resolvedTarget.kind === "skip") {
@@ -193,6 +209,27 @@ export async function checkWiki(location, options = {}) {
                     message: "Wiki page contains a broken local link.",
                     page,
                 });
+            }
+        }
+    }
+    if (location.workspaceRoot !== undefined) {
+        try {
+            for (const inspection of await inspectInstructionBlocks(location.workspaceRoot)) {
+                const issue = instructionIssue(inspection.file, inspection.status);
+                if (issue !== undefined) {
+                    issues.push(issue);
+                }
+            }
+        }
+        catch (error) {
+            if (error instanceof MemexError && error.code === "SYMLINK_ESCAPE") {
+                issues.push({
+                    code: "SYMLINK",
+                    message: "Repository instruction file must not be a symbolic link.",
+                });
+            }
+            else {
+                throw error;
             }
         }
     }
@@ -235,8 +272,18 @@ export async function checkWiki(location, options = {}) {
                 });
             }
         }
+        if (phase === "strict") {
+            const report = pageContents.get("graph-report.md");
+            if (report !== undefined && parseGraphReportGeneration(report) !== graph.status().generation) {
+                issues.push({
+                    code: "STALE_GRAPH_REPORT",
+                    message: "Graph report generation does not match the current graph generation.",
+                    page: "graph-report.md",
+                });
+            }
+        }
     }
-    if (state) {
+    if (state && phase === "strict") {
         try {
             if ((await createWikiContentHash(location)) !== state.contentHash) {
                 issues.push({
@@ -259,7 +306,37 @@ export async function checkWiki(location, options = {}) {
             }
         }
     }
-    return { ok: issues.length === 0, issues };
+    return { ok: issues.length === 0, phase, issues };
+}
+function instructionIssue(file, status) {
+    switch (status) {
+        case "fresh":
+            return undefined;
+        case "missing":
+            return {
+                code: "MISSING_INSTRUCTION_BLOCK",
+                message: "Repository instruction file is missing its Memex block.",
+                page: file,
+            };
+        case "duplicate":
+            return {
+                code: "DUPLICATE_INSTRUCTION_BLOCK",
+                message: "Repository instruction file contains duplicate Memex blocks.",
+                page: file,
+            };
+        case "malformed":
+            return {
+                code: "MALFORMED_INSTRUCTION_BLOCK",
+                message: "Repository instruction file contains a malformed Memex block.",
+                page: file,
+            };
+        case "stale":
+            return {
+                code: "STALE_INSTRUCTION_BLOCK",
+                message: "Repository instruction file contains a stale Memex block.",
+                page: file,
+            };
+    }
 }
 export async function createWikiContentHash(location) {
     const pages = await listMarkdownPages(location);

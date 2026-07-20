@@ -4,9 +4,9 @@ import path from "node:path";
 import { runDoctor } from "./doctor.js";
 import { defaultVendorRoot, loadEmbedder, loadVendorManifest } from "./embedder.js";
 import { MemexError } from "./errors.js";
-import { collectGitContext } from "./git.js";
+import { collectGitContext, resolveRepositoryScope } from "./git.js";
 import { getGraphStatus } from "./graph.js";
-import { openGraphIndex, probeGraphStorage, resolveGraphStorage } from "./graph-store.js";
+import { openGraphIndex, probeGraphStorage } from "./graph-store.js";
 import { openLexicalIndex } from "./lexical-index.js";
 import { runMigration } from "./migrate.js";
 import { hostHomeDir, resolveWikiLocation } from "./paths.js";
@@ -15,12 +15,14 @@ import { listSchedules, removeSchedule, setSchedule } from "./schedules.js";
 import { ingestSource, listSources, purgeData } from "./sources.js";
 import { readState } from "./state.js";
 import { openVectorStore } from "./vector-store.js";
+import { readRetrievalHealth } from "./retrieval-health.js";
 import { checkWiki, finalizeRun, initializeWiki, readPage, writePage, } from "./wiki.js";
 export const MEMEX_OPERATIONS = [
     "init",
     "status",
     "context",
     "search",
+    "retrieval_health",
     "ask",
     "read",
     "write",
@@ -34,7 +36,7 @@ export const MEMEX_OPERATIONS = [
     "graph",
     "migrate",
 ];
-const GRAPH_ACTIONS = [
+export const GRAPH_ACTIONS = [
     "build",
     "status",
     "query",
@@ -50,6 +52,7 @@ const GRAPH_ACTIONS = [
 ];
 const MODES = ["code", "personal"];
 const WIKI_COMMANDS = ["init", "update", "ingest"];
+const CHECK_PHASES = ["preflight", "strict"];
 const GRAPH_RESPONSE_BYTE_LIMIT = 48 * 1024;
 const RETRIEVAL_SIGNALS = ["lexical", "vector", "graph"];
 function isRetrievalSignal(value) {
@@ -75,6 +78,11 @@ async function openLexicalAndVector(location, wantsVector) {
     const vectorStore = await openVectorStore(path.join(location.dataRoot, "vectors"), { modelId: embedder.modelId, modelRevision, dims: embedder.dims });
     return { lexicalIndex, embedder, vectorStore };
 }
+async function retrievalProjectScope(location) {
+    return location.mode === "code" && location.workspaceRoot !== undefined
+        ? resolveRepositoryScope(location.workspaceRoot)
+        : "memex:personal";
+}
 // `search`'s graph signal is one of three optional inputs — absent when not
 // yet built, degrading the implicit default rather than erroring.
 async function openGraphIndexIfAvailable(location) {
@@ -84,8 +92,10 @@ async function openGraphIndexIfAvailable(location) {
     const status = await getGraphStatus({ root: location.workspaceRoot, homeDir });
     if (!status.available)
         return undefined;
-    const resolved = await resolveGraphStorage(location.workspaceRoot, homeDir);
-    return openGraphIndex(resolved.storage);
+    const probed = await probeGraphStorage(location.workspaceRoot, homeDir);
+    if (!probed.initialized)
+        return undefined;
+    return openGraphIndex(probed.storage);
 }
 export async function dispatch(request) {
     try {
@@ -134,14 +144,21 @@ async function dispatchUnsafe(request) {
             const explicit = requested !== undefined;
             const wantsVector = explicit ? requested.includes("vector") : true;
             const wantsGraph = explicit ? requested.includes("graph") : true;
-            const lexicalAndVector = await openLexicalAndVector(location, wantsVector);
+            const [lexicalAndVector, projectScope] = await Promise.all([
+                openLexicalAndVector(location, wantsVector),
+                retrievalProjectScope(location),
+            ]);
             const graphIndex = wantsGraph ? await openGraphIndexIfAvailable(location) : undefined;
             if (explicit && requested.includes("graph") && graphIndex === undefined) {
                 throw new MemexError("NOT_INITIALIZED", "Graph retrieval requires a built graph index; run graph build first.");
             }
             const signals = explicit ? requested : ["lexical", "vector", ...(graphIndex === undefined ? [] : ["graph"])];
-            const ports = { ...lexicalAndVector, ...(graphIndex === undefined ? {} : { graphIndex }) };
+            const ports = { ...lexicalAndVector, evidenceIdentity: { projectScope }, ...(graphIndex === undefined ? {} : { graphIndex }) };
             return retrieveSearch({ text: readRequiredString(input, "query"), limit: readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20, signals }, ports);
+        }
+        case "retrieval_health": {
+            const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
+            return readRetrievalHealth(location, { projectScope: await retrievalProjectScope(location) });
         }
         case "ask": {
             const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "query", "limit", "signals"]));
@@ -151,15 +168,18 @@ async function dispatchUnsafe(request) {
             const requested = readOptionalSignals(input);
             const wantsVector = requested === undefined ? true : requested.includes("vector");
             const homeDir = hostHomeDir();
-            const [lexicalAndVector, status] = await Promise.all([
+            const [lexicalAndVector, status, projectScope] = await Promise.all([
                 openLexicalAndVector(location, wantsVector),
                 getGraphStatus({ root: location.workspaceRoot, homeDir }),
+                retrievalProjectScope(location),
             ]);
             if (!status.available)
                 throw new MemexError("NOT_INITIALIZED", "Ask requires a built graph index; run graph build first.");
-            const resolved = await resolveGraphStorage(location.workspaceRoot, homeDir);
-            const graphIndex = await openGraphIndex(resolved.storage);
-            return retrieveAsk(readRequiredString(input, "query"), readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20, { ...lexicalAndVector, graphIndex }, { stale: !status.fresh }, requested);
+            const probed = await probeGraphStorage(location.workspaceRoot, homeDir);
+            if (!probed.initialized)
+                throw new MemexError("NOT_INITIALIZED", "Ask requires a built graph index; run graph build first.");
+            const graphIndex = await openGraphIndex(probed.storage);
+            return retrieveAsk(readRequiredString(input, "query"), readOptionalBoundedInteger(input, "limit", 1, 100) ?? 20, { ...lexicalAndVector, graphIndex, evidenceIdentity: { projectScope } }, { stale: !status.fresh }, requested);
         }
         case "read": {
             const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "page"]));
@@ -195,9 +215,13 @@ async function dispatchUnsafe(request) {
             });
         }
         case "check": {
-            const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
+            const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "phase"]));
+            const phase = has(input, "phase") ? readEnum(input, "phase", CHECK_PHASES) : undefined;
             const graphIndex = location.mode === "code" ? await tryOpenGraphIndexForCheck(location.workspaceRoot, hostHomeDir()) : undefined;
-            return checkWiki(location, { ...(graphIndex === undefined ? {} : { graph: graphIndex }) });
+            return checkWiki(location, {
+                ...(phase === undefined ? {} : { phase }),
+                ...(graphIndex === undefined ? {} : { graph: graphIndex }),
+            });
         }
         case "doctor": {
             const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
@@ -249,7 +273,7 @@ async function dispatchSchedule(input) {
     });
 }
 async function dispatchGraph(input) {
-    assertKeys(input, ["mode", "root", "action", "force", "query", "target", "base", "direction", "depth", "limit", "from", "to"]);
+    assertKeys(input, ["mode", "root", "action", "force", "query", "target", "base", "direction", "depth", "limit", "from", "to", "params", "preference"]);
     if (has(input, "mode"))
         readEnum(input, "mode", ["code"]);
     const root = readRequiredString(input, "root");
@@ -265,49 +289,49 @@ async function dispatchGraph(input) {
     const to = readOptionalString(input, "to");
     const graph = await loadGraph();
     if (action === "build") {
-        assertAbsent(input, ["query", "target", "base", "direction", "depth", "limit"]);
+        assertAbsent(input, ["query", "target", "base", "direction", "depth", "limit", "from", "to", "params", "preference"]);
         return publicGraphResult("build", root, await graph.buildGraph({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(force === undefined ? {} : { force }) }), limit);
     }
     if (action === "status") {
-        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "limit"]);
+        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "limit", "from", "to", "params", "preference"]);
         return publicGraphResult("status", root, await graph.getGraphStatus({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT }), limit);
     }
     if (action === "query") {
-        assertAbsent(input, ["force", "target", "base", "direction", "depth"]);
+        assertAbsent(input, ["force", "target", "base", "direction", "depth", "from", "to", "params", "preference"]);
         if (query === undefined)
             throw invalid("Graph query requires query.");
         return publicGraphResult("query", root, await graph.queryGraph({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, query, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "context") {
-        assertAbsent(input, ["force", "query", "base", "direction", "depth"]);
+        assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to", "params", "preference"]);
         if (target === undefined)
             throw invalid("Graph context requires target.");
         return publicGraphResult("context", root, await graph.getGraphContext({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "impact") {
-        assertAbsent(input, ["force", "query", "base"]);
+        assertAbsent(input, ["force", "query", "base", "from", "to", "params", "preference"]);
         if (target === undefined)
             throw invalid("Graph impact requires target.");
         return publicGraphResult("impact", root, await graph.analyzeGraphImpact({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(direction === undefined ? {} : { direction }), ...(depth === undefined ? {} : { depth }), ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "changes") {
-        assertAbsent(input, ["force", "query", "target", "direction", "depth"]);
+        assertAbsent(input, ["force", "query", "target", "direction", "depth", "from", "to", "params", "preference"]);
         return publicGraphResult("changes", root, await graph.analyzeGraphChanges({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(base === undefined ? {} : { base }), ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "path") {
-        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth"]);
+        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "params", "preference"]);
         if (from === undefined || to === undefined)
             throw invalid("Graph path requires from and to.");
         return publicGraphResult("path", root, await graph.getGraphPath({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, from, to, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "explain") {
-        assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to"]);
+        assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to", "params", "preference"]);
         if (target === undefined)
             throw invalid("Graph explain requires target.");
         return publicGraphResult("explain", root, await graph.explainGraphNode({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "communities") {
-        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to"]);
+        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to", "params", "preference"]);
         return publicGraphResult("communities", root, await graph.listGraphCommunities({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "report") {
@@ -337,8 +361,7 @@ async function tryOpenGraphIndexForCheck(workspaceRoot, homeDir) {
     const probe = await probeGraphStorage(workspaceRoot, homeDir);
     if (!probe.initialized)
         return undefined;
-    const resolved = await resolveGraphStorage(workspaceRoot, homeDir);
-    return openGraphIndex(resolved.storage);
+    return openGraphIndex(probe.storage);
 }
 function publicGraphResult(action, requestedRoot, value, limit) {
     const result = readRecord(value, "Graph operation returned an invalid result.");

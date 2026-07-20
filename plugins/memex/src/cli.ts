@@ -4,9 +4,11 @@ import { stdin as input, stdout as output } from "node:process";
 import { TextDecoder } from "node:util";
 
 import {
+  GRAPH_ACTIONS,
   MEMEX_OPERATIONS,
   dispatch,
   readCliTransport,
+  type GraphAction,
   type MemexOperation,
 } from "./adapter.js";
 import { MAX_ENVELOPE_BYTES } from "./contracts.js";
@@ -47,12 +49,19 @@ const VALUE_FLAGS = new Set([
   "from",
   "to",
   "preference",
+  "params",
+  "phase",
 ]);
 const BOOLEAN_FLAGS = new Set(["stdin", "force", "json", "pretty", "enabled", "disabled"]);
 
 export async function main(argv: readonly string[], stdinText?: string): Promise<number> {
   const pretty = argv.includes("--pretty");
   try {
+    const help = helpText(argv);
+    if (help !== undefined) {
+      output.write(help);
+      return 0;
+    }
     const { operation, flags } = parseCli(argv);
     if (flags.json === true && flags.pretty === true) throw invalid("JSON and pretty output cannot be combined.");
     const request = await toRequest(operation, flags, stdinText ?? "");
@@ -99,6 +108,13 @@ async function toRequest(operation: MemexOperation, flags: ParsedFlags, stdinTex
       .split(",")
       .map((entry) => entry.trim())
       .filter((entry) => entry.length > 0);
+  }
+  if (typeof inputValue.params === "string") {
+    try {
+      inputValue.params = JSON.parse(inputValue.params);
+    } catch {
+      throw invalid("Graph params must be valid JSON.");
+    }
   }
   if (operation === "write") {
     const content = await readOneTransport(flags, "content", "content-file", stdinText);
@@ -173,6 +189,79 @@ function rename(input: Record<string, unknown>, from: string, to: string): void 
 
 function isOperation(value: string | undefined): value is MemexOperation {
   return value !== undefined && MEMEX_OPERATIONS.some((operation) => operation === value);
+}
+
+const OPERATION_USAGE: Readonly<Record<MemexOperation, string>> = {
+  init: "--mode <code|personal> [--root <path>]",
+  status: "--mode <code|personal> [--root <path>]",
+  context: "--root <path> [--previous-head <sha>]",
+  search: "--mode <code|personal> [--root <path>] --query <text> [--limit <n>] [--signals <list>]",
+  retrieval_health: "--mode <code|personal> [--root <path>]",
+  ask: "--mode code --root <path> --query <text> [--limit <n>] [--signals <list>]",
+  read: "--mode <code|personal> [--root <path>] --page <path>",
+  write: "--mode <code|personal> [--root <path>] --page <path> (--content <text>|--content-file <path>|--stdin)",
+  ingest: "--mode <code|personal> [--root <path>] (--envelope-file <path>|--stdin)",
+  enrich: "--root <path> (--envelope-file <path>|--stdin)",
+  finalize: "--mode <code|personal> [--root <path>] --command <init|update|ingest> --run-id <id> --started-at <iso> --summary <text>",
+  check: "--mode <code|personal> [--root <path>] [--phase <preflight|strict>]",
+  doctor: "--mode <code|personal> [--root <path>]",
+  schedule: "--mode <code|personal> [--root <path>] --action <set|list|remove> [options]",
+  purge: "--mode <code|personal> [--root <path>] --scope <raw|schedules|personal-wiki|all>",
+  graph: "[--mode code] --root <path> --action <action> [action options]",
+  migrate: "",
+};
+
+const GRAPH_ACTION_USAGE: Readonly<Record<GraphAction, string>> = {
+  build: "--root <path> --action build [--mode code] [--force]",
+  status: "--root <path> --action status [--mode code]",
+  query: "--root <path> --action query --query <text> [--mode code] [--limit <1-100>]",
+  context: "--root <path> --action context --target <symbol> [--mode code] [--limit <1-100>]",
+  impact: "--root <path> --action impact --target <symbol> [--mode code] [--direction <inbound|outbound|both>] [--depth <1-5>] [--limit <1-100>]",
+  changes: "--root <path> --action changes [--mode code] [--base <git-ref>] [--limit <1-100>]",
+  map: "--root <path> --action map [--mode code] [--limit <1-100>]",
+  path: "--root <path> --action path --from <symbol> --to <symbol> [--mode code] [--limit <1-100>]",
+  explain: "--root <path> --action explain --target <symbol> [--mode code] [--limit <1-100>]",
+  communities: "--root <path> --action communities [--mode code] [--limit <1-100>]",
+  report: "--root <path> --action report [--mode code]",
+  cypher: "--root <path> --action cypher --query <statement> [--mode code] [--params <json>] [--preference <auto|native|wasm|pure>] [--limit <1-100>]",
+};
+
+function helpText(argv: readonly string[]): string | undefined {
+  if (argv.length === 1 && argv[0] === "--help") {
+    return [
+      "Usage: memex <operation> [options]",
+      "",
+      "Operations:",
+      ...MEMEX_OPERATIONS.map((operation) => `  ${operation}`),
+      "",
+      "Run 'memex <operation> --help' for operation usage.",
+      "Output is JSON unless help is requested.",
+      "",
+    ].join("\n");
+  }
+  if (argv.length === 4 && argv[0] === "graph" && argv[1] === "--action" && argv[3] === "--help") {
+    const action = GRAPH_ACTIONS.find((candidate) => candidate === argv[2]);
+    if (action === undefined) {
+      throw invalid("Graph help action must be recognized.");
+    }
+    return `Usage: memex graph ${GRAPH_ACTION_USAGE[action]}\n`;
+  }
+  if (argv.length === 2 && argv[1] === "--help" && isOperation(argv[0])) {
+    if (argv[0] === "graph") {
+      return [
+        `Usage: memex graph ${OPERATION_USAGE.graph}`,
+        "",
+        "Actions (required flags are unbracketed; allowed optional flags are bracketed):",
+        ...GRAPH_ACTIONS.map((action) => `  ${action}: ${GRAPH_ACTION_USAGE[action]}`),
+        "",
+        "Run 'memex graph --action <action> --help' for one action.",
+        "",
+      ].join("\n");
+    }
+    const suffix = OPERATION_USAGE[argv[0]];
+    return `Usage: memex ${argv[0]}${suffix === "" ? "" : ` ${suffix}`}\n`;
+  }
+  return undefined;
 }
 
 function invalid(message: string): MemexError {

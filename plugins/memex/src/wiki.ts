@@ -11,17 +11,31 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 import { atomicWriteFile, withWikiLock } from "./atomic.js";
-import type { WikiCommand, WikiStateV1 } from "./contracts.js";
+import {
+  parseCanonicalTimestamp,
+  type WikiCommand,
+  type WikiStateV1,
+} from "./contracts.js";
 import { MemexError } from "./errors.js";
 import type { GraphIndexPort } from "./graph-index.js";
+import {
+  inspectInstructionBlocks,
+  syncInstructionBlocks,
+} from "./instruction-blocks.js";
 import { reindexWikiPage } from "./reindex.js";
+import { parseGraphReportGeneration } from "./report.js";
 import {
   resolveConfinedMarkdownPath,
   resolveWikiLocation,
   type ResolveWikiLocationOptions,
   type WikiLocation,
 } from "./paths.js";
-import { readState, tryReadState, writeState } from "./state.js";
+import {
+  readState,
+  readStateForWrite,
+  tryReadStateForWrite,
+  writeState,
+} from "./state.js";
 
 export const REQUIRED_WIKI_PAGES = [
   "quickstart.md",
@@ -47,6 +61,7 @@ export interface InitializeWikiOptions extends ResolveWikiLocationOptions {
 export interface InitializeWikiResult {
   changed: boolean;
   createdPages: string[];
+  instructionFiles: string[];
   location: WikiLocation;
   state: WikiStateV1;
 }
@@ -73,18 +88,35 @@ export interface FinalizeRunResult {
 }
 
 export interface WikiCheckIssue {
-  code: "BROKEN_LINK" | "DANGLING_NODE_REF" | "INVALID_STATE" | "MISSING_PAGE" | "MISSING_PAGE_EDGE" | "MISSING_PAGE_NODE" | "STALE_STATE" | "SYMLINK";
+  code:
+    | "BROKEN_LINK"
+    | "DANGLING_NODE_REF"
+    | "DUPLICATE_INSTRUCTION_BLOCK"
+    | "INVALID_STATE"
+    | "MALFORMED_INSTRUCTION_BLOCK"
+    | "MISSING_INSTRUCTION_BLOCK"
+    | "MISSING_PAGE"
+    | "MISSING_PAGE_EDGE"
+    | "MISSING_PAGE_NODE"
+    | "STALE_GRAPH_REPORT"
+    | "STALE_INSTRUCTION_BLOCK"
+    | "STALE_STATE"
+    | "SYMLINK";
   message: string;
   page?: string;
 }
 
+export type WikiCheckPhase = "preflight" | "strict";
+
 export interface WikiCheckResult {
   ok: boolean;
+  phase: WikiCheckPhase;
   issues: WikiCheckIssue[];
 }
 
 export interface WikiCheckOptions {
   graph?: GraphIndexPort;
+  phase?: WikiCheckPhase;
 }
 
 export async function initializeWiki(
@@ -117,11 +149,20 @@ export async function initializeWiki(
       createdPages.push(page);
     }
 
-    const existingState = await tryReadState(location);
-    if (existingState && createdPages.length === 0) {
+    const instructionFiles = location.workspaceRoot === undefined
+      ? []
+      : (await syncInstructionBlocks(location.workspaceRoot)).changedFiles;
+
+    const existingState = await tryReadStateForWrite(location);
+    if (
+      existingState &&
+      createdPages.length === 0 &&
+      instructionFiles.length === 0
+    ) {
       return {
         changed: false,
         createdPages,
+        instructionFiles,
         location,
         state: existingState,
       };
@@ -147,7 +188,9 @@ export async function initializeWiki(
         completedAt: now,
         changed: true,
         summary: existingState
-          ? "Restored missing standard wiki pages."
+          ? createdPages.length > 0
+            ? "Restored missing standard wiki pages and Memex instructions."
+            : "Refreshed Memex instruction blocks."
           : "Initialized Memex standard pages.",
       },
     };
@@ -156,6 +199,7 @@ export async function initializeWiki(
     return {
       changed: true,
       createdPages,
+      instructionFiles,
       location,
       state,
     };
@@ -196,14 +240,18 @@ export async function writePage(
 export async function finalizeRun(
   options: FinalizeRunOptions,
 ): Promise<FinalizeRunResult> {
+  const startedAt = parseCanonicalTimestamp(options.startedAt, "Finalize startedAt");
+  const completedAt = parseCanonicalTimestamp(
+    options.completedAt ?? new Date().toISOString(),
+    "Finalize completedAt",
+  );
   return withWikiLock(options.location.wikiRoot, async () => {
-    const current = await readState(options.location);
+    const current = await readStateForWrite(options.location);
     const contentHash = await createWikiContentHash(options.location);
     if (contentHash === current.contentHash) {
       return { changed: false, state: current };
     }
 
-    const completedAt = options.completedAt ?? new Date().toISOString();
     const lastGitHead = options.lastGitHead ?? current.lastGitHead;
     const next: WikiStateV1 = {
       ...current,
@@ -213,7 +261,7 @@ export async function finalizeRun(
       lastRun: {
         id: options.runId,
         command: options.command,
-        startedAt: options.startedAt,
+        startedAt,
         completedAt,
         changed: true,
         summary: options.summary,
@@ -228,6 +276,7 @@ export async function checkWiki(
   location: WikiLocation,
   options: WikiCheckOptions = {},
 ): Promise<WikiCheckResult> {
+  const phase = options.phase ?? "strict";
   const issues: WikiCheckIssue[] = [];
   let state: WikiStateV1 | null = null;
 
@@ -253,6 +302,7 @@ export async function checkWiki(
   }
 
   let pages: string[] = [];
+  const pageContents = new Map<string, string>();
   try {
     pages = await listMarkdownPages(location);
   } catch (error) {
@@ -268,6 +318,7 @@ export async function checkWiki(
 
   for (const page of pages) {
     const content = (await readPage(location, page)).content;
+    pageContents.set(page, content);
     for (const target of findMarkdownLinks(content)) {
       const resolvedTarget = resolveLinkedPage(page, target);
       if (resolvedTarget.kind === "skip") {
@@ -289,6 +340,26 @@ export async function checkWiki(
           message: "Wiki page contains a broken local link.",
           page,
         });
+      }
+    }
+  }
+
+  if (location.workspaceRoot !== undefined) {
+    try {
+      for (const inspection of await inspectInstructionBlocks(location.workspaceRoot)) {
+        const issue = instructionIssue(inspection.file, inspection.status);
+        if (issue !== undefined) {
+          issues.push(issue);
+        }
+      }
+    } catch (error) {
+      if (error instanceof MemexError && error.code === "SYMLINK_ESCAPE") {
+        issues.push({
+          code: "SYMLINK",
+          message: "Repository instruction file must not be a symbolic link.",
+        });
+      } else {
+        throw error;
       }
     }
   }
@@ -334,9 +405,19 @@ export async function checkWiki(
         });
       }
     }
+    if (phase === "strict") {
+      const report = pageContents.get("graph-report.md");
+      if (report !== undefined && parseGraphReportGeneration(report) !== graph.status().generation) {
+        issues.push({
+          code: "STALE_GRAPH_REPORT",
+          message: "Graph report generation does not match the current graph generation.",
+          page: "graph-report.md",
+        });
+      }
+    }
   }
 
-  if (state) {
+  if (state && phase === "strict") {
     try {
       if ((await createWikiContentHash(location)) !== state.contentHash) {
         issues.push({
@@ -358,7 +439,41 @@ export async function checkWiki(
     }
   }
 
-  return { ok: issues.length === 0, issues };
+  return { ok: issues.length === 0, phase, issues };
+}
+
+function instructionIssue(
+  file: string,
+  status: "fresh" | "missing" | "duplicate" | "malformed" | "stale",
+): WikiCheckIssue | undefined {
+  switch (status) {
+    case "fresh":
+      return undefined;
+    case "missing":
+      return {
+        code: "MISSING_INSTRUCTION_BLOCK",
+        message: "Repository instruction file is missing its Memex block.",
+        page: file,
+      };
+    case "duplicate":
+      return {
+        code: "DUPLICATE_INSTRUCTION_BLOCK",
+        message: "Repository instruction file contains duplicate Memex blocks.",
+        page: file,
+      };
+    case "malformed":
+      return {
+        code: "MALFORMED_INSTRUCTION_BLOCK",
+        message: "Repository instruction file contains a malformed Memex block.",
+        page: file,
+      };
+    case "stale":
+      return {
+        code: "STALE_INSTRUCTION_BLOCK",
+        message: "Repository instruction file contains a stale Memex block.",
+        page: file,
+      };
+  }
 }
 
 export async function createWikiContentHash(

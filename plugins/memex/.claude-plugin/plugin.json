@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "memex",
   "displayName": "Memex",
-  "version": "0.2.0",
+  "version": "0.3.3",
   "description": "Build and maintain a self-sufficient agentic wiki with a unified code, concept, and wiki graph plus local embeddings, from Codex or Claude Code through a shared deterministic runtime.",
   "author": {
     "name": "Giulio Leone"

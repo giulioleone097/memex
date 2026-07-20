@@ -1,0 +1,14 @@
+{
+  "schema": "memexbench.baseline.v1",
+  "benchmark": "MemexBench-Code",
+  "revision": "mx-04-01-v1",
+  "immutable": true,
+  "capturedAt": "2026-07-20T00:00:00Z",
+  "minimumRecallAt5": 0.8,
+  "manifestSha256": "8c7be6ef44f6f0cafcb617c9f10d4b5aab803ad93a2183e4f4114eb3ac7b031c",
+  "queriesSha256": "0a8dfdbbb38104651e5e508174e05ff913fba7ad599968f8f5dc43f5b6742676",
+  "qrelsSha256": "3594065a50ea67c5a575dd56813cf43d2a90aac2baf35a0d20fb93e2680c4276",
+  "splitsSha256": "9fee410c4e164193788cb5b5ee96af3f26a570f64ddfa84969530a7701bbeb95",
+  "corpusSha256": "f1c66ec8e6ec1b60be2735aa66f0724e2fa01152bd310628a5465e2e85988b3e",
+  "notes": "Latency is observed, not an exact baseline equality. Raise the revision when fixtures, queries, qrels, frozen splits, model revision, or gate policy changes."
+}

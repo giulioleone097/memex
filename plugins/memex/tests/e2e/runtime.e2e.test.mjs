@@ -543,7 +543,7 @@ The catalog boundary lives in \`src/catalog.mjs\` at Git commit \`${harness.init
 
     const statePath = join(wikiRoot, ".last-update.json");
     const firstState = JSON.parse(await readFile(statePath, "utf8"));
-    const dataRoot = join(harness.homeRoot, ".memex", "data", firstState.workspaceId);
+    const dataRoot = init.json.data.location.dataRoot;
     const privateData = await directoryText(dataRoot);
     for (const kind of SOURCE_KINDS) assert.match(privateData, new RegExp(`"kind"\\s*:\\s*"${kind}"`, "u"));
     const repositoryWikiText = await directoryText(wikiRoot);

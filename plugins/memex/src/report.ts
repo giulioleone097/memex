@@ -13,6 +13,10 @@ export interface GraphReportInputV1 {
   ambiguousEdges: Array<{ edge: GraphEdgeV1; from: GraphNodeV1 | undefined; to: GraphNodeV1 | undefined }>;
 }
 
+export function parseGraphReportGeneration(markdown: string): string | undefined {
+  return markdown.match(/^# Graph Report\r?\n\r?\nGenerated [^\r\n]+ from graph generation `(g-[a-f0-9]{64})`\./u)?.[1];
+}
+
 export function renderGraphReportMarkdown(input: GraphReportInputV1): string {
   const lines: string[] = [];
   lines.push("# Graph Report");
@@ -92,7 +96,5 @@ export function renderGraphReportMarkdown(input: GraphReportInputV1): string {
       lines.push(`| ${entry.from?.name ?? entry.edge.from} | ${entry.to?.name ?? entry.edge.to} | ${entry.edge.kind} |`);
     }
   }
-  lines.push("");
-
   return `${lines.join("\n")}\n`;
 }

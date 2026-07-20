@@ -26,7 +26,7 @@ const PLUGIN_ID = "memex@memex-local";
 const LIVE_SMOKE_ENABLED = process.env.MEMEX_RUN_CLIENT_SMOKE === "1";
 const LIVE_LIFECYCLE_TIMEOUT_MS = 120_000;
 const TOOL_NAMES = [
-  "init", "status", "context", "search", "ask", "read", "write", "ingest",
+  "init", "status", "context", "search", "retrieval_health", "ask", "read", "write", "ingest",
   "enrich", "finalize", "check", "doctor", "schedule", "purge", "graph",
   "migrate",
 ];

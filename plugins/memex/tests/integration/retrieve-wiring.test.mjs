@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -147,6 +147,66 @@ test("dispatch(search): lexical+graph signals return real evidence for an indexe
   assert.ok(result.data.evidence.some((item) => item.ref.nodeId === symbolId));
   const hit = result.data.evidence.find((item) => item.ref.nodeId === symbolId);
   assert.equal(hit.citation, "src/service.ts#L1-1");
+  assert.equal(hit.provenance.projectScope, "memex:unscoped", "a repository without a portable origin must stay explicitly unscoped");
+});
+
+test("dispatch(search): evidence identity is additive, deterministic, and does not expose the host root", async () => {
+  const root = await temporaryRoot("repo-identity");
+  const home = await temporaryRoot("home-identity");
+  await initGitRepo(root);
+  await execFileAsync("git", ["remote", "add", "origin", "git@github.com:example/memex-fixture.git"], { cwd: root });
+  const { symbolId } = await writeFixtureGraph(root, home);
+  const { resolveWikiLocation } = await import("../../dist/paths.js");
+  const location = await resolveWikiLocation({ mode: "code", root, homeDir: home });
+  await indexFixtureChunk(location.dataRoot, symbolId);
+
+  const request = { operation: "search", input: { mode: "code", root, query: "runCatalogSync", limit: 5, signals: ["lexical", "graph"] } };
+  const first = await withHome(home, () => dispatch(request));
+  const second = await withHome(home, () => dispatch(request));
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.equal(second.ok, true, JSON.stringify(second));
+  const firstHit = first.data.evidence.find((item) => item.ref.nodeId === symbolId);
+  const secondHit = second.data.evidence.find((item) => item.ref.nodeId === symbolId);
+  assert.ok(firstHit);
+  assert.ok(secondHit);
+  assert.match(firstHit.evidenceId, /^ev1:[a-f0-9]{64}$/u);
+  assert.equal(firstHit.evidenceId, secondHit.evidenceId);
+  assert.equal(firstHit.provenance.sourceIdentity, "src/service.ts");
+  assert.equal(firstHit.provenance.projectScope, "git:github.com/example/memex-fixture");
+  assert.ok(!JSON.stringify(firstHit.provenance).includes(root), "evidence provenance must not contain an absolute host root");
+
+  const movedRoot = await temporaryRoot("repo-identity-moved");
+  const movedHome = await temporaryRoot("home-identity-moved");
+  await initGitRepo(movedRoot);
+  await execFileAsync("git", ["remote", "add", "origin", "https://github.com/example/memex-fixture.git"], { cwd: movedRoot });
+  const movedGraph = await writeFixtureGraph(movedRoot, movedHome);
+  const movedLocation = await resolveWikiLocation({ mode: "code", root: movedRoot, homeDir: movedHome });
+  await indexFixtureChunk(movedLocation.dataRoot, movedGraph.symbolId);
+  const moved = await withHome(movedHome, () => dispatch({ ...request, input: { ...request.input, root: movedRoot } }));
+  assert.equal(moved.ok, true, JSON.stringify(moved));
+  const movedHit = moved.data.evidence.find((item) => item.ref.nodeId === movedGraph.symbolId);
+  assert.ok(movedHit);
+  assert.equal(movedHit.provenance.projectScope, firstHit.provenance.projectScope);
+  assert.equal(movedHit.evidenceId, firstHit.evidenceId, "moving a clone with the same origin must preserve evidence identity");
+});
+
+test("dispatch(retrieval_health): separates portable repository identity from clone-local storage keys", async () => {
+  const firstRoot = await temporaryRoot("health-scope-first");
+  const firstHome = await temporaryRoot("health-scope-first-home");
+  const movedRoot = await temporaryRoot("health-scope-moved");
+  const movedHome = await temporaryRoot("health-scope-moved-home");
+  await initGitRepo(firstRoot);
+  await initGitRepo(movedRoot);
+  await execFileAsync("git", ["remote", "add", "origin", "git@github.com:example/portable-health.git"], { cwd: firstRoot });
+  await execFileAsync("git", ["remote", "add", "origin", "https://github.com/example/portable-health.git"], { cwd: movedRoot });
+
+  const first = await withHome(firstHome, () => dispatch({ operation: "retrieval_health", input: { mode: "code", root: firstRoot } }));
+  const moved = await withHome(movedHome, () => dispatch({ operation: "retrieval_health", input: { mode: "code", root: movedRoot } }));
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.equal(moved.ok, true, JSON.stringify(moved));
+  assert.equal(first.data.identity.repositoryIdentity, "git:github.com/example/portable-health");
+  assert.equal(moved.data.identity.repositoryIdentity, first.data.identity.repositoryIdentity);
+  assert.notEqual(moved.data.identity.hostLocalStorageKey, first.data.identity.hostLocalStorageKey);
 });
 
 test("dispatch(ask): wires a real stale=true when the graph fingerprint no longer matches", async () => {
@@ -207,6 +267,9 @@ test("dispatch(search): explicitly requesting the graph signal before any graph 
   const result = await withHome(home, () => dispatch({ operation: "search", input: { mode: "code", root, query: "x", limit: 5, signals: ["graph"] } }));
   assert.equal(result.ok, false);
   assert.equal(result.error.code, "NOT_INITIALIZED");
+  const { resolveWikiLocation } = await import("../../dist/paths.js");
+  const location = await resolveWikiLocation({ mode: "code", root, homeDir: home });
+  await assert.rejects(stat(path.join(location.dataRoot, "graph")), { code: "ENOENT" });
 });
 
 test("dispatch(search): the implicit default narrows quietly (not an error) when no graph has been built yet", async () => {

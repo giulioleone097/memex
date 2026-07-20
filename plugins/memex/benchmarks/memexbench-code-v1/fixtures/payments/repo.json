@@ -1,0 +1,24 @@
+{
+  "schema": "memexbench.fixture.v1",
+  "fixtureId": "payments",
+  "name": "Beacon Payments",
+  "revision": "payments-2025-06-18",
+  "documents": [
+    {"id":"payments-charge","category":"exact","citation":"src/charge.ts#L8-L19","title":"Charge command","text":"createCharge validates an idempotency key and records a pending payment before capture.","kind":"code","updatedAt":"2025-06-18T11:00:00Z","nodeId":"payments.createCharge"},
+    {"id":"payments-ledger","category":"semantic","citation":"src/ledger.ts#L1-L12","title":"Payment ledger","text":"The payment ledger is an append-only record of authorization, capture, refund, and settlement events.","kind":"code","updatedAt":"2025-05-17T11:00:00Z","nodeId":"payments.ledger"},
+    {"id":"payments-impact","category":"impact","citation":"docs/payments-impact.md#L1-L8","title":"Payments impact map","text":"Changing capture retries affects the charge worker, ledger projections, and merchant notifications.","kind":"wiki","updatedAt":"2025-06-03T11:00:00Z","nodeId":"payments.impact"},
+    {"id":"payments-history","category":"temporal","citation":"docs/payments-history.md#L1-L8","title":"Payments history","text":"The June 2025 payments migration introduced idempotent capture retries and retired the synchronous callback.","kind":"wiki","updatedAt":"2025-06-20T11:00:00Z","nodeId":"payments.history"},
+    {"id":"payments-change","category":"change","citation":"CHANGELOG.md#L18-L24","title":"Payments change","text":"The latest release stores retry outcomes in the ledger and marks duplicate capture requests as safe no-ops.","kind":"wiki","updatedAt":"2025-06-23T11:00:00Z","nodeId":"payments.change"},
+    {"id":"payments-decision","category":"decision","citation":"decisions/payments.md#L1-L8","title":"Payments decision record","text":"Decision: idempotency is enforced at the charge boundary and ledger writes remain append-only for recovery.","kind":"wiki","updatedAt":"2025-06-05T11:00:00Z","nodeId":"payments.decision"},
+    {"id":"payments-global","category":"global","citation":"README.md#L1-L8","title":"Payments repository overview","text":"Beacon Payments is a TypeScript service for idempotent charges, append-only ledger events, and settlement workers.","kind":"wiki","updatedAt":"2025-04-03T11:00:00Z","nodeId":"payments.readme"}
+  ],
+  "edges": [
+    {"from":"payments.createCharge","to":"payments.ledger","type":"writes","resolved":true},
+    {"from":"payments.ledger","to":"payments.impact","type":"affects","resolved":true},
+    {"from":"payments.impact","to":"payments.history","type":"documents","resolved":true},
+    {"from":"payments.history","to":"payments.change","type":"supersedes","resolved":true},
+    {"from":"payments.change","to":"payments.decision","type":"records","resolved":true},
+    {"from":"payments.decision","to":"payments.unknown","type":"mentions","resolved":false}
+  ],
+  "update": {"id":"payments-update","citation":"src/refund.ts#L4-L10","text":"createRefund appends a refund event to the payment ledger after authorization.","kind":"code"}
+}

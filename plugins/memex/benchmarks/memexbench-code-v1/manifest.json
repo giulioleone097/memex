@@ -1,0 +1,45 @@
+{
+  "schema": "memexbench.manifest.v1",
+  "benchmark": "MemexBench-Code",
+  "version": "1.0.0",
+  "revision": "mx-04-01-v1",
+  "description": "A frozen, local-only retrieval gate for representative code repositories.",
+  "fixtures": [
+    "fixtures/catalog/repo.json",
+    "fixtures/auth/repo.json",
+    "fixtures/payments/repo.json",
+    "fixtures/graph/repo.json"
+  ],
+  "queries": "queries.jsonl",
+  "qrels": "qrels.jsonl",
+  "splits": "splits.json",
+  "rawResultSchema": "schemas/raw-result.schema.json",
+  "baseline": "baseline.json",
+  "queryCount": 224,
+  "categories": ["exact", "semantic", "impact", "temporal", "change", "decision", "global"],
+  "strategies": ["rrf", "lexical-first", "vector-first", "graph-first"],
+  "signals": ["lexical", "vector", "graph", "hybrid"],
+  "topK": 5,
+  "model": {
+    "id": "deterministic-hash-vector",
+    "revision": "memexbench-vector-v1",
+    "dimensions": 64,
+    "normalization": "l2"
+  },
+  "reproducibility": {
+    "node": ">=20",
+    "network": false,
+    "locale": "C",
+    "timezone": "UTC",
+    "command": "npm --prefix plugins/memex run memexbench -- --check"
+  },
+  "gates": {
+    "minQueries": 200,
+    "minFixtures": 3,
+    "minCategories": 7,
+    "maxDuplicateRate": 0.05,
+    "maxStaleRate": 0.2,
+    "maxUnsupportedRate": 0.05,
+    "maxUnresolvedEdgeRate": 0.2
+  }
+}

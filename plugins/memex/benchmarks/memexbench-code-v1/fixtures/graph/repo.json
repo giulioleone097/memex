@@ -1,0 +1,25 @@
+{
+  "schema": "memexbench.fixture.v1",
+  "fixtureId": "graph",
+  "name": "Orbit Graph Tools",
+  "revision": "graph-2025-06-18",
+  "documents": [
+    {"id":"graph-build","category":"exact","citation":"src/build.ts#L6-L18","title":"Graph builder","text":"buildGraph scans repository symbols and persists nodes and typed edges for traversal.","kind":"code","updatedAt":"2025-06-18T12:00:00Z","nodeId":"graph.buildGraph"},
+    {"id":"graph-retrieval","category":"semantic","citation":"src/retrieve.ts#L1-L15","title":"Graph retrieval","text":"Graph retrieval expands lexical and vector seeds through confidence-weighted neighbors before fusion.","kind":"code","updatedAt":"2025-05-16T12:00:00Z","nodeId":"graph.retrieval"},
+    {"id":"graph-impact","category":"impact","citation":"docs/graph-impact.md#L1-L8","title":"Graph impact map","text":"Changing edge confidence affects impact analysis, related-node context, and hybrid result ordering.","kind":"wiki","updatedAt":"2025-06-04T12:00:00Z","nodeId":"graph.impact"},
+    {"id":"graph-history","category":"temporal","citation":"docs/graph-history.md#L1-L8","title":"Graph history","text":"The June 2025 graph migration added unresolved-edge reporting and preserved prior generation manifests.","kind":"wiki","updatedAt":"2025-06-21T12:00:00Z","nodeId":"graph.history"},
+    {"id":"graph-change","category":"change","citation":"CHANGELOG.md#L26-L32","title":"Graph change","text":"The latest release makes graph builds incremental and reports stale manifests before retrieval.","kind":"wiki","updatedAt":"2025-06-24T12:00:00Z","nodeId":"graph.change"},
+    {"id":"graph-decision","category":"decision","citation":"decisions/graph.md#L1-L8","title":"Graph decision record","text":"Decision: unresolved edges are surfaced as metrics and never silently treated as resolved relationships.","kind":"wiki","updatedAt":"2025-06-06T12:00:00Z","nodeId":"graph.decision"},
+    {"id":"graph-global","category":"global","citation":"README.md#L1-L8","title":"Graph repository overview","text":"Orbit Graph Tools is a Node.js repository for deterministic indexing, confidence-aware traversal, and retrieval diagnostics.","kind":"wiki","updatedAt":"2025-04-04T12:00:00Z","nodeId":"graph.readme"},
+    {"id":"graph-unsupported","category":"global","citation":"vendor/legacy.db#L1-L1","title":"Legacy binary index","text":"An unsupported legacy binary index retained only to measure unsupported-source handling.","kind":"binary","updatedAt":"2024-01-01T12:00:00Z","nodeId":"graph.legacy","support":"unsupported"}
+  ],
+  "edges": [
+    {"from":"graph.buildGraph","to":"graph.retrieval","type":"feeds","resolved":true},
+    {"from":"graph.retrieval","to":"graph.impact","type":"affects","resolved":true},
+    {"from":"graph.impact","to":"graph.history","type":"documents","resolved":true},
+    {"from":"graph.history","to":"graph.change","type":"supersedes","resolved":true},
+    {"from":"graph.change","to":"graph.decision","type":"records","resolved":true},
+    {"from":"graph.decision","to":"graph.unknown","type":"mentions","resolved":false}
+  ],
+  "update": {"id":"graph-update","citation":"src/update.ts#L3-L9","text":"updateGraph refreshes changed nodes while retaining the previous generation for audit.","kind":"code"}
+}

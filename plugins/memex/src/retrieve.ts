@@ -5,12 +5,18 @@ import type { GraphConfidence, GraphNodeV1 } from "./graph-contracts.js";
 import type { GraphIndexPort } from "./graph-index.js";
 import type { LexicalIndex } from "./lexical-index.js";
 import type { VectorStore } from "./vector-store.js";
+import { createEvidenceIdentity, UNSCOPED_PROJECT_SCOPE, type EvidenceIdentity, type EvidenceProvenance } from "./evidence-identity.js";
 
 export interface SearchRequest { text: string; limit: number; signals?: ReadonlyArray<"lexical" | "vector" | "graph">; }
-export interface EvidenceItem { ref: ChunkRef; score: number; ranks: { lexical?: number; vector?: number; graph?: number }; citation: string; confidence?: GraphConfidence }
+export interface EvidenceItem { ref: ChunkRef; score: number; ranks: { lexical?: number; vector?: number; graph?: number }; citation: string; confidence?: GraphConfidence; evidenceId: string; provenance: EvidenceProvenance }
 export interface AskResultV1 { schema: "memex.ask.v1"; question: string; evidence: EvidenceItem[]; relatedNodes: GraphNodeV1[]; degraded: boolean; stale: boolean; truncated: boolean; }
 export interface SearchResultV1 { schemaVersion: 1; evidence: EvidenceItem[]; degraded: boolean; truncated: boolean; }
-export interface RetrievalPorts { lexicalIndex: LexicalIndex; vectorStore?: VectorStore; embedder?: Embedder; graphIndex?: GraphIndexPort; }
+export interface RetrievalEvidenceIdentity {
+  projectScope?: string | ((ref: ChunkRef) => string | undefined);
+  sourceIdentity?: string | ((ref: ChunkRef) => string | undefined);
+  priorEvidenceId?: string | ((ref: ChunkRef) => string | undefined);
+}
+export interface RetrievalPorts { lexicalIndex: LexicalIndex; vectorStore?: VectorStore; embedder?: Embedder; graphIndex?: GraphIndexPort; evidenceIdentity?: RetrievalEvidenceIdentity; }
 
 type SignalName = "lexical" | "vector" | "graph";
 interface RankedList { signal: SignalName; items: ReadonlyArray<{ ref: ChunkRef; score: number; confidence?: GraphConfidence }>; }
@@ -43,7 +49,7 @@ export async function search(request: SearchRequest, ports: RetrievalPorts): Pro
     const lexicalItems = lists.find((list) => list.signal === "lexical")?.items ?? [];
     lists.push({ signal: "graph", items: await graphSignal(ports.graphIndex, request.text, lexicalItems, vectorItems, oversample) });
   }
-  const fused = fuse(lists);
+  const fused = fuse(lists, ports.evidenceIdentity);
   return { schemaVersion: 1, evidence: fused.slice(0, request.limit), degraded: signals.length < ALL_SIGNALS.length, truncated: fused.length > request.limit };
 }
 
@@ -78,27 +84,127 @@ export function validateSignals(signals: SearchRequest["signals"]): SignalName[]
   return ALL_SIGNALS.filter((signal) => unique.has(signal));
 }
 
-function fuse(lists: readonly RankedList[]): EvidenceItem[] {
-  const byId = new Map<string, { ref: ChunkRef; ranks: EvidenceItem["ranks"]; score: number; confidence?: GraphConfidence }>();
+function fuse(lists: readonly RankedList[], identityConfig: RetrievalEvidenceIdentity | undefined): EvidenceItem[] {
+  // Identity, rather than the legacy ref.id, is the deduplication key.  A
+  // lexical index and a vector index can carry independently-generated IDs for
+  // the same source excerpt; deduping here (before top-k slicing) keeps one
+  // evidence item while retaining every signal's rank contribution.
+  const byId = new Map<string, FusedEntry>();
   for (const list of lists) {
     list.items.forEach((item, index) => {
       const rank = index + 1;
-      const existing = byId.get(item.ref.id) ?? { ref: item.ref, ranks: {}, score: 0 };
-      existing.ranks = { ...existing.ranks, [list.signal]: rank };
-      existing.score += 1 / (RRF_K + rank);
+      const identity = evidenceIdentityFor(item.ref, identityConfig);
+      const existing = byId.get(identity.evidenceId);
+      if (existing === undefined) {
+        byId.set(identity.evidenceId, {
+          ref: item.ref,
+          identity,
+          ranks: { [list.signal]: rank },
+          score: 1 / (RRF_K + rank),
+          ...(item.confidence === undefined ? {} : { confidence: item.confidence }),
+        });
+        return;
+      }
+      // A malformed/legacy index may return the same identity more than once
+      // from one signal.  Count that signal once and keep its best rank.
+      const previousRank = existing.ranks[list.signal];
+      if (previousRank === undefined) {
+        existing.ranks = { ...existing.ranks, [list.signal]: rank };
+        existing.score += 1 / (RRF_K + rank);
+      } else if (rank < previousRank) {
+        existing.score += 1 / (RRF_K + rank) - 1 / (RRF_K + previousRank);
+        existing.ranks = { ...existing.ranks, [list.signal]: rank };
+      }
+      // Keep the representative deterministic even when index traversal order
+      // differs.  This does not alter the evidence identity or provenance.
+      if (compareRefs(item.ref, existing.ref) < 0) existing.ref = item.ref;
+      if (existing.identity.provenance.priorEvidenceId === undefined && identity.provenance.priorEvidenceId !== undefined) {
+        existing.identity = {
+          evidenceId: existing.identity.evidenceId,
+          provenance: { ...existing.identity.provenance, priorEvidenceId: identity.provenance.priorEvidenceId },
+        };
+      }
       if (item.confidence !== undefined) existing.confidence = item.confidence;
-      byId.set(item.ref.id, existing);
     });
   }
   return [...byId.values()]
+    // Preserve the legacy representative/tie ordering by ref.id.  This keeps
+    // old callers' deterministic ordering while evidenceId remains the
+    // identity/deduplication key.
     .sort((left, right) => right.score - left.score || left.ref.id.localeCompare(right.ref.id))
-    .map((entry) => ({
-      ref: entry.ref,
-      score: entry.score,
-      ranks: entry.ranks,
-      citation: `${entry.ref.path}#L${String(entry.ref.startLine)}-${String(entry.ref.endLine)}`,
-      confidence: entry.confidence ?? planeConfidence(entry.ref.plane),
-    }));
+    .map((entry) => evidenceItem(entry));
+}
+
+interface FusedEntry {
+  ref: ChunkRef;
+  identity: EvidenceIdentity;
+  ranks: EvidenceItem["ranks"];
+  score: number;
+  confidence?: GraphConfidence;
+}
+
+function evidenceItem(entry: FusedEntry): EvidenceItem {
+  return {
+    ref: entry.ref,
+    score: entry.score,
+    ranks: entry.ranks,
+    citation: `${entry.ref.path}#L${String(entry.ref.startLine)}-${String(entry.ref.endLine)}`,
+    confidence: entry.confidence ?? planeConfidence(entry.ref.plane),
+    evidenceId: entry.identity.evidenceId,
+    provenance: entry.identity.provenance,
+  };
+}
+
+function evidenceIdentityFor(ref: ChunkRef, config: RetrievalEvidenceIdentity | undefined): EvidenceIdentity {
+  const candidate = ref as ChunkRef & {
+    projectScope?: string;
+    sourceIdentity?: string;
+    sourceId?: string;
+    priorEvidenceId?: string;
+    previousEvidenceId?: string;
+    provenance?: Partial<EvidenceProvenance>;
+  };
+  const provenance = candidate.provenance;
+  const projectScope = resolveIdentityValue(config?.projectScope, ref)
+    ?? candidate.projectScope
+    ?? provenance?.projectScope
+    ?? UNSCOPED_PROJECT_SCOPE;
+  const sourceIdentity = resolveIdentityValue(config?.sourceIdentity, ref)
+    ?? candidate.sourceIdentity
+    ?? candidate.sourceId
+    ?? provenance?.sourceIdentity
+    // ChunkRef.path is repository-relative by contract and is the stable
+    // source identity for old indexes that predate explicit source IDs.
+    ?? ref.path;
+  const legacyPriorEvidenceId = resolveIdentityValue(config?.priorEvidenceId, ref)
+    ?? candidate.priorEvidenceId
+    ?? candidate.previousEvidenceId
+    ?? provenance?.priorEvidenceId;
+  // Older indexes can carry a legacy 64-hex ref ID in this field.  It is not
+  // an ev1 identity and therefore cannot be asserted as lineage, but it must
+  // not turn an otherwise valid retrieval into an IO_FAILURE.
+  const priorEvidenceId = legacyPriorEvidenceId !== undefined && /^ev1:[a-f0-9]{64}$/u.test(legacyPriorEvidenceId)
+    ? legacyPriorEvidenceId
+    : undefined;
+  return createEvidenceIdentity({
+    projectScope,
+    sourceIdentity,
+    contentHash: ref.contentHash,
+    startLine: ref.startLine,
+    endLine: ref.endLine,
+    ...(priorEvidenceId === undefined ? {} : { priorEvidenceId }),
+  });
+}
+
+function resolveIdentityValue(value: string | ((ref: ChunkRef) => string | undefined) | undefined, ref: ChunkRef): string | undefined {
+  return typeof value === "function" ? value(ref) : value;
+}
+
+function compareRefs(left: ChunkRef, right: ChunkRef): number {
+  return left.id.localeCompare(right.id)
+    || left.path.localeCompare(right.path)
+    || left.startLine - right.startLine
+    || left.endLine - right.endLine;
 }
 
 // TP.2 review finding I2: a chunk not reached via the graph signal still

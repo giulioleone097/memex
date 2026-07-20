@@ -30,6 +30,15 @@ const WIKI_STATE_KEYS = new Set([
     "lastGitHead",
     "lastRun",
 ]);
+const WIKI_STATE_FILE_V2_KEYS = new Set([
+    "schemaVersion",
+    "mode",
+    "createdAt",
+    "updatedAt",
+    "contentHash",
+    "lastGitHead",
+    "lastRun",
+]);
 const LAST_RUN_KEYS = new Set([
     "id",
     "command",
@@ -76,14 +85,7 @@ export function parseWikiState(input) {
     if (!isWikiMode(state.mode)) {
         throw new MemexError("INVALID_STATE", "Wiki state mode is invalid.");
     }
-    const lastRun = requireRecord(state.lastRun, "INVALID_STATE", "Wiki state lastRun must be an object.");
-    requireKnownKeys(lastRun, LAST_RUN_KEYS, "INVALID_STATE", "Wiki state lastRun");
-    if (!isWikiCommand(lastRun.command)) {
-        throw new MemexError("INVALID_STATE", "Wiki state lastRun command is invalid.");
-    }
-    if (typeof lastRun.changed !== "boolean") {
-        throw new MemexError("INVALID_STATE", "Wiki state lastRun changed must be boolean.");
-    }
+    const lastRun = parseWikiRunState(state.lastRun);
     const lastGitHead = readOptionalString(state, "lastGitHead", "INVALID_STATE", "Wiki state lastGitHead");
     return {
         schemaVersion: 1,
@@ -94,14 +96,45 @@ export function parseWikiState(input) {
         updatedAt: requireTimestamp(state.updatedAt, "INVALID_STATE", "Wiki state updatedAt"),
         contentHash: requireNonEmptyString(state.contentHash, "INVALID_STATE", "Wiki state contentHash"),
         ...(lastGitHead === undefined ? {} : { lastGitHead }),
-        lastRun: {
-            id: requireNonEmptyString(lastRun.id, "INVALID_STATE", "Wiki state lastRun id"),
-            command: lastRun.command,
-            startedAt: requireTimestamp(lastRun.startedAt, "INVALID_STATE", "Wiki state lastRun startedAt"),
-            completedAt: requireTimestamp(lastRun.completedAt, "INVALID_STATE", "Wiki state lastRun completedAt"),
-            changed: lastRun.changed,
-            summary: requireString(lastRun.summary, "INVALID_STATE", "Wiki state lastRun summary"),
-        },
+        lastRun,
+    };
+}
+export function parseWikiStateFileV2(input) {
+    const state = requireRecord(input, "INVALID_STATE", "Wiki state must be an object.");
+    requireKnownKeys(state, WIKI_STATE_FILE_V2_KEYS, "INVALID_STATE", "Wiki state");
+    if (state.schemaVersion !== 2) {
+        throw new MemexError("INVALID_STATE", "Unsupported portable wiki state schema version. Expected 2.");
+    }
+    if (!isWikiMode(state.mode)) {
+        throw new MemexError("INVALID_STATE", "Wiki state mode is invalid.");
+    }
+    const lastGitHead = readOptionalString(state, "lastGitHead", "INVALID_STATE", "Wiki state lastGitHead");
+    return {
+        schemaVersion: 2,
+        mode: state.mode,
+        createdAt: requireTimestamp(state.createdAt, "INVALID_STATE", "Wiki state createdAt"),
+        updatedAt: requireTimestamp(state.updatedAt, "INVALID_STATE", "Wiki state updatedAt"),
+        contentHash: requireNonEmptyString(state.contentHash, "INVALID_STATE", "Wiki state contentHash"),
+        ...(lastGitHead === undefined ? {} : { lastGitHead }),
+        lastRun: parseWikiRunState(state.lastRun),
+    };
+}
+function parseWikiRunState(input) {
+    const lastRun = requireRecord(input, "INVALID_STATE", "Wiki state lastRun must be an object.");
+    requireKnownKeys(lastRun, LAST_RUN_KEYS, "INVALID_STATE", "Wiki state lastRun");
+    if (!isWikiCommand(lastRun.command)) {
+        throw new MemexError("INVALID_STATE", "Wiki state lastRun command is invalid.");
+    }
+    if (typeof lastRun.changed !== "boolean") {
+        throw new MemexError("INVALID_STATE", "Wiki state lastRun changed must be boolean.");
+    }
+    return {
+        id: requireNonEmptyString(lastRun.id, "INVALID_STATE", "Wiki state lastRun id"),
+        command: lastRun.command,
+        startedAt: requireTimestamp(lastRun.startedAt, "INVALID_STATE", "Wiki state lastRun startedAt"),
+        completedAt: requireTimestamp(lastRun.completedAt, "INVALID_STATE", "Wiki state lastRun completedAt"),
+        changed: lastRun.changed,
+        summary: requireString(lastRun.summary, "INVALID_STATE", "Wiki state lastRun summary"),
     };
 }
 export function parseSourceEnvelope(input) {
@@ -320,6 +353,9 @@ function requireTimestamp(value, code, label) {
         throw new MemexError(code, `${label} must be a canonical ISO-8601 timestamp.`);
     }
     return value;
+}
+export function parseCanonicalTimestamp(value, label) {
+    return requireTimestamp(value, "INVALID_ARGUMENT", label);
 }
 function readOptionalTimestamp(record, key, label) {
     return Object.hasOwn(record, key)

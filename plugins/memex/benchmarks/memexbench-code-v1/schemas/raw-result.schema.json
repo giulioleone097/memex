@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memexbench.raw-result.v1",
+  "type": "object",
+  "required": ["schema", "benchmark", "run", "queries", "categories", "results", "metrics", "gate", "fingerprints"],
+  "properties": {
+    "schema": { "const": "memexbench.raw-result.v1" },
+    "benchmark": { "const": "MemexBench-Code" },
+    "run": {
+      "type": "object",
+      "required": ["revision", "startedAt", "node", "modelRevision", "cold", "warm"],
+      "properties": {
+        "revision": { "type": "string" },
+        "startedAt": { "type": "string" },
+        "node": { "type": "string" },
+        "modelRevision": { "type": "string" },
+        "cold": { "type": "boolean" },
+        "warm": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "queries": { "type": "integer", "minimum": 200 },
+    "categories": { "type": "integer", "minimum": 7 },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["queryId", "signal", "strategy", "latencyMs", "tokens", "hits"],
+        "properties": {
+          "queryId": { "type": "string" },
+          "signal": { "enum": ["lexical", "vector", "graph", "hybrid"] },
+          "strategy": { "enum": ["rrf", "lexical-first", "vector-first", "graph-first"] },
+          "latencyMs": { "type": "number", "minimum": 0 },
+          "tokens": { "type": "integer", "minimum": 0 },
+          "hits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["citation", "evidenceId", "score", "rank", "signals", "provenance"],
+              "properties": {
+                "citation": { "type": "string" },
+                "evidenceId": { "type": "string", "pattern": "^ev1:[a-f0-9]{64}$" },
+                "score": { "type": "number" },
+                "rank": { "type": "integer", "minimum": 1 },
+                "signals": { "type": "array", "items": { "type": "string" } },
+                "provenance": {
+                  "type": "object",
+                  "required": ["projectScope", "sourceIdentity", "contentHash", "startLine", "endLine"],
+                  "properties": {
+                    "projectScope": { "type": "string" },
+                    "sourceIdentity": { "type": "string" },
+                    "contentHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                    "startLine": { "type": "integer", "minimum": 1 },
+                    "endLine": { "type": "integer", "minimum": 1 },
+                    "priorEvidenceId": { "type": "string", "pattern": "^ev1:[a-f0-9]{64}$" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["evidenceIdentity", "noVector", "byCategory", "bySignal"],
+      "properties": {
+        "evidenceIdentity": {
+          "type": "object",
+          "required": ["total", "unique", "duplicateRate"],
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "unique": { "type": "integer", "minimum": 0 },
+            "duplicateRate": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "noVector": {
+          "type": "object",
+          "required": ["deterministic", "fingerprintSha256", "queryCount", "minimumRecallAt5"],
+          "properties": {
+            "deterministic": { "type": "boolean" },
+            "fingerprintSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "queryCount": { "type": "integer", "minimum": 0 },
+            "minimumRecallAt5": { "type": "number", "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "byCategory": { "type": "object" },
+        "bySignal": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "gate": {
+      "type": "object",
+      "required": ["passed", "failures", "failuresByCategory", "failuresBySignal"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "failures": { "type": "array", "items": { "type": "string" } },
+        "failuresByCategory": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        },
+        "failuresBySignal": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fingerprints": {
+      "type": "object",
+      "required": ["manifestSha256", "queriesSha256", "qrelsSha256", "splitsSha256", "corpusSha256"],
+      "properties": {
+        "manifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "queriesSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "qrelsSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "splitsSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "corpusSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -5,6 +5,7 @@ import {
   mkdir,
   readFile,
   realpath,
+  rename,
   rm,
   stat,
   symlink,
@@ -312,27 +313,31 @@ describe("storage", () => {
     await expectMemexError(readState(location), "INVALID_STATE");
   });
 
-  test("storage: rejects state copied from a different workspace", async () => {
-    const firstRepository = await makeTemporaryRoot("state-origin");
-    const secondRepository = await makeTemporaryRoot("state-destination");
-    const first = await initializeWiki({
+  test("storage: rebinds portable state after repository relocation", async () => {
+    const parent = await makeTemporaryRoot("state-relocation");
+    const home = await makeTemporaryRoot("state-relocation-home");
+    const firstRepository = path.join(parent, "original");
+    await mkdir(firstRepository);
+    await initializeWiki({
       mode: "code",
       root: firstRepository,
+      homeDir: home,
       now: NOW,
       runId: "state-origin",
     });
-    const secondLocation = await resolveWikiLocation({
+    const relocatedRepository = path.join(parent, "relocated");
+    await rename(firstRepository, relocatedRepository);
+    const relocated = await resolveWikiLocation({
       mode: "code",
-      root: secondRepository,
+      root: relocatedRepository,
+      homeDir: home,
     });
-    await mkdir(secondLocation.wikiRoot, { recursive: true });
-    await writeFile(
-      secondLocation.statePath,
-      await readFile(first.location.statePath, "utf8"),
-      "utf8",
-    );
+    const rebound = await readState(relocated);
 
-    await expectMemexError(readState(secondLocation), "INVALID_STATE");
+    assert.equal(rebound.workspaceId, relocated.workspaceId);
+    assert.equal(rebound.wikiRoot, relocated.wikiRoot);
+    assert.equal(relocated.statePath, path.join(relocated.wikiRoot, ".last-update.json"));
+    assert.equal(JSON.parse(await readFile(relocated.statePath, "utf8")).schemaVersion, 2);
   });
 
   test("storage: serializes concurrent processes and never guesses stale lock ownership", async () => {

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import { test } from "node:test";
 
+import { createEvidenceIdentity } from "../../dist/evidence-identity.js";
 import { ask, search } from "../../dist/retrieve.js";
 
 function ref(id, path, nodeId) {
@@ -78,6 +80,103 @@ test("retrieve.search: an incompatible vector store throws INDEX_INCOMPATIBLE", 
 test("retrieve.search: rejects an empty or unknown signals array", async () => {
   const ports = { lexicalIndex: fakeLexicalIndex([]) };
   await assert.rejects(search({ text: "q", limit: 5, signals: [] }, ports), { code: "INVALID_ARGUMENT" });
+});
+
+test("evidence identity: is deterministic, host-independent, and carries changed-content provenance", () => {
+  const input = {
+    projectScope: "repo:catalog",
+    sourceIdentity: "src/catalog.ts",
+    contentHash: "a".repeat(64),
+    startLine: 10,
+    endLine: 18,
+  };
+  const identityFromHostRoot = (root) => createEvidenceIdentity({
+    ...input,
+    sourceIdentity: path.relative(root, path.join(root, "src/catalog.ts")),
+  });
+  const first = identityFromHostRoot("/Users/alice/work/catalog");
+  const second = identityFromHostRoot("/opt/builds/bob/catalog");
+  assert.equal(first.evidenceId, second.evidenceId);
+  assert.match(first.evidenceId, /^ev1:[a-f0-9]{64}$/u);
+  assert.deepEqual(first.provenance, {
+    projectScope: "repo:catalog",
+    sourceIdentity: "src/catalog.ts",
+    contentHash: "a".repeat(64),
+    startLine: 10,
+    endLine: 18,
+  });
+
+  const changed = createEvidenceIdentity({
+    ...input,
+    contentHash: "b".repeat(64),
+    priorEvidenceId: first.evidenceId,
+  });
+  assert.notEqual(changed.evidenceId, first.evidenceId, "changed content must receive a new evidence ID");
+  assert.equal(changed.provenance.priorEvidenceId, first.evidenceId);
+
+  assert.throws(
+    () => createEvidenceIdentity({ ...input, projectScope: "/Users/alice/catalog" }),
+    /logical identity.*absolute host path/iu,
+    "absolute project scopes must be rejected rather than hidden behind host-specific hashes",
+  );
+});
+
+test("retrieve.search: deduplicates lexical/vector copies by evidenceId before top-k", async () => {
+  const lexicalRef = ref("a".repeat(64), "docs/shared.md");
+  const vectorRef = ref("b".repeat(64), "docs/shared.md");
+  vectorRef.contentHash = lexicalRef.contentHash;
+  const ports = {
+    lexicalIndex: fakeLexicalIndex([lexicalRef]),
+    vectorStore: fakeVectorStore([vectorRef]),
+    embedder: fakeEmbedder(),
+    evidenceIdentity: { projectScope: "repo:shared", sourceIdentity: (candidate) => candidate.path },
+  };
+  const first = await search({ text: "query", limit: 1, signals: ["lexical", "vector"] }, ports);
+  const second = await search({ text: "query", limit: 1, signals: ["lexical", "vector"] }, ports);
+  assert.equal(first.evidence.length, 1, "the same excerpt must occupy one top-k slot");
+  assert.deepEqual(first.evidence, second.evidence, "fusion ordering and representative selection must be deterministic");
+  assert.deepEqual(first.evidence[0].ranks, { lexical: 1, vector: 1 });
+  assert.equal(first.evidence[0].provenance.projectScope, "repo:shared");
+  assert.equal(first.evidence[0].evidenceId, second.evidence[0].evidenceId);
+});
+
+test("retrieve.search: lexical-only path is deterministic without vector assets", async () => {
+  const a = ref("a".repeat(64), "docs/a.md");
+  const ports = { lexicalIndex: fakeLexicalIndex([a]) };
+  const first = await search({ text: "query", limit: 5, signals: ["lexical"] }, ports);
+  const second = await search({ text: "query", limit: 5, signals: ["lexical"] }, ports);
+  assert.deepEqual(first.evidence, second.evidence);
+  assert.equal(first.evidence[0].provenance.projectScope, "memex:unscoped");
+});
+
+test("retrieve.search: emits priorEvidenceId when an indexed candidate carries changed-content lineage", async () => {
+  const prior = createEvidenceIdentity({
+    projectScope: "repo:history",
+    sourceIdentity: "docs/history.md",
+    contentHash: "a".repeat(64),
+    startLine: 1,
+    endLine: 2,
+  });
+  const changed = ref("c".repeat(64), "docs/history.md");
+  changed.contentHash = "b".repeat(64);
+  changed.priorEvidenceId = prior.evidenceId;
+  const result = await search({ text: "history", limit: 5, signals: ["lexical"] }, {
+    lexicalIndex: fakeLexicalIndex([changed]),
+    evidenceIdentity: { projectScope: "repo:history" },
+  });
+  assert.equal(result.evidence[0].provenance.priorEvidenceId, prior.evidenceId);
+  assert.notEqual(result.evidence[0].evidenceId, prior.evidenceId);
+});
+
+test("retrieve.search: ignores a legacy prior ref ID instead of failing retrieval", async () => {
+  const legacy = ref("c".repeat(64), "docs/legacy.md");
+  legacy.previousEvidenceId = "d".repeat(64);
+  const result = await search({ text: "legacy", limit: 5, signals: ["lexical"] }, {
+    lexicalIndex: fakeLexicalIndex([legacy]),
+    evidenceIdentity: { projectScope: "repo:history" },
+  });
+  assert.equal(result.evidence.length, 1);
+  assert.equal(Object.hasOwn(result.evidence[0].provenance, "priorEvidenceId"), false);
 });
 
 // TP.2 review round 2, N1: the previous version of this test asserted only
