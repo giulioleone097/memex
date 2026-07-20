@@ -1,4 +1,4 @@
-import type { WikiCommand, WikiStateV1 } from "./contracts.js";
+import { type WikiCommand, type WikiStateV1 } from "./contracts.js";
 import type { GraphIndexPort } from "./graph-index.js";
 import { type ResolveWikiLocationOptions, type WikiLocation } from "./paths.js";
 export declare const REQUIRED_WIKI_PAGES: readonly ["quickstart.md", "architecture.md", "source-map.md", "workflows.md", "domain-concepts.md", "operations.md", "integrations.md", "testing.md"];
@@ -10,6 +10,7 @@ export interface InitializeWikiOptions extends ResolveWikiLocationOptions {
 export interface InitializeWikiResult {
     changed: boolean;
     createdPages: string[];
+    instructionFiles: string[];
     location: WikiLocation;
     state: WikiStateV1;
 }
@@ -32,16 +33,19 @@ export interface FinalizeRunResult {
     state: WikiStateV1;
 }
 export interface WikiCheckIssue {
-    code: "BROKEN_LINK" | "DANGLING_NODE_REF" | "INVALID_STATE" | "MISSING_PAGE" | "MISSING_PAGE_EDGE" | "MISSING_PAGE_NODE" | "STALE_STATE" | "SYMLINK";
+    code: "BROKEN_LINK" | "DANGLING_NODE_REF" | "DUPLICATE_INSTRUCTION_BLOCK" | "INVALID_STATE" | "MALFORMED_INSTRUCTION_BLOCK" | "MISSING_INSTRUCTION_BLOCK" | "MISSING_PAGE" | "MISSING_PAGE_EDGE" | "MISSING_PAGE_NODE" | "STALE_GRAPH_REPORT" | "STALE_INSTRUCTION_BLOCK" | "STALE_STATE" | "SYMLINK";
     message: string;
     page?: string;
 }
+export type WikiCheckPhase = "preflight" | "strict";
 export interface WikiCheckResult {
     ok: boolean;
+    phase: WikiCheckPhase;
     issues: WikiCheckIssue[];
 }
 export interface WikiCheckOptions {
     graph?: GraphIndexPort;
+    phase?: WikiCheckPhase;
 }
 export declare function initializeWiki(options: InitializeWikiOptions): Promise<InitializeWikiResult>;
 export declare function readPage(location: WikiLocation, page: string): Promise<PageReadResult>;

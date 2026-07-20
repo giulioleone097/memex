@@ -28,4 +28,5 @@ export interface GraphReportInputV1 {
         to: GraphNodeV1 | undefined;
     }>;
 }
+export declare function parseGraphReportGeneration(markdown: string): string | undefined;
 export declare function renderGraphReportMarkdown(input: GraphReportInputV1): string;

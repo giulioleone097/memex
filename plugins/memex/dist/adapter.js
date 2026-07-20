@@ -36,7 +36,7 @@ export const MEMEX_OPERATIONS = [
     "graph",
     "migrate",
 ];
-const GRAPH_ACTIONS = [
+export const GRAPH_ACTIONS = [
     "build",
     "status",
     "query",
@@ -52,6 +52,7 @@ const GRAPH_ACTIONS = [
 ];
 const MODES = ["code", "personal"];
 const WIKI_COMMANDS = ["init", "update", "ingest"];
+const CHECK_PHASES = ["preflight", "strict"];
 const GRAPH_RESPONSE_BYTE_LIMIT = 48 * 1024;
 const RETRIEVAL_SIGNALS = ["lexical", "vector", "graph"];
 function isRetrievalSignal(value) {
@@ -214,9 +215,13 @@ async function dispatchUnsafe(request) {
             });
         }
         case "check": {
-            const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
+            const location = await resolveWikiLocation(readLocation(input, ["mode", "root", "phase"]));
+            const phase = has(input, "phase") ? readEnum(input, "phase", CHECK_PHASES) : undefined;
             const graphIndex = location.mode === "code" ? await tryOpenGraphIndexForCheck(location.workspaceRoot, hostHomeDir()) : undefined;
-            return checkWiki(location, { ...(graphIndex === undefined ? {} : { graph: graphIndex }) });
+            return checkWiki(location, {
+                ...(phase === undefined ? {} : { phase }),
+                ...(graphIndex === undefined ? {} : { graph: graphIndex }),
+            });
         }
         case "doctor": {
             const location = await resolveWikiLocation(readLocation(input, ["mode", "root"]));
@@ -268,7 +273,7 @@ async function dispatchSchedule(input) {
     });
 }
 async function dispatchGraph(input) {
-    assertKeys(input, ["mode", "root", "action", "force", "query", "target", "base", "direction", "depth", "limit", "from", "to"]);
+    assertKeys(input, ["mode", "root", "action", "force", "query", "target", "base", "direction", "depth", "limit", "from", "to", "params", "preference"]);
     if (has(input, "mode"))
         readEnum(input, "mode", ["code"]);
     const root = readRequiredString(input, "root");
@@ -284,49 +289,49 @@ async function dispatchGraph(input) {
     const to = readOptionalString(input, "to");
     const graph = await loadGraph();
     if (action === "build") {
-        assertAbsent(input, ["query", "target", "base", "direction", "depth", "limit"]);
+        assertAbsent(input, ["query", "target", "base", "direction", "depth", "limit", "from", "to", "params", "preference"]);
         return publicGraphResult("build", root, await graph.buildGraph({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(force === undefined ? {} : { force }) }), limit);
     }
     if (action === "status") {
-        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "limit"]);
+        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "limit", "from", "to", "params", "preference"]);
         return publicGraphResult("status", root, await graph.getGraphStatus({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT }), limit);
     }
     if (action === "query") {
-        assertAbsent(input, ["force", "target", "base", "direction", "depth"]);
+        assertAbsent(input, ["force", "target", "base", "direction", "depth", "from", "to", "params", "preference"]);
         if (query === undefined)
             throw invalid("Graph query requires query.");
         return publicGraphResult("query", root, await graph.queryGraph({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, query, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "context") {
-        assertAbsent(input, ["force", "query", "base", "direction", "depth"]);
+        assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to", "params", "preference"]);
         if (target === undefined)
             throw invalid("Graph context requires target.");
         return publicGraphResult("context", root, await graph.getGraphContext({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "impact") {
-        assertAbsent(input, ["force", "query", "base"]);
+        assertAbsent(input, ["force", "query", "base", "from", "to", "params", "preference"]);
         if (target === undefined)
             throw invalid("Graph impact requires target.");
         return publicGraphResult("impact", root, await graph.analyzeGraphImpact({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(direction === undefined ? {} : { direction }), ...(depth === undefined ? {} : { depth }), ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "changes") {
-        assertAbsent(input, ["force", "query", "target", "direction", "depth"]);
+        assertAbsent(input, ["force", "query", "target", "direction", "depth", "from", "to", "params", "preference"]);
         return publicGraphResult("changes", root, await graph.analyzeGraphChanges({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(base === undefined ? {} : { base }), ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "path") {
-        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth"]);
+        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "params", "preference"]);
         if (from === undefined || to === undefined)
             throw invalid("Graph path requires from and to.");
         return publicGraphResult("path", root, await graph.getGraphPath({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, from, to, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "explain") {
-        assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to"]);
+        assertAbsent(input, ["force", "query", "base", "direction", "depth", "from", "to", "params", "preference"]);
         if (target === undefined)
             throw invalid("Graph explain requires target.");
         return publicGraphResult("explain", root, await graph.explainGraphNode({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, target, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "communities") {
-        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to"]);
+        assertAbsent(input, ["force", "query", "target", "base", "direction", "depth", "from", "to", "params", "preference"]);
         return publicGraphResult("communities", root, await graph.listGraphCommunities({ root, homeDir: os.homedir(), responseByteLimit: GRAPH_RESPONSE_BYTE_LIMIT, ...(limit === undefined ? {} : { limit }) }), limit);
     }
     if (action === "report") {

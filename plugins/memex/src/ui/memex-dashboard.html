@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Memex dashboard</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --canvas: #f4f1e9;
+      --surface: #fffdf7;
+      --surface-raised: #ffffff;
+      --ink: #171912;
+      --muted: #62675a;
+      --line: #d7d4c8;
+      --accent: #365c46;
+      --accent-soft: #dce9df;
+      --warning: #8a5a09;
+      --warning-soft: #f7e6bf;
+      --danger: #9b302b;
+      --danger-soft: #f8d9d5;
+      --info: #315b85;
+      --info-soft: #d9e7f5;
+      --shadow: 0 14px 40px rgba(39, 42, 31, 0.09);
+      --radius: 18px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    :root[data-theme="dark"] {
+      --canvas: #161914;
+      --surface: #20241d;
+      --surface-raised: #282d24;
+      --ink: #f1f2eb;
+      --muted: #b8bdaf;
+      --line: #41483d;
+      --accent: #94c5a4;
+      --accent-soft: #263d2d;
+      --warning: #f2bd63;
+      --warning-soft: #4b3717;
+      --danger: #ff9690;
+      --danger-soft: #4c2523;
+      --info: #9ac5ed;
+      --info-soft: #243c52;
+      --shadow: 0 14px 42px rgba(0, 0, 0, 0.26);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 280px;
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% -8%, color-mix(in srgb, var(--accent-soft) 78%, transparent), transparent 38%),
+        var(--canvas);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    button, a { font: inherit; }
+
+    .skip-link {
+      position: fixed;
+      inset: 10px auto auto 10px;
+      z-index: 10;
+      transform: translateY(-160%);
+      border-radius: 8px;
+      background: var(--ink);
+      color: var(--surface);
+      padding: 8px 12px;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .shell {
+      width: min(100%, 1040px);
+      margin: 0 auto;
+      padding: clamp(16px, 4vw, 42px);
+    }
+
+    .masthead {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 3px; font-size: clamp(1.75rem, 5vw, 2.8rem); line-height: 1.05; letter-spacing: -0.045em; }
+    h2 { margin-bottom: 14px; font-size: 1rem; letter-spacing: -0.01em; }
+    .subtitle { margin-bottom: 0; color: var(--muted); font-size: 0.92rem; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      padding: 7px 11px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .pill::before {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .pill[data-health="healthy"] { color: var(--accent); }
+    .pill[data-health="degraded"] { color: var(--warning); }
+    .pill[data-health="error"] { color: var(--danger); }
+
+    .state-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(20px, 5vw, 38px);
+    }
+
+    .state-panel[hidden], .dashboard[hidden] { display: none; }
+    .state-panel:focus, main:focus { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 4px; }
+
+    .loading-row { display: grid; grid-template-columns: 52px 1fr; gap: 16px; align-items: center; }
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border: 4px solid var(--line);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .state-title { margin-bottom: 4px; font-size: 1.05rem; font-weight: 800; }
+    .state-copy { margin-bottom: 0; color: var(--muted); }
+
+    .dashboard { display: grid; gap: 16px; }
+    .summary-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 16px; }
+    .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 3.5vw, 26px);
+    }
+
+    .identity { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+    .workspace-name { margin-bottom: 4px; overflow-wrap: anywhere; font-size: clamp(1.3rem, 4vw, 1.85rem); line-height: 1.15; letter-spacing: -0.03em; }
+    .workspace-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0; color: var(--muted); font-size: 0.84rem; }
+    .workspace-meta span { display: inline-flex; gap: 5px; }
+    .workspace-meta strong { color: var(--ink); font-weight: 700; text-transform: capitalize; }
+
+    .freshness {
+      border-radius: 14px;
+      background: var(--accent-soft);
+      padding: 14px;
+    }
+
+    .freshness-label { margin-bottom: 5px; color: var(--muted); font-size: 0.73rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; }
+    .freshness-value { margin-bottom: 2px; font-size: 1.05rem; font-weight: 800; text-transform: capitalize; }
+    .freshness-time { margin-bottom: 0; color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface-raised);
+      padding: 14px;
+    }
+
+    .metric-value { display: block; font-size: clamp(1.35rem, 4vw, 2rem); font-weight: 850; line-height: 1; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+    .metric-label { display: block; margin-top: 7px; color: var(--muted); font-size: 0.74rem; font-weight: 750; text-transform: uppercase; }
+    .metric[data-tone="warning"] .metric-value { color: var(--warning); }
+
+    .details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .list-item {
+      min-width: 0;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface-raised) 78%, var(--canvas));
+      padding: 12px 14px;
+    }
+
+    .item-label { display: block; margin-bottom: 3px; font-size: 0.84rem; font-weight: 800; overflow-wrap: anywhere; }
+    .item-reference, .item-message { display: block; color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+    .diagnostic-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .severity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--info); flex: 0 0 auto; }
+    .list-item[data-severity="warning"] { background: var(--warning-soft); }
+    .list-item[data-severity="warning"] .severity-dot { background: var(--warning); }
+    .list-item[data-severity="error"] { background: var(--danger-soft); }
+    .list-item[data-severity="error"] .severity-dot { background: var(--danger); }
+
+    .empty-note { margin: 0; color: var(--muted); font-size: 0.86rem; }
+    .source-note { margin: 2px 0 0; color: var(--muted); font-size: 0.72rem; text-align: right; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 720px) {
+      .summary-grid, .details-grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .identity { display: grid; }
+      .masthead { align-items: center; }
+    }
+
+    @media (max-width: 390px) {
+      .shell { padding: 13px; }
+      .masthead { display: grid; gap: 12px; }
+      .pill { justify-self: start; }
+      .metrics { grid-template-columns: 1fr; }
+      .source-note { text-align: left; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#dashboard-main">Skip to dashboard</a>
+  <div class="shell" id="app" data-state="loading">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Local knowledge system</p>
+        <h1>Memex</h1>
+        <p class="subtitle">Workspace health and grounded evidence</p>
+      </div>
+      <span class="pill" id="health-pill" data-health="unknown">Loading</span>
+    </header>
+
+    <main id="dashboard-main" tabindex="-1">
+      <section class="state-panel" id="loading-state" aria-live="polite" data-state="loading">
+        <div class="loading-row">
+          <span class="spinner" aria-hidden="true"></span>
+          <div>
+            <p class="state-title">Preparing dashboard</p>
+            <p class="state-copy">Waiting for a prepared Memex view model.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="state-panel" id="empty-state" hidden data-state="empty">
+        <p class="state-title">No dashboard data</p>
+        <p class="state-copy">Run a Memex data tool, then pass its prepared summary to the render tool.</p>
+      </section>
+
+      <section class="state-panel" id="error-state" hidden role="alert" data-state="error">
+        <p class="state-title">Dashboard unavailable</p>
+        <p class="state-copy" id="error-copy">The supplied view model is invalid or could not be displayed.</p>
+      </section>
+
+      <section class="dashboard" id="success-state" hidden data-state="success" aria-label="Memex dashboard">
+        <div class="summary-grid">
+          <article class="card identity">
+            <div>
+              <p class="eyebrow">Workspace</p>
+              <h2 class="workspace-name" id="workspace-name"></h2>
+              <p class="workspace-meta">
+                <span>Mode <strong id="mode-value"></strong></span>
+                <span>State <strong id="state-value"></strong></span>
+              </p>
+            </div>
+          </article>
+          <article class="card freshness" aria-labelledby="freshness-heading">
+            <p class="freshness-label" id="freshness-heading">Freshness</p>
+            <p class="freshness-value" id="freshness-value"></p>
+            <p class="freshness-time" id="freshness-time"></p>
+          </article>
+        </div>
+
+        <article class="card" aria-labelledby="graph-heading">
+          <h2 id="graph-heading">Graph inventory</h2>
+          <div class="metrics" id="graph-metrics"></div>
+          <p class="empty-note" id="graph-empty" hidden>Graph is unavailable for this prepared view.</p>
+        </article>
+
+        <div class="details-grid">
+          <article class="card" aria-labelledby="evidence-heading">
+            <h2 id="evidence-heading">Evidence and citations</h2>
+            <ul class="list" id="evidence-list"></ul>
+            <p class="empty-note" id="evidence-empty" hidden>No evidence references supplied.</p>
+          </article>
+          <article class="card" aria-labelledby="diagnostics-heading">
+            <h2 id="diagnostics-heading">Diagnostics</h2>
+            <ul class="list" id="diagnostics-list"></ul>
+            <p class="empty-note" id="diagnostics-empty" hidden>No diagnostics reported.</p>
+          </article>
+        </div>
+        <p class="source-note" id="source-note">Prepared data only · no filesystem or network access</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const INITIALIZE_REQUEST_ID = 1;
+      const states = ["loading", "empty", "error", "success"];
+      const app = document.getElementById("app");
+      const healthPill = document.getElementById("health-pill");
+      let bridgeReady = false;
+      let initializationFailed = false;
+      let rendered = false;
+      let tornDown = false;
+      let previewTimer;
+
+      function setState(state, message) {
+        app.dataset.state = state;
+        for (const name of states) {
+          document.getElementById(`${name}-state`).hidden = name !== state;
+        }
+        if (state === "error" && message) document.getElementById("error-copy").textContent = message;
+        if (state !== "success") {
+          healthPill.dataset.health = state === "error" ? "error" : "unknown";
+          healthPill.textContent = state;
+        }
+      }
+
+      function isRecord(value) {
+        return value !== null && typeof value === "object" && !Array.isArray(value);
+      }
+
+      function isViewModel(value) {
+        return isRecord(value)
+          && ["code", "personal"].includes(value.mode)
+          && typeof value.workspace === "string"
+          && ["healthy", "degraded", "error", "unknown"].includes(value.health)
+          && ["ready", "stale", "uninitialized", "locked", "error"].includes(value.state)
+          && isRecord(value.freshness)
+          && isRecord(value.graph)
+          && Array.isArray(value.evidence)
+          && Array.isArray(value.diagnostics);
+      }
+
+      function clearChildren(node) {
+        while (node.firstChild) node.removeChild(node.firstChild);
+      }
+
+      function appendText(parent, className, value, tagName = "span") {
+        const node = document.createElement(tagName);
+        node.className = className;
+        node.textContent = String(value);
+        parent.appendChild(node);
+        return node;
+      }
+
+      function formatCount(value) {
+        return Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+      }
+
+      function formatTime(value) {
+        if (typeof value !== "string" || value.length === 0) return "No update time supplied";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "Update time unavailable" : date.toLocaleString();
+      }
+
+      function renderMetrics(graph) {
+        const metrics = document.getElementById("graph-metrics");
+        const empty = document.getElementById("graph-empty");
+        clearChildren(metrics);
+        metrics.hidden = !graph.available;
+        empty.hidden = graph.available;
+        if (!graph.available) return;
+        const entries = [
+          ["Files", graph.files],
+          ["Nodes", graph.nodes],
+          ["Edges", graph.edges],
+          ["Unresolved", graph.unresolvedEdges],
+        ];
+        for (const [label, value] of entries) {
+          const metric = document.createElement("div");
+          metric.className = "metric";
+          if (label === "Unresolved" && Number(value) > 0) metric.dataset.tone = "warning";
+          appendText(metric, "metric-value", formatCount(value));
+          appendText(metric, "metric-label", label);
+          metrics.appendChild(metric);
+        }
+      }
+
+      function renderEvidence(items) {
+        const list = document.getElementById("evidence-list");
+        const empty = document.getElementById("evidence-empty");
+        clearChildren(list);
+        empty.hidden = items.length !== 0;
+        for (const item of items) {
+          const row = document.createElement("li");
+          row.className = "list-item";
+          appendText(row, "item-label", item.label);
+          appendText(row, "item-reference", item.reference);
+          list.appendChild(row);
+        }
+      }
+
+      function renderDiagnostics(items) {
+        const list = document.getElementById("diagnostics-list");
+        const empty = document.getElementById("diagnostics-empty");
+        clearChildren(list);
+        empty.hidden = items.length !== 0;
+        for (const item of items) {
+          const row = document.createElement("li");
+          row.className = "list-item";
+          row.dataset.severity = item.severity;
+          const head = document.createElement("div");
+          head.className = "diagnostic-head";
+          const dot = document.createElement("span");
+          dot.className = "severity-dot";
+          dot.setAttribute("aria-hidden", "true");
+          head.appendChild(dot);
+          appendText(head, "item-label", item.code);
+          row.appendChild(head);
+          appendText(row, "item-message", item.message);
+          list.appendChild(row);
+        }
+      }
+
+      function render(viewModel) {
+        if (!isViewModel(viewModel)) {
+          setState("error", "The host supplied an invalid Memex dashboard view model.");
+          return;
+        }
+        rendered = true;
+        document.getElementById("workspace-name").textContent = viewModel.workspace;
+        document.getElementById("mode-value").textContent = viewModel.mode;
+        document.getElementById("state-value").textContent = viewModel.state;
+        document.getElementById("freshness-value").textContent = viewModel.freshness.status;
+        document.getElementById("freshness-time").textContent = formatTime(viewModel.freshness.updatedAt);
+        healthPill.dataset.health = viewModel.health;
+        healthPill.textContent = viewModel.health;
+        renderMetrics(viewModel.graph);
+        renderEvidence(viewModel.evidence);
+        renderDiagnostics(viewModel.diagnostics);
+        setState("success");
+      }
+
+      function receiveToolResult(result) {
+        const structured = isRecord(result) && isRecord(result.structuredContent)
+          ? result.structuredContent
+          : result;
+        if (isRecord(structured) && isViewModel(structured.viewModel)) render(structured.viewModel);
+        else setState("empty");
+      }
+
+      function send(message) {
+        if (window.parent === window) return;
+        window.parent.postMessage(message, "*");
+      }
+
+      function isRequestId(value) {
+        return typeof value === "string" || (typeof value === "number" && Number.isFinite(value));
+      }
+
+      function handleMessage(event) {
+        if (event.source !== window.parent || !isRecord(event.data) || event.data.jsonrpc !== "2.0") return;
+        const message = event.data;
+        if (message.method === "ui/resource-teardown" && isRequestId(message.id)) {
+          send({ jsonrpc: "2.0", id: message.id, result: {} });
+          tornDown = true;
+          bridgeReady = false;
+          if (previewTimer !== undefined) window.clearTimeout(previewTimer);
+          window.removeEventListener("message", handleMessage);
+          return;
+        }
+        if (tornDown) return;
+        if (message.id === INITIALIZE_REQUEST_ID) {
+          if (bridgeReady || initializationFailed) return;
+          if (isRecord(message.error)) {
+            initializationFailed = true;
+            setState("error", "MCP Apps bridge initialization failed.");
+            return;
+          }
+          if (!isRecord(message.result)) {
+            initializationFailed = true;
+            setState("error", "MCP Apps bridge returned an invalid initialization response.");
+            return;
+          }
+          bridgeReady = true;
+          if (isRecord(message.result.hostContext)) {
+            const theme = message.result.hostContext.theme;
+            if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
+          }
+          send({ jsonrpc: "2.0", method: "ui/notifications/initialized" });
+          return;
+        }
+        if (!bridgeReady) return;
+        if (message.method === "ui/notifications/tool-result" && isRecord(message.params)) {
+          receiveToolResult(message.params);
+          return;
+        }
+        if (message.method === "ui/notifications/host-context-changed" && isRecord(message.params)) {
+          const theme = message.params.theme;
+          if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
+        }
+      }
+
+      window.addEventListener("message", handleMessage);
+
+      send({
+        jsonrpc: "2.0",
+        id: INITIALIZE_REQUEST_ID,
+        method: "ui/initialize",
+        params: {
+          protocolVersion: "2026-01-26",
+          appCapabilities: {},
+          appInfo: { name: "memex-dashboard", version: "0.3.3" },
+        },
+      });
+
+      const openai = isRecord(window.openai) ? window.openai : undefined;
+      if (openai && isRecord(openai.toolOutput)) receiveToolResult(openai.toolOutput);
+      if (openai && (openai.theme === "dark" || openai.theme === "light")) {
+        document.documentElement.dataset.theme = openai.theme;
+      }
+
+      previewTimer = window.setTimeout(() => {
+        if (tornDown || rendered || initializationFailed) return;
+        if (window.parent !== window && bridgeReady) {
+          setState("empty");
+          return;
+        }
+        if (window.parent !== window) return;
+        render({
+          mode: "code",
+          workspace: "Static preview",
+          health: "healthy",
+          state: "ready",
+          freshness: { status: "current", updatedAt: "2026-07-18T12:00:00.000Z" },
+          graph: { available: true, files: 128, nodes: 1642, edges: 2987, unresolvedEdges: 11 },
+          evidence: [
+            { label: "Architecture", reference: "memex/architecture.md" },
+            { label: "Graph report", reference: "memex/graph-report.md" },
+          ],
+          diagnostics: [
+            { severity: "warning", code: "UNRESOLVED_EDGES", message: "Eleven heuristic edges remain unresolved." },
+            { severity: "info", code: "STATIC_PREVIEW", message: "Preview data is local and does not represent a live workspace." },
+          ],
+        });
+      }, 1200);
+    })();
+  </script>
+</body>
+</html>

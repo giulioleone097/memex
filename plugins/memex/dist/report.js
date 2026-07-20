@@ -1,3 +1,6 @@
+export function parseGraphReportGeneration(markdown) {
+    return markdown.match(/^# Graph Report\r?\n\r?\nGenerated [^\r\n]+ from graph generation `(g-[a-f0-9]{64})`\./u)?.[1];
+}
 export function renderGraphReportMarkdown(input) {
     const lines = [];
     lines.push("# Graph Report");
@@ -70,6 +73,5 @@ export function renderGraphReportMarkdown(input) {
             lines.push(`| ${entry.from?.name ?? entry.edge.from} | ${entry.to?.name ?? entry.edge.to} | ${entry.edge.kind} |`);
         }
     }
-    lines.push("");
     return `${lines.join("\n")}\n`;
 }
